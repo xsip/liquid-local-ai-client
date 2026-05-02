@@ -1,31 +1,31 @@
-import { animate, style, transition, trigger, query, stagger } from '@angular/animations';
+import { animate, style, transition, trigger } from '@angular/animations';
 import { Component, ElementRef, input, output, signal, ViewChild } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChatMetadataDto, CreateChatMetadataDto, UpdateChatMetadataDto } from '../../client';
 import {
-  ChatSettingsDialogComponent,
   ChatSettingsData,
-  ChatSettingsSaveEvent,
+  ChatSettingsDialogComponent,
+  ChatSettingsSaveEvent
 } from '../../shared/components/chat-settings-dialog.component';
 import { SpinnerComponent } from '../../shared/components/spinner.component';
 import { TranslateModule } from '@ngx-translate/core';
 import { NgIconComponent, provideIcons } from '@ng-icons/core';
 import {
-  heroChatBubbleOvalLeft,
-  heroPlus,
-  heroLockClosed,
-  heroPencilSquare,
-  heroCog6Tooth,
-  heroTrash,
-  heroPaperClip,
   heroBackspace,
+  heroChatBubbleOvalLeft,
+  heroCog6Tooth,
+  heroLockClosed,
+  heroPaperClip,
+  heroPencilSquare,
+  heroPlus,
+  heroTrash
 } from '@ng-icons/heroicons/outline';
+import { BadgeComponent, IconButtonComponent } from '../../shared';
+import { AuthImageMountDirective, CodeBlockMountDirective, FileCardMountDirective } from './markdown.pipe';
+import { ChatAttachmentsSidebarComponent } from '../../shared/components/chat-attachments-sidebar.component';
 import ClientEnum = CreateChatMetadataDto.ClientEnum;
 import InvokeAiModelToUseEnum = UpdateChatMetadataDto.InvokeAiModelToUseEnum;
-import { BadgeComponent, IconButtonComponent } from '../../shared';
-import { AuthFilesDirective, AuthImagesDirective } from './markdown.pipe';
-import { ChatAttachmentsSidebarComponent } from '../../shared/components/chat-attachments-sidebar.component';
 
 @Component({
   selector: 'app-chat-sidebar',
@@ -71,9 +71,10 @@ import { ChatAttachmentsSidebarComponent } from '../../shared/components/chat-at
     NgIconComponent,
     BadgeComponent,
     IconButtonComponent,
-    AuthImagesDirective,
-    AuthFilesDirective,
     ChatAttachmentsSidebarComponent,
+    AuthImageMountDirective,
+    CodeBlockMountDirective,
+    FileCardMountDirective,
   ],
   viewProviders: [
     provideIcons({
@@ -89,8 +90,9 @@ import { ChatAttachmentsSidebarComponent } from '../../shared/components/chat-at
   ],
   template: `
     <div
-      authImages
-      authFiles
+      mountAuthImages
+      mountCodeBlocks
+      mountFileCards
       class="flex flex-col w-70 border-r border-border-default shrink-0 h-full bg-surface-raised"
       style="box-shadow: 2px 0 12px rgba(0,0,0,0.06);"
     >

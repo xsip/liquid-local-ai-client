@@ -4,8 +4,8 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { ChatMessage } from './chat.service';
 import {
-  AuthFilesDirective,
-  AuthImagesDirective,
+  AuthFilesDirective, AuthImageMountDirective,
+  CodeBlockMountDirective, FileCardMountDirective,
   MarkdownPipe,
   StripMarkdownPipe,
 } from './markdown.pipe';
@@ -73,11 +73,13 @@ import ClientEnum = CreateChatMetadataDto.ClientEnum;
     DatePipe,
     TranslateModule,
     MarkdownPipe,
-    AuthImagesDirective,
     StripMarkdownPipe,
     SpinnerComponent,
     NgIconComponent,
-    AuthFilesDirective
+    AuthFilesDirective,
+    AuthImageMountDirective,
+    CodeBlockMountDirective,
+    FileCardMountDirective,
   ],
   viewProviders: [
     provideIcons({
@@ -151,8 +153,9 @@ import ClientEnum = CreateChatMetadataDto.ClientEnum;
             >
               <div
                 class="markdown-body"
-                authImages
-                authFiles
+                mountAuthImages
+                mountCodeBlocks
+                mountFileCards
                 [innerHTML]="msg.text | markdown: msg.streaming"
               ></div>
             </div>
@@ -284,8 +287,9 @@ import ClientEnum = CreateChatMetadataDto.ClientEnum;
                     }}
                   </span>
                   <pre
-                    authImages
-                    authFiles
+                    mountAuthImages
+                    mountCodeBlocks
+                    mountFileCards
                     class="mt-1.5 whitespace-pre-wrap break-all leading-relaxed text-[11px]"
                     [class]="msg.toolFailed ? 'text-error-text' : 'text-success-text'"
                     [innerHTML]="msg.toolOutput | markdown"
@@ -415,8 +419,9 @@ import ClientEnum = CreateChatMetadataDto.ClientEnum;
             >
               @if (msg.streaming) {
                 <div
-                  authImages
-                  authFiles
+                  mountAuthImages
+                  mountCodeBlocks
+                  mountFileCards
                   class="markdown-body markdown-body--violet"
                   [innerHTML]="msg.text | markdown"
                 ></div>
@@ -425,8 +430,9 @@ import ClientEnum = CreateChatMetadataDto.ClientEnum;
                 ></span>
               } @else {
                 <div
-                  authImages
-                  authFiles
+                  mountAuthImages
+                  mountCodeBlocks
+                  mountFileCards
                   class="markdown-body markdown-body--violet"
                   [innerHTML]="msg.text | markdown"
                 ></div>
@@ -455,8 +461,9 @@ import ClientEnum = CreateChatMetadataDto.ClientEnum;
               @if (msg.streaming) {
                 <div
                   class="markdown-body"
-                  authImages
-                  authFiles
+                  mountAuthImages
+                  mountCodeBlocks
+                  mountFileCards
                   [innerHTML]="msg.text | markdown: msg.streaming"
                 ></div>
                 <span
@@ -465,8 +472,9 @@ import ClientEnum = CreateChatMetadataDto.ClientEnum;
               } @else {
                 <div
                   class="markdown-body"
-                  authImages
-                  authFiles
+                  mountAuthImages
+                  mountCodeBlocks
+                  mountFileCards
                   [innerHTML]="msg.text | markdown: msg.streaming"
                 ></div>
               }

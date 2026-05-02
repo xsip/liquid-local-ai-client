@@ -1,9 +1,10 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { ApplicationRef, Component, EnvironmentInjector, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
 import { LmStudioEvent } from './lmstudio-stream.service';
 import { ActivatedRoute, Router, RouterOutlet } from '@angular/router';
 import { jwtDecode } from 'jwt-decode';
+import { ImageLightboxComponent } from './routes/lm-studio-api/markdown.pipe';
 interface DecodedToken {
   exp: number; // Expiration time in seconds since epoch
   iat: number; // Issued at time
@@ -13,7 +14,9 @@ interface DecodedToken {
   selector: 'app-root',
   imports: [CommonModule, ReactiveFormsModule, RouterOutlet],
   template: `
-    <div class=" hidden my-4 rounded-lg overflow-hidden border border-code-border bg-code-bg text-[13.5px]">
+    <div
+      class=" hidden my-4 rounded-lg overflow-hidden border border-code-border bg-code-bg text-[13.5px]"
+    >
       <div
         class="flex items-center justify-between px-3.5 py-1.5 bg-code-header border-b border-code-border"
       >
@@ -35,6 +38,11 @@ interface DecodedToken {
 export class App implements OnInit {
   activatedRoute = inject(ActivatedRoute);
   router = inject(Router);
+
+  constructor(appRef: ApplicationRef, injector: EnvironmentInjector) {
+    ImageLightboxComponent.bootstrap(appRef, injector);
+  }
+
   ngOnInit() {
     // Replace your delegated click listener with this safe version
     document.addEventListener('click', (e) => {

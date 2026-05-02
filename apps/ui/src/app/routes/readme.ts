@@ -19,7 +19,19 @@ import {
   selector: 'app-readme',
   standalone: true,
   imports: [CommonModule, RouterLink, TranslateModule, NgIconComponent],
-  viewProviders: [provideIcons({ heroCommandLine, heroSun, heroMoon, heroChatBubbleOvalLeft, heroBolt, heroComputerDesktop, heroServer, heroInformationCircle, heroExclamationTriangle })],
+  viewProviders: [
+    provideIcons({
+      heroCommandLine,
+      heroSun,
+      heroMoon,
+      heroChatBubbleOvalLeft,
+      heroBolt,
+      heroComputerDesktop,
+      heroServer,
+      heroInformationCircle,
+      heroExclamationTriangle,
+    }),
+  ],
   styles: [
     `
       :host {
@@ -115,11 +127,11 @@ import {
               <ng-icon name="heroCommandLine" class="w-4 h-4 text-accent" />
             </span>
             <span class="font-semibold text-sm text-text-primary truncate"
-              >LM Studio Chat Client</span
+            >LM Studio Chat Client</span
             >
             <span
               class="hidden sm:inline-flex badge-pill bg-accent/10 text-accent-text border border-accent/20 ml-1"
-              >docs</span
+            >docs</span
             >
           </div>
 
@@ -156,20 +168,20 @@ import {
         <div class="relative max-w-6xl mx-auto px-4 sm:px-8 py-16 sm:py-24">
           <div class="flex flex-wrap items-center gap-2 mb-6">
             <span class="badge-pill bg-accent/10 text-accent-text border border-accent/20"
-              >Angular 21</span
+            >Angular 21</span
             >
             <span
               class="badge-pill bg-reasoning-bg text-reasoning-text border border-reasoning-border"
-              >NestJS 11</span
+            >NestJS 11</span
             >
             <span class="badge-pill bg-tool-bg text-tool-text border border-tool-border"
-              >MongoDB</span
+            >MongoDB</span
             >
             <span class="badge-pill bg-success-bg text-success-text border border-success-border"
-              >MCP</span
+            >MCP</span
             >
             <span class="badge-pill bg-warn-bg text-warn-text border border-warn-border"
-              >AES Encryption</span
+            >AES Encryption</span
             >
           </div>
 
@@ -179,7 +191,7 @@ import {
             LM Studio<br />
             <span
               class="text-transparent bg-clip-text bg-gradient-to-r from-accent to-reasoning-text"
-              >Chat Client</span
+            >Chat Client</span
             >
           </h1>
           <p class="text-lg sm:text-xl text-text-secondary max-w-2xl mb-8 leading-relaxed">
@@ -265,7 +277,7 @@ import {
             During inference, LM Studio calls back into the NestJS MCP server with the user's JWT
             forwarded in
             <code class="text-xs bg-surface-overlay px-1.5 py-0.5 rounded text-accent"
-              >Authorization</code
+            >Authorization</code
             >, giving MCP tools full access to the authenticated user's context.
           </p>
           <!--<div class="img-placeholder rounded-xl w-full h-56 sm:h-80 mb-6">
@@ -379,15 +391,16 @@ import {
                   class="flex-1 min-w-0 bg-surface-raised border border-border-default rounded-xl p-4 sm:p-5 mb-3"
                 >
                   <p class="font-semibold text-text-primary mb-2">{{ step.title }}</p>
-                  <p class="text-sm text-text-secondary mb-3" *ngIf="step.desc">{{ step.desc }}</p>
-                  <div
-                    *ngIf="step.code"
-                    class="rounded-lg overflow-hidden border border-border-subtle"
-                  >
-                    <pre class="bg-surface-overlay px-4 py-3 text-xs text-accent">{{
-                      step.code
-                    }}</pre>
-                  </div>
+                  @if (step.desc) {
+                    <p class="text-sm text-text-secondary mb-3">{{ step.desc }}</p>
+                  }
+                  @if (step.code) {
+                    <div class="rounded-lg overflow-hidden border border-border-subtle">
+                      <pre class="bg-surface-overlay px-4 py-3 text-xs text-accent">{{
+                          step.code
+                        }}</pre>
+                    </div>
+                  }
                 </div>
               </div>
             </ng-container>
@@ -400,7 +413,7 @@ import {
           <p class="text-text-secondary mb-6">
             Create
             <code class="text-xs bg-surface-overlay px-1.5 py-0.5 rounded text-success-text"
-              >apps/api/.env</code
+            >apps/api/.env</code
             >
             with the following:
           </p>
@@ -430,13 +443,17 @@ import {
 <span class="text-success-text">SELF_MCP_URL</span>=http://192.168.0.34:8888/tools/mcp
 
 <span class="text-success-text">PORT</span>=8888
-<span class="text-success-text">USE_SWAGGER</span>=true       <span class="text-text-muted"># enables /api Swagger UI</span></pre>
+<span class="text-success-text">USE_SWAGGER</span>=true       <span
+                  class="text-text-muted"># enables /api Swagger UI</span></pre>
             </div>
           </div>
           <div
             class="mt-3 flex gap-2 items-start bg-info-bg border border-info-border rounded-lg px-4 py-3"
           >
-            <ng-icon name="heroInformationCircle" class="w-4 h-4 text-info-text flex-shrink-0 mt-0.5" />
+            <ng-icon
+              name="heroInformationCircle"
+              class="w-4 h-4 text-info-text flex-shrink-0 mt-0.5"
+            />
             <p class="text-xs text-info-text">
               <strong>SELF_MCP_URL</strong> must be the LAN IP reachable from LM Studio's process —
               not <code class="bg-info-bg px-1 rounded">localhost</code> — so MCP tool callbacks
@@ -451,15 +468,19 @@ import {
           <p class="text-text-secondary mb-6">
             The NestJS backend registers itself as an MCP server via
             <code class="text-xs bg-surface-overlay px-1.5 py-0.5 rounded text-tool-text"
-              >&#64;rekog/mcp-nest</code
+            >&#64;rekog/mcp-nest</code
             >, exposing both Streamable HTTP and SSE transports at
             <code class="text-xs bg-surface-overlay px-1.5 py-0.5 rounded text-tool-text"
-              >/tools/mcp</code
+            >/tools/mcp</code
             >. The user's JWT is forwarded with every MCP callback, giving tools full access to
             authenticated user data.
           </p>
-            <img class="dark:hidden block mb-2" src="mcp-preview-light.png" alt="chat overview light" />
-            <img class="dark:block hidden mb-2" src="mcp-preview-dark.png" alt="chat overview dark" />
+          <img
+            class="dark:hidden block mb-2"
+            src="mcp-preview-light.png"
+            alt="chat overview light"
+          />
+          <img class="dark:block hidden mb-2" src="mcp-preview-dark.png" alt="chat overview dark" />
 
           <div class="space-y-3 mb-4">
             <ng-container *ngFor="let tool of mcpTools">
@@ -468,7 +489,7 @@ import {
               >
                 <code
                   class="flex-shrink-0 text-xs bg-tool-bg border border-tool-border text-tool-text px-2.5 py-1 rounded-lg font-mono"
-                  >{{ tool.name }}</code
+                >{{ tool.name }}</code
                 >
                 <p class="text-sm text-text-secondary leading-relaxed">{{ tool.desc }}</p>
               </div>
@@ -518,31 +539,33 @@ import {
           <div class="overflow-x-auto rounded-xl border border-border-default">
             <table class="w-full text-sm">
               <thead>
-                <tr class="bg-surface-overlay text-xs text-text-muted uppercase tracking-wider">
-                  <th class="text-left px-4 py-3 font-semibold">What</th>
-                  <th class="text-left px-4 py-3 font-semibold">Where</th>
-                  <th class="text-left px-4 py-3 font-semibold">Plaintext?</th>
-                </tr>
+              <tr class="bg-surface-overlay text-xs text-text-muted uppercase tracking-wider">
+                <th class="text-left px-4 py-3 font-semibold">What</th>
+                <th class="text-left px-4 py-3 font-semibold">Where</th>
+                <th class="text-left px-4 py-3 font-semibold">Plaintext?</th>
+              </tr>
               </thead>
               <tbody>
-                <ng-container *ngFor="let row of securityBoundaries; let odd = odd">
-                  <tr [class]="odd ? 'bg-surface-raised' : 'bg-surface-base'">
-                    <td class="px-4 py-3 text-text-primary font-mono text-xs">{{ row.what }}</td>
-                    <td class="px-4 py-3 text-text-secondary text-xs">{{ row.where }}</td>
-                    <td class="px-4 py-3">
+              <ng-container *ngFor="let row of securityBoundaries; let odd = odd">
+                <tr [class]="odd ? 'bg-surface-raised' : 'bg-surface-base'">
+                  <td class="px-4 py-3 text-text-primary font-mono text-xs">{{ row.what }}</td>
+                  <td class="px-4 py-3 text-text-secondary text-xs">{{ row.where }}</td>
+                  <td class="px-4 py-3">
+                    @if (row.plaintext) {
                       <span
-                        *ngIf="row.plaintext"
                         class="badge-pill bg-success-bg text-success-text border border-success-border"
-                        >&#10003; Yes</span
+                      >&#10003; Yes</span
                       >
+                    }
+                    @if (row.plaintext) {
                       <span
-                        *ngIf="!row.plaintext"
                         class="badge-pill bg-error-bg text-error-text border border-error-border"
-                        >&#10007; No</span
+                      >&#10007; No</span
                       >
-                    </td>
-                  </tr>
-                </ng-container>
+                    }
+                  </td>
+                </tr>
+              </ng-container>
               </tbody>
             </table>
           </div>
@@ -550,7 +573,10 @@ import {
           <div
             class="mt-4 flex gap-2 items-start bg-warn-bg border border-warn-border rounded-lg px-4 py-3"
           >
-            <ng-icon name="heroExclamationTriangle" class="w-4 h-4 text-warn-text flex-shrink-0 mt-0.5" />
+            <ng-icon
+              name="heroExclamationTriangle"
+              class="w-4 h-4 text-warn-text flex-shrink-0 mt-0.5"
+            />
             <p class="text-xs text-warn-text">
               The <strong>cryptoKey</strong> lives in MongoDB — your NestJS API and database are the
               security boundary. Use HTTPS and restrict DB access in any non-local deployment.
@@ -603,7 +629,7 @@ import {
             Token consumption is tracked per user against configurable subscription-tier budgets
             stored in the
             <code class="text-xs bg-surface-overlay px-1.5 py-0.5 rounded text-reasoning-text"
-              >token_limit_configs</code
+            >token_limit_configs</code
             >
             MongoDB collection.
           </p>
@@ -634,28 +660,28 @@ import {
           <div class="overflow-x-auto rounded-xl border border-border-default">
             <table class="w-full text-sm">
               <thead>
-                <tr class="bg-surface-overlay text-xs text-text-muted uppercase tracking-wider">
-                  <th class="text-left px-4 py-3 font-semibold w-20">Method</th>
-                  <th class="text-left px-4 py-3 font-semibold">Path</th>
-                  <th class="text-left px-4 py-3 font-semibold hidden sm:table-cell">
-                    Description
-                  </th>
-                </tr>
+              <tr class="bg-surface-overlay text-xs text-text-muted uppercase tracking-wider">
+                <th class="text-left px-4 py-3 font-semibold w-20">Method</th>
+                <th class="text-left px-4 py-3 font-semibold">Path</th>
+                <th class="text-left px-4 py-3 font-semibold hidden sm:table-cell">
+                  Description
+                </th>
+              </tr>
               </thead>
               <tbody>
-                <ng-container *ngFor="let route of apiRoutes; let odd = odd">
-                  <tr [class]="odd ? 'bg-surface-raised' : 'bg-surface-base'">
-                    <td class="px-4 py-2.5">
-                      <span [class]="'badge-pill ' + route.methodClass">{{ route.method }}</span>
-                    </td>
-                    <td class="px-4 py-2.5 font-mono text-xs text-text-secondary">
-                      {{ route.path }}
-                    </td>
-                    <td class="px-4 py-2.5 text-xs text-text-muted hidden sm:table-cell">
-                      {{ route.desc }}
-                    </td>
-                  </tr>
-                </ng-container>
+              <ng-container *ngFor="let route of apiRoutes; let odd = odd">
+                <tr [class]="odd ? 'bg-surface-raised' : 'bg-surface-base'">
+                  <td class="px-4 py-2.5">
+                    <span [class]="'badge-pill ' + route.methodClass">{{ route.method }}</span>
+                  </td>
+                  <td class="px-4 py-2.5 font-mono text-xs text-text-secondary">
+                    {{ route.path }}
+                  </td>
+                  <td class="px-4 py-2.5 text-xs text-text-muted hidden sm:table-cell">
+                    {{ route.desc }}
+                  </td>
+                </tr>
+              </ng-container>
               </tbody>
             </table>
           </div>

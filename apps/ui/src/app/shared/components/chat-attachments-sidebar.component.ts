@@ -4,16 +4,21 @@ import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { NgIconComponent, provideIcons } from '@ng-icons/core';
 import {
-  heroPaperClip,
-  heroDocument,
-  heroTableCells,
   heroArchiveBox,
+  heroArrowDownTray,
+  heroDocument,
   heroFilm,
   heroMusicalNote,
+  heroPaperClip,
   heroPhoto,
-  heroArrowDownTray,
+  heroTableCells,
 } from '@ng-icons/heroicons/outline';
-import { AuthFilesDirective, AuthImagesDirective } from '../../routes/lm-studio-api/markdown.pipe';
+import {
+  AuthImageComponent,
+  AuthImageMountDirective,
+  CodeBlockMountDirective,
+  FileCardMountDirective,
+} from '../../routes/lm-studio-api/markdown.pipe';
 import { ChatMetadataDto } from '../../client';
 
 interface FileTypeConfig {
@@ -114,8 +119,10 @@ const FILE_TYPE_FALLBACK: FileTypeConfig = {
     CommonModule,
     TranslateModule,
     NgIconComponent,
-    AuthImagesDirective,
-    AuthFilesDirective,
+    AuthImageMountDirective,
+    CodeBlockMountDirective,
+    FileCardMountDirective,
+    AuthImageComponent,
   ],
   viewProviders: [
     provideIcons({
@@ -132,8 +139,9 @@ const FILE_TYPE_FALLBACK: FileTypeConfig = {
   template: `
     <div
       class="flex-1 overflow-y-auto py-1 min-h-0 px-2 flex flex-col gap-0.5"
-      authImages
-      authFiles
+      mountAuthImages
+      mountCodeBlocks
+      mountFileCards
     >
       @if (chat()?.generatedAssets?.length === 0) {
         <div class="flex flex-col items-center justify-center h-full gap-2 text-center px-3 py-8">
@@ -196,11 +204,7 @@ const FILE_TYPE_FALLBACK: FileTypeConfig = {
               @chatItemAnim
             >
               <div class="relative">
-                <img
-                  [attr.data-auth-src]="asset.thumbnail"
-                  class="rounded-md w-full h-auto"
-                  src="data:image/gif;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO89x8AAsEB3+IGkhwAAAAASUVORK5CYII="
-                />
+                <app-auth-image [authSrc]="asset.thumbnail" />
                 <div
                   class="flex absolute bottom-0 left-0 w-full bg-surface-overlay/80 items-center gap-1.5 pl-1"
                 >
