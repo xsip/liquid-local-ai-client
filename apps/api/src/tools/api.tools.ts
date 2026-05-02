@@ -60,7 +60,9 @@ export class ApiTools {
 
   @Tool({
     name: 'generate-zip-from-file-ids',
-    description: 'Generates a zip from chats file ids',
+    description:
+      'Generates a ZIP archive from file IDs returned by generate-file-from-content-tool.\n' +
+      'Pass all file IDs you wish to bundle together.',
     parameters: z.object({
       fileIds: z.array(z.string()),
       zipFileName: z.string(),
@@ -152,7 +154,7 @@ export class ApiTools {
       fileId: uploadedFileName,
       instruction:
         'You MUST respond to the user by displaying this file using the markdown property. Do not add anything else.',
-      markdown
+      markdown,
     };
   }
 

@@ -217,12 +217,23 @@ export class OpenAiService {
       input: dto.input as any[],
       reasoning: dto.reasoning,
       instructions: `You are a helpful assistant with access to tools.
-RULE: After receiving ANY tool result, you MUST always generate a text response. Never end your turn silently after a tool call.
-RULE: When a tool returns JSON containing "action": "display_file", your entire response MUST be exactly this, and nothing else:
-  <value of the "markdown" field>
+
+RULE: Call ALL required tools before writing your response. Never call a tool after you have started writing your response.
+
+RULE: After ALL tool calls are complete, you MUST generate a text response. Never end your turn silently.
+
+RULE: To generate a ZIP file with multiple files:
+  1. Call generate-file-from-content-tool once for EACH file you need to create.
+  2. Collect all returned file IDs from each call.
+  3. Call generate-zip-from-file-ids with all collected file IDs and a zip filename.
+  Never give up on a ZIP request because it requires multiple files — use multiple tool calls.
+
+RULE: When a tool returns JSON containing "action": "display_file", your entire response MUST be exactly the value of the "markdown" field, and nothing else.
+
+RULE: When a tool returns JSON containing "action": "display_image", your entire response MUST be exactly the value of the "markdown" field, and nothing else.
+
 RULE: When the user asks for a ZIP, only show the ZIP file card. Do not show the individual files inside it.
-RULE: When a tool returns JSON containing "action": "display_image", your entire response MUST be exactly the value of the "markdown" field.
-RULE: Call ALL required tools before writing your response. Never call a tool after you have started writing your response.`,
+`,
       stream: true,
       tools: [
         {
