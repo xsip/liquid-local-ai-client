@@ -14,9 +14,10 @@ import {
   heroTableCells,
 } from '@ng-icons/heroicons/outline';
 import {
+  AuthFilesDirective,
   AuthImageComponent,
   AuthImageMountDirective,
-  CodeBlockMountDirective,
+  CodeBlockMountDirective, FileCardComponent,
   FileCardMountDirective,
 } from '../../routes/lm-studio-api/markdown.pipe';
 import { ChatMetadataDto } from '../../client';
@@ -123,6 +124,8 @@ const FILE_TYPE_FALLBACK: FileTypeConfig = {
     CodeBlockMountDirective,
     FileCardMountDirective,
     AuthImageComponent,
+    AuthFilesDirective,
+    FileCardComponent,
   ],
   viewProviders: [
     provideIcons({
@@ -142,6 +145,7 @@ const FILE_TYPE_FALLBACK: FileTypeConfig = {
       mountAuthImages
       mountCodeBlocks
       mountFileCards
+      authFiles
     >
       @if (chat()?.generatedAssets?.length === 0) {
         <div class="flex flex-col items-center justify-center h-full gap-2 text-center px-3 py-8">
@@ -153,50 +157,12 @@ const FILE_TYPE_FALLBACK: FileTypeConfig = {
       } @else {
         @for (asset of chat()!.generatedAssets!; track asset._id) {
           @if (asset.type === 'FILE') {
-            <!-- ── File card ── -->
-            <div
-              class="group flex items-center gap-3 rounded-xl px-3 py-2.5 border border-border-default bg-surface-raised shadow-sm cursor-pointer hover-lift transition-all duration-200"
-              [attr.data-auth-href]="asset.url"
-              [attr.data-auth-filename]="asset.filename"
+            <app-file-card
+              [filename]="asset.filename ?? ''"
+              [url]="asset.url ?? ''"
+              [ext]="fileExt(asset.filename)"
               @chatItemAnim
-            >
-              <!-- File type icon -->
-              <div
-                class="flex-shrink-0 w-9 h-9 rounded-lg bg-surface-overlay flex items-center justify-center"
-                [class]="fileTypeConfig(asset.filename).iconClass"
-              >
-                <ng-icon [name]="fileTypeConfig(asset.filename).icon" class="w-[18px] h-[18px]" />
-              </div>
-
-              <!-- Filename + ext badge -->
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-1.5 flex-wrap">
-                  <span
-                    class="text-[13px] font-medium text-text-primary truncate max-w-[160px]"
-                    [title]="asset.filename ?? ''"
-                    >{{ asset.filename }}</span
-                  >
-                  <span
-                    class="text-[10px] font-mono font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-surface-overlay"
-                    [class]="fileTypeConfig(asset.filename).extClass"
-                  >
-                    {{ fileExt(asset.filename) }}
-                  </span>
-                </div>
-                <p class="text-[11px] mt-0.5 text-text-muted truncate">{{ asset.url }}</p>
-              </div>
-
-              <!-- Download button -->
-              <button
-                type="button"
-                data-auth-download
-                (click)="$event.stopPropagation()"
-                [title]="'Download ' + asset.filename"
-                class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center border border-accent-text bg-accent-subtle text-accent-text opacity-0 group-hover:opacity-100 transition-all duration-150 hover:scale-105 active:scale-95"
-              >
-                <ng-icon name="heroArrowDownTray" class="w-4 h-4" />
-              </button>
-            </div>
+            />
           } @else if (asset.type === 'IMAGE' && asset.thumbnail) {
             <button
               type="button"
