@@ -94,19 +94,19 @@ export class ApiTools {
       );
 
     const assetUrl = `api/assets/${chatId}/${uploadedFileName}`;
+    const ext = filename.split('.').pop()?.toLowerCase() ?? 'file';
+    const sizeKb = Math.round(buffer.byteLength / 1024);
+    const sizeLabel =
+      sizeKb >= 1024 ? `${(sizeKb / 1024).toFixed(1)}MB` : `${sizeKb}KB`;
 
     await this.chatMetaDataService.addAssetToChat(user._id!, chatId, {
       url: assetUrl,
       filename,
       refId: id,
-      type: GeneratedAssetType.FILE,   // was IMAGE — change if you have a FILE enum value
+      mimeType,
+      sizeKb,
+      type: GeneratedAssetType.FILE, // was IMAGE — change if you have a FILE enum value
     });
-
-    const ext = filename.split('.').pop()?.toLowerCase() ?? 'file';
-    const sizeKb = Math.round(buffer.byteLength / 1024);
-    const sizeLabel = sizeKb >= 1024
-      ? `${(sizeKb / 1024).toFixed(1)}MB`
-      : `${sizeKb}KB`;
 
     return {
       action: 'display_file',

@@ -16,6 +16,8 @@ export interface GeneratedAssetDto {
     type: GeneratedAssetDto.TypeEnum;
     url: string;
     thumbnail?: string;
+    sizeKb?: number;
+    mimeType?: string;
 }
 export namespace GeneratedAssetDto {
     export const TypeEnum = {

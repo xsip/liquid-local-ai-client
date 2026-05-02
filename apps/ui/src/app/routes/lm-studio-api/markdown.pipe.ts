@@ -13,6 +13,7 @@ import {
   createComponent,
   EnvironmentInjector,
   ChangeDetectorRef,
+  input,
 } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { HttpClient } from '@angular/common/http';
@@ -111,14 +112,13 @@ const fileIconGeneric = _svgWrap(
       [style.box-shadow]="'var(--shadow-sm)'"
       (click)="onCardClick($event)"
     >
-      <!-- File type icon -->
-      <div
-        class="flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center"
-        [style.background]="'var(--color-surface-overlay)'"
-        [style.color]="colour"
-        [innerHTML]="icon"
-      ></div>
-
+        <!-- File type icon -->
+        <div
+          class="flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center"
+          [style.background]="'var(--color-surface-overlay)'"
+          [style.color]="colour"
+          [innerHTML]="icon"
+        ></div>
       <!-- Filename + meta -->
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-2 flex-wrap">
@@ -181,16 +181,18 @@ export class FileCardComponent {
   @Input() url = '';
   @Input() size = '';
   @Input() ext = 'file';
+  @Input() mimeType?: string = '';
 
   private readonly http = inject(HttpClient);
+  private readonly sanitizer = inject(DomSanitizer);
   private static readonly cache = new Map<string, string | Observable<string>>();
 
   get colour(): string {
     return FILE_TYPE_MAP[this.ext]?.colour ?? 'var(--color-text-muted)';
   }
 
-  get icon(): string {
-    return FILE_TYPE_MAP[this.ext]?.icon ?? fileIconGeneric;
+  get icon(): SafeHtml {
+    return this.sanitizer.bypassSecurityTrustHtml(FILE_TYPE_MAP[this.ext]?.icon ?? fileIconGeneric);
   }
 
   onCardClick(e: MouseEvent): void {
@@ -267,6 +269,8 @@ const FILE_TYPE_MAP: Record<string, { icon: string; colour: string }> = {
   jpeg: { icon: fileIconImage, colour: 'var(--color-secondary-accent-text)' },
   gif: { icon: fileIconImage, colour: 'var(--color-secondary-accent-text)' },
   svg: { icon: fileIconImage, colour: 'var(--color-secondary-accent-text)' },
+  ts: { icon: fileIconImage, colour: 'var(--color-secondary-accent-text)' },
+  html: { icon: fileIconImage, colour: 'var(--color-secondary-accent-text)' },
 };
 
 // ── CodeBlockComponent ───────────────────────────────────────────────────────
@@ -977,10 +981,13 @@ export class FileCardMountDirective extends ComponentMountDirective {
       const ext = decodeURIComponent(placeholder.dataset['ext'] ?? 'file');
       const size = decodeURIComponent(placeholder.dataset['size'] ?? '');
 
+      const mimeType = decodeURIComponent(placeholder.dataset['mimeType'] ?? 'document');
+
       const ref = createComponent(FileCardComponent, { environmentInjector: this.injector });
       ref.instance.filename = filename;
       ref.instance.url = url;
       ref.instance.ext = ext;
+      ref.instance.mimeType = mimeType;
       ref.instance.size = size;
       ref.changeDetectorRef.detectChanges();
 

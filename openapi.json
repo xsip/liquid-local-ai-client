@@ -2126,6 +2126,12 @@
           },
           "thumbnail": {
             "type": "string"
+          },
+          "sizeKb": {
+            "type": "number"
+          },
+          "mimeType": {
+            "type": "string"
           }
         },
         "required": [

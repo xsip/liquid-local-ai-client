@@ -41,6 +41,12 @@ export class GeneratedAsset {
 
   @Prop()
   thumbnail?: string;
+
+  @Prop()
+  sizeKb?: number;
+
+  @Prop()
+  mimeType?: string;
 }
 @Schema({ collection: 'chat_metadata', timestamps: true })
 export class ChatMetadata {
@@ -131,6 +137,12 @@ export class GeneratedAssetDto {
 
   @ApiPropertyOptional()
   thumbnail?: string;
+
+  @ApiPropertyOptional()
+  sizeKb?: number;
+
+  @ApiPropertyOptional()
+  mimeType?: string;
 }
 
 export class ChatMetadataDto {
