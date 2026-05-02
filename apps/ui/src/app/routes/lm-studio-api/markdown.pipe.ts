@@ -112,18 +112,18 @@ const fileIconGeneric = _svgWrap(
       [style.box-shadow]="'var(--shadow-sm)'"
       (click)="onCardClick($event)"
     >
-        <!-- File type icon -->
-        <div
-          class="flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center"
-          [style.background]="'var(--color-surface-overlay)'"
-          [style.color]="colour"
-          [innerHTML]="icon"
-        ></div>
+      <!-- File type icon -->
+      <div
+        class="flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center"
+        [style.background]="'var(--color-surface-overlay)'"
+        [style.color]="colour"
+        [innerHTML]="icon"
+      ></div>
       <!-- Filename + meta -->
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-2 flex-wrap">
           <span
-            class="text-[14px] font-medium truncate max-w-[280px]"
+            class="{{ style === 'chat' ? 'text-[14px]': 'text-[12px]'  }} font-medium truncate max-w-[280px]"
             [style.color]="'var(--color-text-primary)'"
             [title]="filename"
             >{{ filename }}</span
@@ -179,6 +179,7 @@ const fileIconGeneric = _svgWrap(
 export class FileCardComponent {
   @Input() filename = '';
   @Input() url = '';
+  @Input() style: 'chat' | 'sidebar' = 'chat';
   @Input() size = 0;
   @Input() ext = 'file';
   @Input() mimeType?: string = '';
