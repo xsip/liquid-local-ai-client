@@ -91,7 +91,11 @@ export class ApiTools {
         fileId,
       );
 
-      zip.file(file.displayName, file.data);
+      if (file.filename.endsWith('.png')) {
+        zip.file(fileId, file.data);
+      } else {
+        zip.file(file.displayName, file.data);
+      }
 
       await this.assetsService.deleteAsset(user._id + '', chatId, fileId);
       await this.chatMetaDataService.removeAssetFromChat(
@@ -435,19 +439,20 @@ export class ApiTools {
     const thumbnailBuffer = Buffer.from(thumbImageResponse.data);
 
     // Upload via assetsService, same as the REST endpoint
-    const { filename, id } = await this.assetsService.uploadFile(
-      user._id + '',
-      chatId,
-      fileName,
-      buffer,
-      mimeType,
-      thumbnailBuffer,
-    );
+    const { filename: uploadedFileName, id } =
+      await this.assetsService.uploadFile(
+        user._id + '',
+        chatId,
+        fileName,
+        buffer,
+        mimeType,
+        thumbnailBuffer,
+      );
 
     await this.chatMetaDataService.addAssetToChat(user._id!, chatId, {
-      url: `api/assets/${chatId}/${filename}`,
-      thumbnail: `api/assets/${chatId}/${filename}?thumbnail=true`,
-      filename,
+      url: `api/assets/${chatId}/${uploadedFileName}`,
+      thumbnail: `api/assets/${chatId}/${uploadedFileName}?thumbnail=true`,
+      filename: uploadedFileName,
       refId: id,
       type: GeneratedAssetType.IMAGE,
     });
@@ -455,11 +460,12 @@ export class ApiTools {
       {
         content: JSON.stringify({
           action: 'display_image',
+          fileId: uploadedFileName,
           instruction:
             'You MUST respond to the user by displaying this image as HTML. Do not stop.',
-          markdown: `![image](api/assets/${chatId}/${filename}?thumbnail=true)`,
-          html: `<img data-auth-src="api/assets/${chatId}/${filename}?thumbnail=true" src="" alt="${filename}"/>`,
-          url: `api/assets/${chatId}/${filename}?thumbnail=true`,
+          markdown: `![image](api/assets/${chatId}/${uploadedFileName}?thumbnail=true)`,
+          html: `<img data-auth-src="api/assets/${chatId}/${uploadedFileName}?thumbnail=true" src="" alt="${uploadedFileName}"/>`,
+          // url: `api/assets/${chatId}/${uploadedFileName}?thumbnail=true`,
         }),
       },
     ];
