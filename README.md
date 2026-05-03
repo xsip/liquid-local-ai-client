@@ -3,7 +3,7 @@
 A full-stack AI chat client that connects to a locally running [LM Studio](https://lmstudio.ai/) instance via both its native API and its OpenAI-compatible `responses/create` endpoint. Built with Angular, NestJS, and MongoDB, with first-class MCP (Model Context Protocol) tool support, AI image generation via [InvokeAI](https://invoke-ai.github.io/InvokeAI/), image upload into chat, and optional end-to-end AES message encryption.
 
 ---
-![Header](https://raw.githubusercontent.com/xsip/lm-studio-extender/refs/heads/main/img.png)
+![Header](https://raw.githubusercontent.com/xsip/lm-studio-extender/refs/heads/main/img_3.png)
 ---
 
 ## Table of Contents
