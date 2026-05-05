@@ -29,6 +29,7 @@ import { AssetsService } from './assets.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { Public } from '../auth/public.decorator';
+import { AssetRole } from './image-blob.schema';
 
 const IMAGE_FILTER = (_req: any, file: Express.Multer.File, cb: any) => {
   const allowed = /^image\/(jpeg|jpg|png|webp|gif|avif)$/;
@@ -175,6 +176,7 @@ export class AssetsController {
     return this.assetService.uploadFile(
       user._id + '',
       chatId,
+      AssetRole.USER,
       file.originalname,
       file.buffer,
       file.mimetype,

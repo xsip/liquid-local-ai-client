@@ -102,6 +102,7 @@ model/containerReferenceDto.ts
 model/contentDto.ts
 model/contextManagementDto.ts
 model/conversationDto.ts
+model/createAndAddToUserAssetsResponseDto.ts
 model/createChatMetadataDto.ts
 model/createFileDto.ts
 model/createTokenLimitConfigDto.ts

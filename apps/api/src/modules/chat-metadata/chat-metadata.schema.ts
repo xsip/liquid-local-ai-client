@@ -17,7 +17,7 @@ export enum ChatClient {
 
 export enum GeneratedAssetType {
   IMAGE = 'IMAGE',
-  FILE = 'FILE'
+  FILE = 'FILE',
 }
 
 export enum OpenAiEndpointPreference {
@@ -98,6 +98,9 @@ export class ChatMetadata {
 
   @Prop({ required: false, type: [GeneratedAsset] })
   generatedAssets?: GeneratedAsset[];
+
+  @Prop({ required: false, type: [GeneratedAsset] })
+  userAssets?: GeneratedAsset[];
 
   @Prop({ required: false, type: Boolean })
   useInvoke?: boolean;
@@ -193,6 +196,12 @@ export class ChatMetadataDto {
     isArray: true,
   })
   generatedAssets?: GeneratedAssetDto[];
+
+  @ApiPropertyOptional({
+    type: GeneratedAssetDto,
+    isArray: true,
+  })
+  userAssets?: GeneratedAssetDto[];
 
   @ApiProperty()
   lastMessageSentAt?: Date;

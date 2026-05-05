@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { ImageBlob, ImageBlobDocument } from './image-blob.schema';
+import { AssetRole, ImageBlob, ImageBlobDocument } from './image-blob.schema';
 import { DeleteResult, Model } from 'mongoose';
 
 @Injectable()
@@ -48,6 +48,7 @@ export class AssetsService {
   async uploadFile(
     userId: string,
     chatId: string,
+    role: AssetRole,
     originalFilename: string,
     data: Buffer,
     mimeType: string,

@@ -42,7 +42,7 @@ import { ChatMessagesComponent } from './lm-studio-api/chat-messages.component';
 import { InfoComponent } from './lm-studio-api/info.component';
 import { ModelReasoningCapability } from './lm-studio-api/model-selector.component';
 import { AppendedFile, OpenAiChatInputComponent } from './openai-api/chat-input.component';
-import { take } from 'rxjs';
+import { Observable, of, Subject, take, tap } from 'rxjs';
 import { IconButtonComponent } from '../shared/components/ui/icon-button.component';
 import { ButtonComponent } from '../shared/components/ui/button.component';
 import { LabelComponent } from '../shared/components/ui/label.component';
@@ -59,7 +59,8 @@ import {
 } from '@ng-icons/heroicons/outline';
 import InvokeAiModelToUseEnum = ChatMetadataDto.InvokeAiModelToUseEnum;
 import { BlobBackgroundDirective } from '../shared/directives/blob-background.directive';
-
+import { map } from 'rxjs/operators';
+import { Location } from '@angular/common';
 /** How the chat name is determined when creating a new chat. */
 type ChatNameMode = 'ai' | 'custom' | 'none';
 
@@ -454,6 +455,7 @@ type ChatNameMode = 'ai' | 'custom' | 'none';
               [reasoning]="reasoning()"
               [modelReasoningCap]="modelReasoningCap()"
               (submitted)="submit()"
+              [newChatIdProvider]="newChatIdProvider"
               (reset)="chatService.reset()"
               (reasoningChanged)="selectReasoning($event)"
               (appendedFilesChanged)="appendedFiles.set($event)"
@@ -538,7 +540,7 @@ export class OpenAiApi implements OnDestroy, OnInit {
   readonly models = signal<ModelOpenAiDto[]>([]);
   readonly modelsLoading = signal(false);
   readonly selectedModel = signal<ModelOpenAiDto | null>(this.loadStoredModel());
-
+  readonly location = inject(Location);
   private static readonly MODEL_STORAGE_KEY = 'openai-model';
 
   constructor() {
@@ -556,6 +558,37 @@ export class OpenAiApi implements OnDestroy, OnInit {
         );
     });
   }
+  readonly newChatIdProvider = (): Observable<string> => {
+    if (this.chatService.currentChatId()) {
+      return of(this.chatService.currentChatId()!);
+    }
+
+    return this.chatMetaService
+      .createChatMetadata({
+        name: this.resolvedChatName() ?? 'New Chat',
+        client: CreateChatMetadataDto.ClientEnum.Openai,
+        usedModel: this.selectedModel()!.id as string,
+        useCrypto: this.newChatUseCrypto() ?? false,
+        cryptoKey: this.newChatCryptoKey || undefined,
+        openAiEndpointPreference: this.newChatEndpointPreference(),
+        invokeAiModelToUse: this.invokeAiModelPreference(),
+        useInvoke: this.newChatUseInvoke(),
+        reasoningMode: this.reasoning()! as string,
+      })
+      .pipe(
+        map((res) => res._id),
+        tap((chatId) => {
+          this.chatService.currentChatId.set(chatId);
+          this.chatId = chatId ?? undefined;
+          if (chatId) {
+            this.loadChatHistory(chatId);
+            this.loadChatMeta(chatId);
+            this.location.replaceState(`/chat-openai/${chatId}`);
+            this.loadChatList();
+          }
+        }),
+      );
+  };
 
   triggerUserReload() {
     this.infoRef()?.loadUser(); // safe, returns undefined if @if is false

@@ -28,6 +28,7 @@
     "settings": "Settings",
     "deleteChat": "Delete chat",
     "generatedFiles": "Generated Files",
+    "uploadedFiles": "Uploaded Files",
     "deleteConfirm": "Delete this chat?",
     "delete": "Delete",
     "cancel": "Cancel",

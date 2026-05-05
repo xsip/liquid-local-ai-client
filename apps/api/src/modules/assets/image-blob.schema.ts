@@ -1,7 +1,13 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+import { Role } from '../auth/roles.decorator';
 
 export type ImageBlobDocument = ImageBlob & Document;
+
+export enum AssetRole {
+  AI = 'AI',
+  USER = 'USER',
+}
 
 @Schema({ collection: 'image_blobs', timestamps: true })
 export class ImageBlob {
@@ -29,6 +35,12 @@ export class ImageBlob {
   /** Raw binary data stored as a Buffer in MongoDB */
   @Prop({ required: false, type: Buffer })
   thumbnailData: Buffer;
+
+  @Prop({
+    required: true,
+    enum: Object.values(AssetRole)
+  })
+  role: AssetRole;
 }
 
 export const ImageBlobSchema = SchemaFactory.createForClass(ImageBlob);

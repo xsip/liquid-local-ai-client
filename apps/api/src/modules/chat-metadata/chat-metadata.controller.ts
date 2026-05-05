@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -7,10 +8,10 @@ import {
   HttpStatus,
   Param,
   Patch,
-  Post,
+  Post, UploadedFile, UseInterceptors,
 } from '@nestjs/common';
 import {
-  ApiBearerAuth,
+  ApiBearerAuth, ApiBody, ApiConsumes,
   ApiCreatedResponse,
   ApiForbiddenResponse,
   ApiNoContentResponse,
@@ -23,10 +24,16 @@ import {
 import { Types } from 'mongoose';
 import { ChatMetadataService } from './chat-metadata.service';
 import { ChatMetadataDto } from './chat-metadata.schema';
-import { CreateChatMetadataDto } from './dto/create-chat-metadata.dto';
+import {
+  CreateAndAddToUserAssetsResponseDto,
+  CreateChatMetadataDto,
+} from './dto/create-chat-metadata.dto';
 import { UpdateChatMetadataDto } from './dto/update-chat-metadata.dto';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { User } from '../auth/user.schema';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
+import { AssetRole } from '../assets/image-blob.schema';
 
 @ApiTags('Chat Metadata')
 @ApiBearerAuth()
@@ -122,5 +129,52 @@ export class ChatMetadataController {
   remove(@CurrentUser() user: User, @Param('id') id: string) {
     const userId = (user as any)._id as Types.ObjectId;
     return this.chatMetadataService.remove(userId, id);
+  }
+
+  @Post('upload-file/:chatId')
+  @ApiOperation({
+    operationId: 'uploadFile',
+    summary: 'Upload an file  for a specific chat',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @ApiCreatedResponse({
+    description: '{ url: string }',
+    type: CreateAndAddToUserAssetsResponseDto,
+  })
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      // fileFilter: IMAGE_FILTER,
+      limits: { fileSize: 10 * 1024 * 1024 },
+    }),
+  )
+  @ApiParam({
+    name: 'chatId',
+    description: 'ChatId the file belongs to',
+  })
+  async uploadFile(
+    @CurrentUser() user: User & { _id?: Types.ObjectId },
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentUser() _user: User,
+    @Param('chatId')
+    chatId: string,
+  ): Promise<CreateAndAddToUserAssetsResponseDto> {
+    if (!file) throw new BadRequestException('No file provided');
+    return this.chatMetadataService.uploadAndAddAssetToChat(
+      user._id + '',
+      chatId,
+      AssetRole.USER,
+      file.originalname,
+      file.buffer,
+      file.mimetype,
+    );
   }
 }

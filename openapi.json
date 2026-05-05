@@ -895,6 +895,59 @@
         ]
       }
     },
+    "/chats-metadata/upload-file/{chatId}": {
+      "post": {
+        "operationId": "uploadFile",
+        "parameters": [
+          {
+            "name": "chatId",
+            "required": true,
+            "in": "path",
+            "description": "ChatId the file belongs to",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "{ url: string }",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateAndAddToUserAssetsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upload an file  for a specific chat",
+        "tags": [
+          "Chat Metadata"
+        ]
+      }
+    },
     "/openai/models": {
       "get": {
         "operationId": "getModelsOpenAi",
@@ -2202,6 +2255,12 @@
               "$ref": "#/components/schemas/GeneratedAssetDto"
             }
           },
+          "userAssets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GeneratedAssetDto"
+            }
+          },
           "lastMessageSentAt": {
             "format": "date-time",
             "type": "string"
@@ -2275,6 +2334,28 @@
             ]
           }
         }
+      },
+      "CreateAndAddToUserAssetsResponseDto": {
+        "type": "object",
+        "properties": {
+          "sizeKb": {
+            "type": "number",
+            "description": "Asset size in KB"
+          },
+          "assetUrl": {
+            "type": "string",
+            "description": "URL to asset"
+          },
+          "filename": {
+            "type": "string",
+            "description": "Filename"
+          }
+        },
+        "required": [
+          "sizeKb",
+          "assetUrl",
+          "filename"
+        ]
       },
       "ResponseConversationParamDto": {
         "type": "object",

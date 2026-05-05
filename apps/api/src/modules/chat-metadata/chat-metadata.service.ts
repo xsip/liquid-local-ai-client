@@ -11,11 +11,16 @@ import {
   ChatMetadataDocument,
   GeneratedAsset,
   GeneratedAssetDto,
+  GeneratedAssetType,
 } from './chat-metadata.schema';
 import { Chat, ChatDocument } from '../chats/chat.schema';
 import { CreateChatMetadataDto } from './dto/create-chat-metadata.dto';
 import { UpdateChatMetadataDto } from './dto/update-chat-metadata.dto';
-import { ImageBlob, ImageBlobDocument } from '../assets/image-blob.schema';
+import {
+  AssetRole,
+  ImageBlob,
+  ImageBlobDocument,
+} from '../assets/image-blob.schema';
 
 @Injectable()
 export class ChatMetadataService {
@@ -103,9 +108,10 @@ export class ChatMetadataService {
   }
 
   async addAssetToChat(
-    userId: Types.ObjectId,
+    userId: Types.ObjectId | string,
     id: string,
     asset: GeneratedAssetDto | GeneratedAsset,
+    role: AssetRole = AssetRole.AI,
   ): Promise<ChatMetadataDocument> {
     this.assertObjectId(id);
 
@@ -122,12 +128,19 @@ export class ChatMetadataService {
         : asset
     ) as GeneratedAsset;
 
-    if (!doc.generatedAssets?.length) {
-      doc.generatedAssets = [normalizedAsset];
+    if (role === AssetRole.AI) {
+      if (!doc.generatedAssets?.length) {
+        doc.generatedAssets = [normalizedAsset];
+      } else {
+        doc.generatedAssets.push(normalizedAsset);
+      }
     } else {
-      doc.generatedAssets.push(normalizedAsset);
+      if (!doc.userAssets?.length) {
+        doc.userAssets = [normalizedAsset];
+      } else {
+        doc.userAssets.push(normalizedAsset);
+      }
     }
-
     await doc.save();
     this.logger.log(`Updated Assets for ChatMetadata id=${id}`);
     return doc;
@@ -176,8 +189,13 @@ export class ChatMetadataService {
 
   // ── Guards ────────────────────────────────────────────────────────────────
 
-  private assertOwner(userId: Types.ObjectId, doc: ChatMetadataDocument): void {
-    if (!doc.userId.equals(userId)) {
+  private assertOwner(
+    userId: Types.ObjectId | string,
+    doc: ChatMetadataDocument,
+  ): void {
+    const uId =
+      typeof userId !== 'string' ? new Types.ObjectId(userId) : userId;
+    if (!doc.userId.equals(uId)) {
       throw new ForbiddenException(
         'You do not have access to this chat metadata',
       );
@@ -188,5 +206,52 @@ export class ChatMetadataService {
     if (!Types.ObjectId.isValid(id)) {
       throw new NotFoundException(`Invalid id: ${id}`);
     }
+  }
+
+  async uploadAndAddAssetToChat(
+    userId: string,
+    chatId: string,
+    role: AssetRole,
+    originalFilename: string,
+    data: Buffer,
+    mimeType: string,
+    thumbnailData?: Buffer,
+  ) {
+    const ext = originalFilename.split('.').pop()?.toLowerCase() ?? 'bin';
+    const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+
+    const mdl = await this.imageBlobModel.create({
+      userId,
+      chatId,
+      filename,
+      mimeType,
+      displayName: originalFilename,
+      data,
+      thumbnailData,
+    });
+
+    const res = { url: `assets/${chatId}/${filename}`, filename, id: mdl._id };
+    const sizeKb = Math.round(data.byteLength / 1024);
+
+    const assetUrl = `api/assets/${chatId}/${res.filename}`;
+    await this.addAssetToChat(
+      userId,
+      chatId,
+      {
+        url: assetUrl,
+        filename: originalFilename,
+        refId: res.id,
+        mimeType: mimeType,
+        sizeKb,
+        type: GeneratedAssetType.FILE,
+      },
+      role,
+    );
+
+    return {
+      sizeKb,
+      assetUrl,
+      filename: originalFilename,
+    };
   }
 }

@@ -31,6 +31,7 @@ export interface ChatMetadataDto {
     cryptoKey?: string;
     openAiEndpointPreference?: ChatMetadataDto.OpenAiEndpointPreferenceEnum;
     generatedAssets?: Array<GeneratedAssetDto>;
+    userAssets?: Array<GeneratedAssetDto>;
     lastMessageSentAt: string;
     useInvoke?: boolean;
     invokeAiModelToUse?: ChatMetadataDto.InvokeAiModelToUseEnum;

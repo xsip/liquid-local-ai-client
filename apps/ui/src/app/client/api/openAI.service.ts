@@ -45,6 +45,7 @@ export class OpenAIService extends BaseService {
      * Stream a chat response via SSE
      * Streams the LM Studio response as Server-Sent Events. Each exchange is persisted in MongoDB under the given &#x60;internalChatId&#x60;. If &#x60;internalChatId&#x60; is supplied, the latest &#x60;response_id&#x60; for that session is fetched from the DB and set as &#x60;previous_response_id&#x60; on the request so LM Studio maintains conversation context. If &#x60;internalChatId&#x60; is omitted a new session is created and its generated ID is returned via a &#x60;created_chat&#x60; SSE event before the stream closes.
      * @endpoint post /openai/chat-stream
+     * @param letAiDecideChatName 
      * @param chatStreamOpenAiRequest 
      * @param internalChatId MD5 hex string identifying an existing chat session. Omit to start a new session.
      * @param chatName Name for new chat
@@ -57,10 +58,13 @@ export class OpenAIService extends BaseService {
      * @param reportProgress flag to report request and response progress.
      * @param options additional options
      */
-    public chatStreamOpenAi(chatStreamOpenAiRequest: ChatStreamOpenAiRequest, internalChatId?: string, chatName?: string, useCrypto?: boolean, cryptoKey?: string, openAiEndpointPreference?: 'RESPONSES' | 'COMPLETION', useInvoke?: boolean, invokeModel?: 'Dreamshaper 8' | 'Juggernaut XL v9', observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'text/event-stream', context?: HttpContext, transferCache?: boolean}): Observable<Blob>;
-    public chatStreamOpenAi(chatStreamOpenAiRequest: ChatStreamOpenAiRequest, internalChatId?: string, chatName?: string, useCrypto?: boolean, cryptoKey?: string, openAiEndpointPreference?: 'RESPONSES' | 'COMPLETION', useInvoke?: boolean, invokeModel?: 'Dreamshaper 8' | 'Juggernaut XL v9', observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'text/event-stream', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<Blob>>;
-    public chatStreamOpenAi(chatStreamOpenAiRequest: ChatStreamOpenAiRequest, internalChatId?: string, chatName?: string, useCrypto?: boolean, cryptoKey?: string, openAiEndpointPreference?: 'RESPONSES' | 'COMPLETION', useInvoke?: boolean, invokeModel?: 'Dreamshaper 8' | 'Juggernaut XL v9', observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'text/event-stream', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<Blob>>;
-    public chatStreamOpenAi(chatStreamOpenAiRequest: ChatStreamOpenAiRequest, internalChatId?: string, chatName?: string, useCrypto?: boolean, cryptoKey?: string, openAiEndpointPreference?: 'RESPONSES' | 'COMPLETION', useInvoke?: boolean, invokeModel?: 'Dreamshaper 8' | 'Juggernaut XL v9', observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'text/event-stream', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+    public chatStreamOpenAi(letAiDecideChatName: boolean, chatStreamOpenAiRequest: ChatStreamOpenAiRequest, internalChatId?: string, chatName?: string, useCrypto?: boolean, cryptoKey?: string, openAiEndpointPreference?: 'RESPONSES' | 'COMPLETION', useInvoke?: boolean, invokeModel?: 'Dreamshaper 8' | 'Juggernaut XL v9', observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'text/event-stream', context?: HttpContext, transferCache?: boolean}): Observable<Blob>;
+    public chatStreamOpenAi(letAiDecideChatName: boolean, chatStreamOpenAiRequest: ChatStreamOpenAiRequest, internalChatId?: string, chatName?: string, useCrypto?: boolean, cryptoKey?: string, openAiEndpointPreference?: 'RESPONSES' | 'COMPLETION', useInvoke?: boolean, invokeModel?: 'Dreamshaper 8' | 'Juggernaut XL v9', observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'text/event-stream', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<Blob>>;
+    public chatStreamOpenAi(letAiDecideChatName: boolean, chatStreamOpenAiRequest: ChatStreamOpenAiRequest, internalChatId?: string, chatName?: string, useCrypto?: boolean, cryptoKey?: string, openAiEndpointPreference?: 'RESPONSES' | 'COMPLETION', useInvoke?: boolean, invokeModel?: 'Dreamshaper 8' | 'Juggernaut XL v9', observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'text/event-stream', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<Blob>>;
+    public chatStreamOpenAi(letAiDecideChatName: boolean, chatStreamOpenAiRequest: ChatStreamOpenAiRequest, internalChatId?: string, chatName?: string, useCrypto?: boolean, cryptoKey?: string, openAiEndpointPreference?: 'RESPONSES' | 'COMPLETION', useInvoke?: boolean, invokeModel?: 'Dreamshaper 8' | 'Juggernaut XL v9', observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'text/event-stream', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (letAiDecideChatName === null || letAiDecideChatName === undefined) {
+            throw new Error('Required parameter letAiDecideChatName was null or undefined when calling chatStreamOpenAi.');
+        }
         if (chatStreamOpenAiRequest === null || chatStreamOpenAiRequest === undefined) {
             throw new Error('Required parameter chatStreamOpenAiRequest was null or undefined when calling chatStreamOpenAi.');
         }
@@ -89,6 +93,15 @@ export class OpenAIService extends BaseService {
             localVarQueryParameters,
             'useCrypto',
             <any>useCrypto,
+            QueryParamStyle.Form,
+            true,
+        );
+
+
+        localVarQueryParameters = this.addToHttpParams(
+            localVarQueryParameters,
+            'letAiDecideChatName',
+            <any>letAiDecideChatName,
             QueryParamStyle.Form,
             true,
         );

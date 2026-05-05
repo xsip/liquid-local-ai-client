@@ -113,8 +113,12 @@ import InvokeAiModelToUseEnum = UpdateChatMetadataDto.InvokeAiModelToUseEnum;
             <ng-icon name="heroChatBubbleOvalLeft" class="w-3.5 h-3.5 text-text-muted" />
           }
           <span class="text-[10px] text-text-muted uppercase tracking-[0.14em] font-semibold">{{
-            (generatedFilesModalContent() ? 'sidebar.generatedFiles' : 'sidebar.history')
-              | translate
+            (generatedFilesModalContent()
+              ? generatedFilesModelType() === 'generated'
+                ? 'sidebar.generatedFiles'
+                : 'sidebar.uploadedFiles'
+              : 'sidebar.history'
+            ) | translate
           }}</span>
         </div>
         @if (chatsLoading()) {
@@ -223,7 +227,7 @@ import InvokeAiModelToUseEnum = UpdateChatMetadataDto.InvokeAiModelToUseEnum;
                   <button
                     @chatItemAnim
                     type="button"
-                    (click)="$event.stopPropagation(); openGeneratedFiles(chat)"
+                    (click)="$event.stopPropagation(); openGeneratedFiles(chat, 'generated')"
                     class="w-full flex items-center rounded-md gap-2.5 px-3 py-1.5 mb-1 text-xs text-text-secondary hover:bg-secondary-accent-subtle hover:text-text-primary transition-colors text-left"
                   >
                     <ng-icon name="heroPaperClip" class="w-3.5 h-3.5 shrink-0 opacity-60" />
@@ -232,6 +236,18 @@ import InvokeAiModelToUseEnum = UpdateChatMetadataDto.InvokeAiModelToUseEnum;
                       >{{ chat.generatedAssets?.length ?? 0 }}
                     </ui-badge>
                   </button>
+                  <div class="border-t border-border-subtle mx-2 my-1"></div>
+
+                  <button
+                    @chatItemAnim
+                    type="button"
+                    (click)="$event.stopPropagation(); openGeneratedFiles(chat, 'user')"
+                    class="w-full flex items-center rounded-md gap-2.5 px-3 py-1.5 mb-1 text-xs text-text-secondary hover:bg-secondary-accent-subtle hover:text-text-primary transition-colors text-left"
+                  >
+                    <ng-icon name="heroPaperClip" class="w-3.5 h-3.5 shrink-0 opacity-60" />
+                    {{ 'sidebar.uploadedFiles' | translate }}
+                    <ui-badge [variant]="'accent'">{{ chat.userAssets?.length ?? 0 }} </ui-badge>
+                  </button>
                 }
               </button>
             }
@@ -239,7 +255,10 @@ import InvokeAiModelToUseEnum = UpdateChatMetadataDto.InvokeAiModelToUseEnum;
         </div>
       } @else {
         <!-- Generated files panel -->
-        <app-chat-attachments-sidebar [chat]="generatedFilesModalContent()" />
+        <app-chat-attachments-sidebar
+          [assetsType]="generatedFilesModelType()!"
+          [chat]="generatedFilesModalContent()"
+        />
       }
     </div>
 
@@ -287,12 +306,23 @@ import InvokeAiModelToUseEnum = UpdateChatMetadataDto.InvokeAiModelToUseEnum;
 
         <button
           type="button"
-          (click)="openGeneratedFiles(menu.chat)"
+          (click)="openGeneratedFiles(menu.chat, 'generated')"
           class="w-full flex items-center gap-2.5 px-3 py-1.5 mb-1 text-xs text-text-secondary hover:bg-surface-overlay hover:text-text-primary transition-colors text-left"
         >
           <ng-icon name="heroPaperClip" class="w-3.5 h-3.5 shrink-0 opacity-60" />
           {{ 'sidebar.generatedFiles' | translate }}
           <ui-badge [variant]="'accent'">{{ menu.chat.generatedAssets?.length ?? 0 }}</ui-badge>
+        </button>
+
+        <div class="border-t border-border-subtle mx-2 my-1"></div>
+        <button
+          type="button"
+          (click)="openGeneratedFiles(menu.chat, 'user')"
+          class="w-full flex items-center gap-2.5 px-3 py-1.5 mb-1 text-xs text-text-secondary hover:bg-surface-overlay hover:text-text-primary transition-colors text-left"
+        >
+          <ng-icon name="heroPaperClip" class="w-3.5 h-3.5 shrink-0 opacity-60" />
+          {{ 'sidebar.uploadedFiles' | translate }}
+          <ui-badge [variant]="'accent'">{{ menu.chat.userAssets?.length ?? 0 }}</ui-badge>
         </button>
 
         <div class="border-t border-border-subtle mx-2 my-1"></div>
@@ -381,6 +411,7 @@ export class ChatSidebarComponent {
 
   readonly settingsModal = signal<ChatSettingsData | null>(null);
   readonly generatedFilesModalContent = signal<ChatMetadataDto | null>(null);
+  readonly generatedFilesModelType = signal<'generated' | 'user' | null>(null);
   readonly settingsLoading = signal(false);
 
   chatNameById(chatId: string): string {
@@ -438,8 +469,9 @@ export class ChatSidebarComponent {
     setTimeout(() => this.renameInputRef?.nativeElement?.select(), 0);
   }
 
-  openGeneratedFiles(chat: ChatMetadataDto): void {
+  openGeneratedFiles(chat: ChatMetadataDto, type: 'generated' | 'user'): void {
     this.closeCtxMenu();
+    this.generatedFilesModelType.set(type);
     this.generatedFilesModalContent.set(chat);
   }
 

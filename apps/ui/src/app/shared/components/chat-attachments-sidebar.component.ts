@@ -181,11 +181,11 @@ const FILE_TYPE_FALLBACK: FileTypeConfig = {
       mountFileCards
       authFiles
     >
-      @if (chat()?.generatedAssets?.length === 0) {
+      @if (getAssets?.length === 0) {
         <div class="flex flex-col items-center justify-center h-full gap-2 text-center px-3 py-8">
           <ng-icon name="heroPaperClip" class="w-8 h-8 text-text-disabled animate-float" />
           <span class="text-[10px] text-text-disabled uppercase tracking-wider">{{
-            'sidebar.noGeneratedFiles' | translate
+              (this.assetsType() === 'generated' ? 'sidebar.noGeneratedFiles' : 'sidebar.noUserFile') | translate
           }}</span>
         </div>
       } @else if (filteredAssets().length === 0) {
@@ -230,6 +230,7 @@ const FILE_TYPE_FALLBACK: FileTypeConfig = {
 })
 export class ChatAttachmentsSidebarComponent implements OnInit, OnDestroy {
   readonly chat = input.required<ChatMetadataDto | null>();
+  readonly assetsType = input.required<'generated' | 'user'>();
 
   readonly searchControl = new FormControl<string>('', { nonNullable: true });
 
@@ -237,7 +238,7 @@ export class ChatAttachmentsSidebarComponent implements OnInit, OnDestroy {
   readonly searchQuery = signal('');
 
   readonly filteredAssets = computed(() => {
-    const assets = this.chat()?.generatedAssets ?? [];
+    const assets = this.getAssets ?? [];
     const query = this.searchQuery().trim().toLowerCase();
     if (!query) return assets;
     return assets.filter((asset) => asset.filename?.toLowerCase().includes(query));
@@ -262,6 +263,12 @@ export class ChatAttachmentsSidebarComponent implements OnInit, OnDestroy {
 
   fileExt(filename?: string | null): string {
     return filename?.split('/').pop()?.toLowerCase() ?? 'file';
+  }
+
+  get getAssets() {
+    return this.assetsType() === 'generated'
+      ? this.chat()?.generatedAssets
+      : this.chat()?.userAssets;
   }
 
   fileTypeConfig(filename?: string | null): FileTypeConfig {

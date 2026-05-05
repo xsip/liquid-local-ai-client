@@ -17,6 +17,7 @@ import crypto from 'crypto';
 import { ApiEvent, ToolsHelperService } from './tools-helper.service';
 import { GeneratedAssetType } from '../modules/chat-metadata/chat-metadata.schema';
 import JSZip from 'jszip';
+import { AssetRole } from '../modules/assets/image-blob.schema';
 
 @Injectable()
 export class ApiTools {
@@ -125,6 +126,7 @@ export class ApiTools {
       await this.assetsService.uploadFile(
         user._id + '',
         chatId,
+        AssetRole.AI,
         zipFileName,
         buffer,
         ZIP_MIME_TYPE,
@@ -193,6 +195,7 @@ export class ApiTools {
       await this.assetsService.uploadFile(
         user._id + '',
         chatId,
+        AssetRole.AI,
         filename,
         buffer,
         mimeType,
@@ -443,6 +446,7 @@ export class ApiTools {
       await this.assetsService.uploadFile(
         user._id + '',
         chatId,
+        AssetRole.AI,
         fileName,
         buffer,
         mimeType,

@@ -83,6 +83,7 @@ export * from './containerReferenceDto';
 export * from './contentDto';
 export * from './contextManagementDto';
 export * from './conversationDto';
+export * from './createAndAddToUserAssetsResponseDto';
 export * from './createChatMetadataDto';
 export * from './createFileDto';
 export * from './createTokenLimitConfigDto';

@@ -7,12 +7,12 @@ import {
   output,
   signal,
   ViewChild,
-  AfterViewChecked,
+  AfterViewChecked, inject,
 } from '@angular/core';
 import Prism from 'prismjs';
 import { CommonModule } from '@angular/common';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { ChatRequestDto, ReasoningDto } from '../../client';
+import { ChatMetadataService, ChatRequestDto, ReasoningDto } from '../../client';
 import { ModelReasoningCapability } from '../../shared/components/reasoning-dropdown.component';
 import { SendButtonComponent } from '../../shared/components/send-button.component';
 import { ResetButtonComponent } from '../../shared/components/reset-button.component';
@@ -27,6 +27,8 @@ import { TranslateModule } from '@ngx-translate/core';
 import { MarkdownPipe } from '../lm-studio-api/markdown.pipe';
 import { NgIconComponent, provideIcons } from '@ng-icons/core';
 import { heroPencilSquare, heroEye, heroLink, heroDocument, heroXMark } from '@ng-icons/heroicons/outline';
+import { ChatService } from './chat.service';
+import { Observable, Subject, switchMap, take } from 'rxjs';
 
 // Re-export AppendedFile so existing consumers importing from this file keep working.
 export type { AppendedFile };
@@ -283,6 +285,10 @@ export class OpenAiChatInputComponent implements AfterViewInit, AfterViewChecked
     ChatRequestDto.ReasoningEnum | ReasoningDto.EffortEnum | undefined
   >();
   readonly modelReasoningCap = input.required<ModelReasoningCapability | null>();
+  readonly newChatIdProvider = input.required<() => Observable<string>>();
+
+  readonly chatService = inject(ChatService);
+  readonly chatMetadataService = inject(ChatMetadataService);
 
   readonly submitted = output<void>();
   readonly reset = output<void>();
@@ -381,15 +387,37 @@ export class OpenAiChatInputComponent implements AfterViewInit, AfterViewChecked
     const files = input.files;
     if (!files?.length) return;
 
-    readFilesAsDataUrls(files).then((newFiles) => {
-      this.appendedFiles.update((existing) => {
-        const merged = mergeFiles(existing, newFiles);
-        this.appendedFilesChanged.emit(merged);
-        return merged;
-      });
-      input.value = '';
-    });
+    const file = files[0];
+
+    if (!this.chatService.currentChatId()) {
+      this.newChatIdProvider()()
+        .pipe(
+          take(1),
+          switchMap((chatId) => this.chatMetadataService.uploadFile(chatId, file)),
+        )
+        .subscribe(res => {
+          console.log(res);
+        });
+      return;
+    }
+
+    this.chatMetadataService
+      .uploadFile(this.chatService.currentChatId()!, file)
+      .pipe(take(1))
+      .subscribe();
   }
+
+  /*
+
+          readFilesAsDataUrls(files).then((newFiles) => {
+            this.appendedFiles.update((existing) => {
+              const merged = mergeFiles(existing, newFiles);
+              this.appendedFilesChanged.emit(merged);
+              return merged;
+            });
+            input.value = '';
+          });
+   */
 
   removeFile(index: number): void {
     this.appendedFiles.update((files) => {

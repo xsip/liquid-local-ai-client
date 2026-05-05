@@ -13,6 +13,15 @@ import { EphemeralMcpIntegrationDto } from '../../lm-studio/dto/chat.dto';
 import { OpenAiEndpointPreference } from '../chat-metadata.schema';
 import { InvokeAiModel } from '../../invoke/invoke.service';
 
+export class CreateAndAddToUserAssetsResponseDto {
+  @ApiProperty({ description: 'Asset size in KB' })
+  sizeKb: number;
+  @ApiProperty({ description: 'URL to asset' })
+  assetUrl: string;
+  @ApiProperty({ description: 'Filename' })
+  filename: string;
+}
+
 export class CreateChatMetadataDto {
   @ApiProperty({ description: 'Human-readable name for this chat session' })
   @IsString()
