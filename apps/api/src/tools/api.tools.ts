@@ -60,6 +60,45 @@ export class ApiTools {
   }
 
   @Tool({
+    name: 'get-content-from-file-ids',
+    description: `Returns content for passed FileIds`,
+    parameters: z.object({
+      fileIds: z.array(z.string()),
+    }),
+  })
+  async getContentFromFiledIds(
+    { fileIds }: { fileIds: string[] },
+    context: Context,
+    request: Request,
+  ) {
+    const user = (request as any).user as User & { _id?: Types.ObjectId };
+    const chatId = request.headers['chatid'] as string;
+
+    if (!user) return `User not defined!!`;
+    if (!chatId) return `chatId not defined!!`;
+    if (!fileIds?.length) return 'No File Ids provided!!';
+
+    const result: any[] = [];
+    for (const fileId of fileIds) {
+      const file = await this.assetsService.getAsset(
+        user._id + '',
+        chatId,
+        fileId,
+      );
+      result.push({
+        content: {
+          type: 'file',
+          mimeType: file.mimeType,
+          data: file.data.toString('base64'),
+          fileName: file.displayName,
+        },
+      });
+    }
+
+    return result;
+  }
+
+  @Tool({
     name: 'generate-zip-from-file-ids',
     description:
       'Generates a ZIP archive from file IDs returned by generate-file-from-content-tool.\n' +

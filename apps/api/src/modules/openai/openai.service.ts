@@ -236,6 +236,7 @@ RULE: The ONLY available tools are exactly these three:
   - generate-file-from-content-tool
   - generate-zip-from-file-ids
   - get-token-usage-tool
+  - get-content-from-file-ids
 
 RULE: Do NOT call tools/list, mcp/list/tools, or any discovery tool.
 The tool list above is complete and final. No other tools exist.
@@ -350,6 +351,7 @@ The ZIP card is the only thing the user needs to see.`,
             'get-token-usage-tool',
             'generate-file-from-content-tool',
             'generate-zip-from-file-ids',
+            'get-content-from-file-ids',
           ],
         } as any,
       ],

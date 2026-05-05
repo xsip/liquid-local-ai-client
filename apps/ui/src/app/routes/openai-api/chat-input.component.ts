@@ -252,7 +252,7 @@ export type { AppendedFile };
                 <ng-icon name="heroDocument" class="w-3.5 h-3.5 shrink-0 text-text-muted" />
                 <span class="truncate text-text-primary flex-1 max-w-xs">{{ file.filename }}</span>
                 <span class="text-text-muted shrink-0 text-[10px]">{{
-                  fileSizeLabel(file.image_url)
+                  file.image_url ? fileSizeLabel(file.image_url) : file.sizeKb
                 }}</span>
                 <button
                   type="button"
@@ -395,7 +395,19 @@ export class OpenAiChatInputComponent implements AfterViewInit, AfterViewChecked
           take(1),
           switchMap((chatId) => this.chatMetadataService.uploadFile(chatId, file)),
         )
-        .subscribe(res => {
+        .subscribe((res) => {
+          this.appendedFiles.update((existing) => {
+            const merged = mergeFiles(existing, [
+              {
+                type: 'input_file',
+                filename: res.filename,
+                assetUrl: res.assetUrl,
+                sizeKb: res.sizeKb,
+              },
+            ]);
+            this.appendedFilesChanged.emit(merged);
+            return merged;
+          });
           console.log(res);
         });
       return;

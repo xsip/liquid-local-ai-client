@@ -224,6 +224,7 @@ export class ChatMetadataService {
       userId,
       chatId,
       filename,
+      role,
       mimeType,
       displayName: originalFilename,
       data,

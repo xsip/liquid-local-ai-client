@@ -15,9 +15,12 @@ export function fileSizeLabel(dataUrl: string): string {
 }
 
 export interface AppendedFile {
-  type: 'input_image';
+  type: 'input_image' | 'input_file';
   filename: string;
-  image_url: string; // data:<mime>;base64,<data>
+  sizeKb?: number;
+  assetUrl?: string;
+  fileName?: string;
+  image_url?: string; // data:<mime>;base64,<data>
 }
 
 /**

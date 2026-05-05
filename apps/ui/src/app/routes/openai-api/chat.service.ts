@@ -123,12 +123,17 @@ export class ChatService {
     this.streaming.set(true);
     this.mcpTracking.clear();
 
-    for (const f of appendedFiles ?? []) {
+    /*for (const f of appendedFiles ?? []) {
       this.chatMessages.update((msgs) => [
         ...msgs,
-        { role: 'user', image: f.image_url, date: new Date() },
+        f.image_url
+          ? { role: 'user', image: f.image_url, date: new Date() }
+          : {
+              role: 'user',
+              text: `::file[${f.filename}](${f.assetUrl}){size=${f.sizeKb} type=${f.filename.split('.')[1]}}`,
+            },
       ]);
-    }
+    }*/
 
     this.chatMessages.update((msgs) => [...msgs, { role: 'user', text: input, date: new Date() }]);
 
@@ -382,13 +387,23 @@ export class ChatService {
       {
         model: selectedModelId,
         input: [
+          ...((appendedFiles as any[]) ?? []).map((f) => {
+            return {
+              role: 'system',
+              content: [
+                {
+                  type: 'input_text',
+                  text: `Get file contents by passing "${f.filename}" to the "get-content-from-file-ids".`,
+                },
+              ],
+            };
+          }) as any,
           {
             role: 'user',
             content: [
-              ...((appendedFiles as any[]) ?? []),
               {
                 type: 'input_text',
-                text: input,
+                text: (appendedFiles?.map(f => `::file[${f.filename}](${f.assetUrl}){size=${f.sizeKb} type=${f.filename.split('.')[1]}}`).join('\n') ?? '') + '  \n' + input,
               },
             ],
           },
