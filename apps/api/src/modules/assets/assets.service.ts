@@ -1,13 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { AssetRole, ImageBlob, ImageBlobDocument } from './image-blob.schema';
+import { AssetRole, AssetBlob, AssetBlobDocument } from './asset-blob.schema';
 import { DeleteResult, Model } from 'mongoose';
 
 @Injectable()
 export class AssetsService {
   constructor(
-    @InjectModel(ImageBlob.name)
-    private readonly imageBlobModel: Model<ImageBlobDocument>,
+    @InjectModel(AssetBlob.name)
+    private readonly assetBlobModel: Model<AssetBlobDocument>,
   ) {}
 
   async setAssetVisibility(
@@ -16,7 +16,7 @@ export class AssetsService {
     filename: string,
     isVisible: boolean,
   ): Promise<void> {
-    const blob = await this.imageBlobModel
+    const blob = await this.assetBlobModel
       .findOne({ userId, chatId, filename })
       .exec();
     if (!blob) return;
@@ -30,14 +30,14 @@ export class AssetsService {
     chatId: string,
     filename: string,
   ): Promise<DeleteResult> {
-    return this.imageBlobModel.deleteOne({ userId, chatId, filename }).exec();
+    return this.assetBlobModel.deleteOne({ userId, chatId, filename }).exec();
   }
   async getAsset(
     userId: string,
     chatId: string,
     filename: string,
     thumbnail?: boolean,
-  ): Promise<ImageBlobDocument> {
+  ): Promise<AssetBlobDocument> {
     // Prevent path traversal
     if (filename.includes('..')) {
       throw new NotFoundException();
@@ -47,7 +47,7 @@ export class AssetsService {
       ? { data: 0 } // exclude full image
       : {};
 
-    const blob = await this.imageBlobModel
+    const blob = await this.assetBlobModel
       .findOne({ userId, chatId, filename }, projection)
       .exec();
 
@@ -70,7 +70,7 @@ export class AssetsService {
     const ext = originalFilename.split('.').pop()?.toLowerCase() ?? 'bin';
     const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
-    const res = await this.imageBlobModel.create({
+    const res = await this.assetBlobModel.create({
       userId,
       chatId,
       filename,

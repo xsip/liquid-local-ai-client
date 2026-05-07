@@ -33,7 +33,7 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { User } from '../auth/user.schema';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
-import { AssetRole } from '../assets/image-blob.schema';
+import { AssetRole } from '../assets/asset-blob.schema';
 
 @ApiTags('Chat Metadata')
 @ApiBearerAuth()

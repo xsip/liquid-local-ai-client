@@ -18,9 +18,9 @@ import { CreateChatMetadataDto } from './dto/create-chat-metadata.dto';
 import { UpdateChatMetadataDto } from './dto/update-chat-metadata.dto';
 import {
   AssetRole,
-  ImageBlob,
-  ImageBlobDocument,
-} from '../assets/image-blob.schema';
+  AssetBlob,
+  AssetBlobDocument,
+} from '../assets/asset-blob.schema';
 
 @Injectable()
 export class ChatMetadataService {
@@ -31,8 +31,8 @@ export class ChatMetadataService {
     private readonly metaModel: Model<ChatMetadataDocument>,
     @InjectModel(Chat.name)
     private readonly chatModel: Model<ChatDocument>,
-    @InjectModel(ImageBlob.name)
-    private readonly imageBlobModel: Model<ImageBlobDocument>,
+    @InjectModel(AssetBlob.name)
+    private readonly assetBlobModel: Model<AssetBlobDocument>,
   ) {}
 
   // ── Create ────────────────────────────────────────────────────────────────
@@ -179,7 +179,7 @@ export class ChatMetadataService {
       `Cascade-deleted ${deletedCount} chats for ChatMetadata id=${id}`,
     );
     // Cascade: delete all images that reference this meta id
-    const { deletedCount: deletedImages } = await this.imageBlobModel
+    const { deletedCount: deletedImages } = await this.assetBlobModel
       .deleteMany({ chatId: id })
       .exec();
     this.logger.log(
@@ -237,7 +237,7 @@ export class ChatMetadataService {
     const ext = originalFilename.split('.').pop()?.toLowerCase() ?? 'bin';
     const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
-    const mdl = await this.imageBlobModel.create({
+    const mdl = await this.assetBlobModel.create({
       userId,
       chatId,
       filename,

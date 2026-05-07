@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AssetsController } from './assets.controller';
-import { ImageBlob, ImageBlobSchema } from './image-blob.schema';
+import { AssetBlob, AssetBlobSchema } from './asset-blob.schema';
 import { AssetsService } from './assets.service';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
-      { name: ImageBlob.name, schema: ImageBlobSchema },
+      { name: AssetBlob.name, schema: AssetBlobSchema },
     ]),
   ],
   providers: [AssetsService],

@@ -310,29 +310,30 @@ your response MUST start with the exact value of the "markdown" field — charac
 
 RULE: The markdown field is an opaque string. Output it exactly as-is.
   - Do NOT reformat it
-  - Do NOT wrap it in brackets or backticks
+  - Do NOT wrap it in brackets, backticks, or any other characters
+  - Do NOT add [ ] around it
+  - Do NOT prepend any base URL, hostname, or domain (e.g. http://...) to any path inside it
   - Do NOT write "Here is your file: ..." before it
   - Do NOT interpret it as a link or modify its syntax
   - Do NOT paraphrase or summarize it
+  - Do NOT absolutize relative paths — leave all paths exactly as they appear
 
-After the markdown string, you may add one or two short sentences to the user.
+The markdown string begins with :: — output that character and everything after it verbatim.
 
-CORRECT response when markdown is  ![image](api/assets/abc/file.png?thumbnail=true) :
-  ![image](api/assets/abc/file.png?thumbnail=true)
-  Here is your cat image!
+CORRECT response when markdown is  ::file[index.html](api/assets/abc/file.html){size=0KB type=html} :
+  ::file[index.html](api/assets/abc/file.html){size=0KB type=html}
+  Here is your file!
 
-INCORRECT:
-  Here is your image: ![image](api/assets/abc/file.png?thumbnail=true)
-  (text before the markdown string is not allowed)
+INCORRECT — wrapped in brackets:
+  [ ::file[index.html](api/assets/abc/file.html){size=0KB type=html}]
 
-INCORRECT:
-  [Your file is ready](api/assets/abc/file.png?thumbnail=true)
-  (reformatting the markdown is not allowed)
+INCORRECT — base URL prepended:
+  ::file[index.html](http://192.168.0.38:4200/api/assets/abc/file.html){size=0KB type=html}
 
-INCORRECT:
-  \`\`\`[Your file is ready](api/assets/abc/file.png?thumbnail=true)\`\`\`
-  (reformatting the markdown in a code block is not allowed)
-
+INCORRECT — text before the markdown string:
+  Here is your file: ::file[index.html](api/assets/abc/file.html){size=0KB type=html}
+  
+  
 ═══════════════════════════════════════════
 GET CONTENT FROM FILE IDS RULE
 ═══════════════════════════════════════════

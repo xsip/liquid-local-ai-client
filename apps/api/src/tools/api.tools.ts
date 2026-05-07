@@ -17,7 +17,7 @@ import crypto from 'crypto';
 import { ApiEvent, ToolsHelperService } from './tools-helper.service';
 import { GeneratedAssetType } from '../modules/chat-metadata/chat-metadata.schema';
 import JSZip from 'jszip';
-import { AssetRole } from '../modules/assets/image-blob.schema';
+import { AssetRole } from '../modules/assets/asset-blob.schema';
 
 @Injectable()
 export class ApiTools {

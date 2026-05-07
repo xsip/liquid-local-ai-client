@@ -6,7 +6,7 @@ import { IsIn, IsOptional } from 'class-validator';
 import { SubscriptionType } from '../auth/user.schema';
 import { InvokeAiModel } from '../invoke/invoke.service';
 import { Role } from '../auth/roles.decorator';
-import { ImageBlob } from '../assets/image-blob.schema';
+import { AssetBlob } from '../assets/asset-blob.schema';
 
 export type ChatMetadataDocument = ChatMetadata & Document;
 
@@ -30,8 +30,8 @@ export class GeneratedAsset {
   @Prop({ required: true })
   filename: string;
 
-  @Prop({ required: true, type: Types.ObjectId, ref: ImageBlob.name })
-  refId: Types.ObjectId | ImageBlob;
+  @Prop({ required: true, type: Types.ObjectId, ref: AssetBlob.name })
+  refId: Types.ObjectId | AssetBlob;
 
   @Prop({ required: true })
   url: string;

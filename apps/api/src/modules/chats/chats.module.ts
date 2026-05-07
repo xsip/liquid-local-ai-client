@@ -8,14 +8,14 @@ import {
   ChatMetadata,
   ChatMetadataSchema,
 } from '../chat-metadata/chat-metadata.schema';
-import { ImageBlob, ImageBlobSchema } from '../assets/image-blob.schema';
+import { AssetBlob, AssetBlobSchema } from '../assets/asset-blob.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Chat.name, schema: ChatSchema },
       { name: ChatMetadata.name, schema: ChatMetadataSchema },
-      { name: ImageBlob.name, schema: ImageBlobSchema },
+      { name: AssetBlob.name, schema: AssetBlobSchema },
     ]),
   ],
   controllers: [ChatsController],
