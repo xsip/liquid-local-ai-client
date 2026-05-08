@@ -1,22 +1,31 @@
 import { animate, style, transition, trigger } from '@angular/animations';
-import { Component, computed, effect, ElementRef, inject, OnDestroy, OnInit, signal, ViewChild } from '@angular/core';
+import {
+  Component,
+  effect,
+  ElementRef,
+  inject,
+  OnDestroy,
+  OnInit,
+  signal,
+  ViewChild,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ChatMetadataService, ChatRequestDto, ChatsService, ModelDto } from '../client';
-import { LMStudioService } from '../client/api/lMStudio.service';
+import { ChatMetadataService, ChatRequestDto, ChatsService } from '../client';
 import { ChatService } from './lm-studio-api/chat.service';
 import { ChatSidebarComponent } from './lm-studio-api/chat-sidebar.component';
 import { ChatMessagesComponent } from './lm-studio-api/chat-messages.component';
 import { ChatInputComponent } from './lm-studio-api/chat-input.component';
 import { EventEntry, EventLogComponent } from './lm-studio-api/event-log.component';
-import { ModelReasoningCapability, ModelSelectorComponent } from './lm-studio-api/model-selector.component';
+import { ModelSelectorComponent } from './lm-studio-api/model-selector.component';
 import { InfoComponent } from './lm-studio-api/info.component';
-import { IconButtonComponent } from '../shared/components/ui/icon-button.component';
-import { ButtonComponent } from '../shared/components/ui/button.component';
+import { ButtonComponent, IconButtonComponent } from '../shared';
 import { TranslateModule } from '@ngx-translate/core';
 import { NgIconComponent, provideIcons } from '@ng-icons/core';
 import { heroBars3, heroUser, heroXMark } from '@ng-icons/heroicons/outline';
+import { LmStudioModelService } from './lm-studio-model.service';
+import ReasoningEnum = ChatRequestDto.ReasoningEnum;
 
 @Component({
   selector: 'app-debug',
@@ -67,7 +76,7 @@ import { heroBars3, heroUser, heroXMark } from '@ng-icons/heroicons/outline';
       ]),
     ]),
   ],
-  providers: [ChatService],
+  providers: [ChatService, LmStudioModelService],
   template: `
     <div
       class="h-screen bg-surface-base text-text-primary flex flex-col overflow-hidden transition-colors duration-300"
@@ -115,11 +124,11 @@ import { heroBars3, heroUser, heroXMark } from '@ng-icons/heroicons/outline';
         <!-- Model selector -->
         <div class="relative ml-auto">
           <app-model-selector
-            [models]="models()"
-            [modelsLoading]="modelsLoading()"
-            [selectedModel]="selectedModel()"
+            [models]="modelService.models()"
+            [modelsLoading]="modelService.modelsLoading()"
+            [selectedModel]="modelService.selectedModel()"
             [hasChatOpen]="chatService.hasChatOpen()"
-            (modelSelected)="selectModel($event)"
+            (modelSelected)="modelService.selectModel($event)"
           />
         </div>
 
@@ -176,8 +185,8 @@ import { heroBars3, heroUser, heroXMark } from '@ng-icons/heroicons/outline';
             <app-chat-input
               [form]="chatService.form"
               [streaming]="chatService.streaming()"
-              [reasoning]="reasoning()"
-              [modelReasoningCap]="modelReasoningCap()"
+              [reasoning]="$any(modelService.reasoning())"
+              [modelReasoningCap]="modelService.modelReasoningCap()"
               (submitted)="submit()"
               (reset)="chatService.reset()"
               (reasoningChanged)="selectReasoning($event)"
@@ -220,11 +229,11 @@ import { heroBars3, heroUser, heroXMark } from '@ng-icons/heroicons/outline';
 })
 export class LmStudioApi implements OnDestroy, OnInit {
   readonly chatService = inject(ChatService);
+  readonly modelService = inject(LmStudioModelService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly chatsApi = inject(ChatsService);
   private readonly chatMetaService = inject(ChatMetadataService);
-  private readonly lmStudioService = inject(LMStudioService);
 
   @ViewChild('messageContainer') private messageContainer?: ElementRef<HTMLElement>;
   @ViewChild('chatSidebar') private chatSidebarRef?: ChatSidebarComponent;
@@ -235,24 +244,9 @@ export class LmStudioApi implements OnDestroy, OnInit {
   readonly chatList = signal<any[]>([]);
   readonly chatsLoading = signal(false);
   readonly events = signal<EventEntry[]>([]);
-  readonly reasoning = signal<ChatRequestDto.ReasoningEnum | undefined>(undefined);
-
   readonly isLoadingMessages = signal(false);
 
-  readonly models = signal<ModelDto[]>([]);
-  readonly modelsLoading = signal(false);
-  readonly selectedModel = signal<ModelDto | null>(this.loadStoredModel());
-
-  private static readonly MODEL_STORAGE_KEY = 'lmstudio_selected_model';
-  private pendingModelKey: string | null = null;
   private eventCounter = 0;
-
-  readonly modelReasoningCap = computed<ModelReasoningCapability | null>(() => {
-    const cap = (this.selectedModel()?.capabilities as any)?.reasoning as
-      | ModelReasoningCapability
-      | undefined;
-    return cap ?? null;
-  });
 
   constructor() {
     effect(() => {
@@ -260,15 +254,16 @@ export class LmStudioApi implements OnDestroy, OnInit {
       this.scrollToBottom(this.messageContainer);
     });
     effect(() => {
-      const cap = this.modelReasoningCap();
-      if (!cap && this.reasoning()) this.reasoning.set(undefined);
-      if (!this.chatService.hasChatOpen()) this.reasoning.set((cap?.default as any) ?? undefined);
+      const cap = this.modelService.modelReasoningCap();
+      if (!cap && this.modelService.reasoning()) this.modelService.setReasoning(undefined);
+      if (!this.chatService.hasChatOpen())
+        this.modelService.setReasoning((cap?.default as any) ?? undefined);
     });
   }
 
   ngOnInit(): void {
     this.loadChatList();
-    this.loadModels();
+    this.modelService.loadModels();
 
     const chatId = this.route.snapshot.paramMap.get('chatId');
     this.chatService.currentChatId.set(chatId);
@@ -281,45 +276,6 @@ export class LmStudioApi implements OnDestroy, OnInit {
 
   ngOnDestroy(): void {
     this.chatService.destroy();
-  }
-
-  // ── Model management ──────────────────────────────────────────────────────
-
-  private loadStoredModel(): ModelDto | null {
-    try {
-      const raw = localStorage.getItem(LmStudioApi.MODEL_STORAGE_KEY);
-      return raw ? (JSON.parse(raw) as ModelDto) : null;
-    } catch {
-      return null;
-    }
-  }
-
-  selectModel(model: ModelDto): void {
-    this.selectedModel.set(model);
-    try {
-      localStorage.setItem(LmStudioApi.MODEL_STORAGE_KEY, JSON.stringify(model));
-    } catch {
-      /* ignore */
-    }
-  }
-
-  private loadModels(): void {
-    this.modelsLoading.set(true);
-    this.lmStudioService.getModels().subscribe({
-      next: (res) => {
-        const llms = res.models.filter((m) => m.type === ModelDto.TypeEnum.Llm);
-        this.models.set(llms);
-        if (this.pendingModelKey) {
-          const match = llms.find((m) => m.key === this.pendingModelKey);
-          if (match) this.selectModel(match);
-          this.pendingModelKey = null;
-        } else if (!this.selectedModel() && llms.length > 0) {
-          this.selectModel(llms[0]);
-        }
-        this.modelsLoading.set(false);
-      },
-      error: () => this.modelsLoading.set(false),
-    });
   }
 
   // ── Chat list ─────────────────────────────────────────────────────────────
@@ -344,18 +300,17 @@ export class LmStudioApi implements OnDestroy, OnInit {
     this.chatMetaService.getChatMetadata(chatId).subscribe({
       next: (meta) => {
         if (meta.usedModel) {
-          const modelList = this.models();
-          if (modelList.length > 0) {
-            const match = modelList.find((m) => m.key === meta.usedModel);
-            if (match) this.selectModel(match);
+          if (this.modelService.models().length > 0) {
+            const match = this.modelService.models().find((m) => m.key === meta.usedModel);
+            if (match) this.modelService.selectModel(match);
           } else {
-            this.pendingModelKey = meta.usedModel;
+            // Defer selection until the model list has loaded
+            this.modelService.resolvePendingModelKey(meta.usedModel);
           }
         }
         const reasoningValue = meta.reasoningMode as ChatRequestDto.ReasoningEnum | undefined;
-        const allowed = this.modelReasoningCap()?.allowed_options;
-        if (reasoningValue && (!allowed || allowed.includes(reasoningValue))) {
-          this.reasoning.set(reasoningValue);
+        if (reasoningValue) {
+          this.modelService.applyReasoningIfAllowed(reasoningValue);
         }
       },
     });
@@ -442,19 +397,23 @@ export class LmStudioApi implements OnDestroy, OnInit {
   // ── Messaging ─────────────────────────────────────────────────────────────
 
   submit(): void {
-    this.chatService.submit(this.selectedModel()?.key ?? '', this.reasoning(), () =>
-      this.loadChatList(),
+    this.chatService.submit(
+      this.modelService.getModelId(this.modelService.selectedModel()!),
+      this.modelService.reasoning() as ReasoningEnum,
+      () => this.loadChatList(),
     );
   }
 
   resend(): void {
-    this.chatService.resend(this.selectedModel()?.key ?? '', this.reasoning(), () =>
-      this.loadChatList(),
+    this.chatService.resend(
+      this.modelService.getModelId(this.modelService.selectedModel()!),
+      this.modelService.reasoning() as ReasoningEnum,
+      () => this.loadChatList(),
     );
   }
 
   selectReasoning(value: ChatRequestDto.ReasoningEnum): void {
-    this.reasoning.set(value);
+    this.modelService.setReasoning(value);
     const chatId = this.chatService.currentChatId();
     if (chatId) {
       this.chatMetaService.updateChatMetadata(chatId, { reasoningMode: value }).subscribe();

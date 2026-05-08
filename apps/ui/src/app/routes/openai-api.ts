@@ -1,17 +1,6 @@
 import { animate, style, transition, trigger } from '@angular/animations';
-import {
-  Component,
-  computed,
-  effect,
-  ElementRef,
-  inject,
-  OnDestroy,
-  OnInit,
-  signal,
-  viewChild,
-  ViewChild,
-} from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, effect, ElementRef, inject, OnDestroy, OnInit, signal, viewChild, ViewChild } from '@angular/core';
+import { CommonModule, Location } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
@@ -23,15 +12,13 @@ import {
   CreateChatMetadataDto,
   EasyInputMessageDtoContentInner,
   MessageDtoContentInner,
-  ModelOpenAiDto,
-  OpenAIService,
   ReasoningDto,
   ResponseInputFileDto,
   ResponseInputImageDto,
   ResponseInputTextDto,
   ResponseOutputMessageDtoContentInner,
   ResponseOutputRefusalDto,
-  ResponseOutputTextDto,
+  ResponseOutputTextDto
 } from '../client';
 import { ChatMessage, ChatService } from './openai-api/chat.service';
 import { OpenAiModelSelectorComponent } from './openai-api/model-selector.component';
@@ -40,27 +27,18 @@ import { OpenAiModelSelectorComponent } from './openai-api/model-selector.compon
 import { ChatSidebarComponent } from './lm-studio-api/chat-sidebar.component';
 import { ChatMessagesComponent } from './lm-studio-api/chat-messages.component';
 import { InfoComponent } from './lm-studio-api/info.component';
-import { ModelReasoningCapability } from './lm-studio-api/model-selector.component';
 import { AppendedFile, OpenAiChatInputComponent } from './openai-api/chat-input.component';
-import { Observable, of, Subject, take, tap } from 'rxjs';
-import { IconButtonComponent } from '../shared/components/ui/icon-button.component';
-import { ButtonComponent } from '../shared/components/ui/button.component';
-import { LabelComponent } from '../shared/components/ui/label.component';
-import { TextInputComponent } from '../shared/components/ui/text-input.component';
-import { ToggleComponent } from '../shared/components/ui/toggle.component';
+import { Observable, of, take, tap } from 'rxjs';
+import { ButtonComponent, IconButtonComponent, LabelComponent, TextInputComponent, ToggleComponent } from '../shared';
 import { TranslateModule } from '@ngx-translate/core';
 import { NgIconComponent, provideIcons } from '@ng-icons/core';
-import {
-  heroBars3,
-  heroUser,
-  heroPlus,
-  heroXMark,
-  heroSparkles,
-} from '@ng-icons/heroicons/outline';
-import InvokeAiModelToUseEnum = ChatMetadataDto.InvokeAiModelToUseEnum;
+import { heroBars3, heroPlus, heroSparkles, heroUser, heroXMark } from '@ng-icons/heroicons/outline';
 import { BlobBackgroundDirective } from '../shared/directives/blob-background.directive';
 import { map } from 'rxjs/operators';
-import { Location } from '@angular/common';
+import { OpenAiModelService } from './openai-model.service';
+import InvokeAiModelToUseEnum = ChatMetadataDto.InvokeAiModelToUseEnum;
+import EffortEnum = ReasoningDto.EffortEnum;
+
 /** How the chat name is determined when creating a new chat. */
 type ChatNameMode = 'ai' | 'custom' | 'none';
 
@@ -132,7 +110,7 @@ type ChatNameMode = 'ai' | 'custom' | 'none';
       ]),
     ]),
   ],
-  providers: [ChatService],
+  providers: [ChatService, OpenAiModelService],
   template: `
     <div
       class="h-screen bg-surface-base text-text-primary flex flex-col overflow-hidden transition-colors duration-300"
@@ -176,11 +154,11 @@ type ChatNameMode = 'ai' | 'custom' | 'none';
 
         <div class="relative ml-auto">
           <app-openai-model-selector
-            [models]="models()"
-            [modelsLoading]="modelsLoading()"
-            [selectedModel]="selectedModel()"
+            [models]="modelService.models()"
+            [modelsLoading]="modelService.modelsLoading()"
+            [selectedModel]="modelService.selectedModel()"
             [hasChatOpen]="chatService.hasChatOpen()"
-            (modelSelected)="selectModel($event)"
+            (modelSelected)="modelService.selectModel($event)"
           />
         </div>
 
@@ -354,11 +332,11 @@ type ChatNameMode = 'ai' | 'custom' | 'none';
                       </div>
                       <div class="relative ml-auto">
                         <app-openai-model-selector
-                          [models]="models()"
-                          [modelsLoading]="modelsLoading()"
-                          [selectedModel]="selectedModel()"
+                          [models]="modelService.models()"
+                          [modelsLoading]="modelService.modelsLoading()"
+                          [selectedModel]="modelService.selectedModel()"
                           [hasChatOpen]="chatService.hasChatOpen()"
-                          (modelSelected)="selectModel($event)"
+                          (modelSelected)="modelService.selectModel($event)"
                         />
                       </div>
                     </div>
@@ -452,8 +430,8 @@ type ChatNameMode = 'ai' | 'custom' | 'none';
               #chatInput
               [form]="chatService.form"
               [streaming]="chatService.streaming()"
-              [reasoning]="reasoning()"
-              [modelReasoningCap]="modelReasoningCap()"
+              [reasoning]="$any(modelService.reasoning())"
+              [modelReasoningCap]="modelService.modelReasoningCap()"
               (submitted)="submit()"
               [newChatIdProvider]="newChatIdProvider"
               (reset)="chatService.reset()"
@@ -493,18 +471,13 @@ type ChatNameMode = 'ai' | 'custom' | 'none';
 })
 export class OpenAiApi implements OnDestroy, OnInit {
   readonly chatService = inject(ChatService);
+  readonly modelService = inject(OpenAiModelService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly chatsApi = inject(ChatsService);
   private readonly chatMetaService = inject(ChatMetadataService);
-  private readonly openAiService = inject(OpenAIService);
-  readonly reasoning = signal<ReasoningDto.EffortEnum | undefined>(undefined);
-  readonly modelReasoningCap = computed<ModelReasoningCapability | null>(() => {
-    return {
-      allowed_options: Object.values(ReasoningDto.EffortEnum).map((v) => v),
-      default: Object.values(ReasoningDto.EffortEnum)[0][0],
-    };
-  });
+  readonly location = inject(Location);
+
   @ViewChild('messageContainer') private messageContainer?: ElementRef<HTMLElement>;
   @ViewChild('chatInput') private chatInputRef?: OpenAiChatInputComponent;
   @ViewChild('chatSidebar') private chatSidebarRef?: ChatSidebarComponent;
@@ -537,11 +510,7 @@ export class OpenAiApi implements OnDestroy, OnInit {
    */
   readonly newChatNameMode = signal<ChatNameMode>('ai');
 
-  readonly models = signal<ModelOpenAiDto[]>([]);
-  readonly modelsLoading = signal(false);
-  readonly selectedModel = signal<ModelOpenAiDto | null>(this.loadStoredModel());
-  readonly location = inject(Location);
-  private static readonly MODEL_STORAGE_KEY = 'openai-model';
+  private chatId?: string;
 
   constructor() {
     effect(() => {
@@ -550,14 +519,15 @@ export class OpenAiApi implements OnDestroy, OnInit {
     });
 
     effect(() => {
-      const cap = this.modelReasoningCap();
-      if (!cap && this.reasoning()) this.reasoning.set(undefined);
+      const cap = this.modelService.modelReasoningCap();
+      if (!cap && this.modelService.reasoning()) this.modelService.setReasoning(undefined);
       if (!this.chatService.hasChatOpen())
-        this.reasoning.set(
+        this.modelService.setReasoning(
           (cap?.allowed_options?.find((e) => e.startsWith(cap?.default)) as any) ?? undefined,
         );
     });
   }
+
   readonly newChatIdProvider = (): Observable<string> => {
     if (this.chatService.currentChatId()) {
       return of(this.chatService.currentChatId()!);
@@ -567,13 +537,13 @@ export class OpenAiApi implements OnDestroy, OnInit {
       .createChatMetadata({
         name: this.resolvedChatName() ?? 'New Chat',
         client: CreateChatMetadataDto.ClientEnum.Openai,
-        usedModel: this.selectedModel()!.id as string,
+        usedModel: this.modelService.selectedModel()!.id as string,
         useCrypto: this.newChatUseCrypto() ?? false,
         cryptoKey: this.newChatCryptoKey || undefined,
         openAiEndpointPreference: this.newChatEndpointPreference(),
         invokeAiModelToUse: this.invokeAiModelPreference(),
         useInvoke: this.newChatUseInvoke(),
-        reasoningMode: this.reasoning()! as string,
+        reasoningMode: this.modelService.reasoning()! as string,
       })
       .pipe(
         map((res) => res._id),
@@ -590,22 +560,13 @@ export class OpenAiApi implements OnDestroy, OnInit {
       );
   };
 
-  triggerUserReload() {
-    this.infoRef()?.loadUser(); // safe, returns undefined if @if is false
+  triggerUserReload(): void {
+    this.infoRef()?.loadUser();
   }
 
-  selectReasoning(value: ChatRequestDto.ReasoningEnum | ReasoningDto.EffortEnum): void {
-    this.reasoning.set(value as ReasoningDto.EffortEnum);
-    const chatId = this.chatService.currentChatId();
-    if (chatId) {
-      this.chatMetaService.updateChatMetadata(chatId, { reasoningMode: value }).subscribe();
-    }
-  }
-
-  private chatId?: string;
   ngOnInit(): void {
     this.loadChatList();
-    this.loadModels();
+    this.modelService.loadModels();
 
     const chatId = this.route.snapshot.paramMap.get('chatId');
     this.chatService.currentChatId.set(chatId);
@@ -616,57 +577,22 @@ export class OpenAiApi implements OnDestroy, OnInit {
     }
   }
 
-  private loadChatMeta(chatId: string): void {
-    this.chatMetaService.getChatMetadata(chatId).subscribe({
-      next: (meta) => {
-        const reasoningValue = meta.reasoningMode as ReasoningDto.EffortEnum | undefined;
-        const match = this.models()?.find((m) => m.id === meta.usedModel);
-        if (match) this.selectModel(match);
-        if (reasoningValue) {
-          this.reasoning.set(reasoningValue);
-        }
-      },
-    });
-  }
-
   ngOnDestroy(): void {
     this.chatService.destroy();
   }
 
   // ── Model management ──────────────────────────────────────────────────────
 
-  private loadStoredModel(): ModelOpenAiDto | null {
-    try {
-      const raw = localStorage.getItem(OpenAiApi.MODEL_STORAGE_KEY);
-      return raw ? (JSON.parse(raw) as ModelOpenAiDto) : null;
-    } catch {
-      return null;
-    }
-  }
-
-  selectModel(model: ModelOpenAiDto): void {
-    this.selectedModel.set(model);
-    try {
-      localStorage.setItem(OpenAiApi.MODEL_STORAGE_KEY, JSON.stringify(model));
-    } catch {
-      /* ignore */
-    }
-  }
-
-  private loadModels(): void {
-    this.modelsLoading.set(true);
-    this.openAiService.getModelsOpenAi().subscribe({
-      next: (models) => {
-        this.models.set(models);
-        if (!this.selectedModel() && models.length > 0) {
-          this.selectModel(models[0]);
-        } else if (this.selectedModel()) {
-          const match = models.find((m) => m.id === this.selectedModel()!.id);
-          if (match) this.selectModel(match);
+  private loadChatMeta(chatId: string): void {
+    this.chatMetaService.getChatMetadata(chatId).subscribe({
+      next: (meta) => {
+        const reasoningValue = meta.reasoningMode as ReasoningDto.EffortEnum | undefined;
+        const match = this.modelService.models()?.find((m) => m.id === meta.usedModel);
+        if (match) this.modelService.selectModel(match);
+        if (reasoningValue) {
+          this.modelService.setEffort(reasoningValue);
         }
-        this.modelsLoading.set(false);
       },
-      error: () => this.modelsLoading.set(false),
     });
   }
 
@@ -807,24 +733,19 @@ export class OpenAiApi implements OnDestroy, OnInit {
   // ── Helpers ───────────────────────────────────────────────────────────────
 
   /**
-   * Resolves the effective chat name to pass to submit() based on the
-   * currently selected naming mode.
-   *
+   * Resolves the effective chat name based on the currently selected naming mode.
    *  'ai'     → undefined  (backend interprets absence as "please auto-name")
-   *             You may want to pass a dedicated flag instead — adjust to match
-   *             your CreateChatMetadataDto contract.
    *  'custom' → trimmed user input (or undefined if left blank)
-   *  'none'   → '' empty string, or a sentinel your backend recognises as
-   *             "no name". Adjust as needed.
+   *  'none'   → '' empty string
    */
   private resolvedChatName(): string | undefined {
     switch (this.newChatNameMode()) {
       case 'ai':
-        return undefined; // backend auto-names
+        return undefined;
       case 'custom':
         return this.newChatName.trim() || undefined;
       case 'none':
-        return ''; // explicit blank — adjust if your API needs a different sentinel
+        return '';
     }
   }
 
@@ -851,7 +772,7 @@ export class OpenAiApi implements OnDestroy, OnInit {
     this.newChatUseCryptoModel = false;
     this.newChatCryptoKey = '';
     this.newChatName = '';
-    this.newChatNameMode.set('ai'); // reset to AI-decides default
+    this.newChatNameMode.set('ai');
   }
 
   // ── Messaging ─────────────────────────────────────────────────────────────
@@ -863,23 +784,22 @@ export class OpenAiApi implements OnDestroy, OnInit {
         .pipe(take(1))
         .subscribe((res) => {
           this.chatService.submit(
-            this.selectedModel()?.id ?? '',
-            this.reasoning(),
+            this.modelService.selectedModel()?.id ?? '',
+            this.modelService.reasoning() as EffortEnum,
             this.appendedFiles(),
             res.useCrypto && res.cryptoKey ? res.cryptoKey : undefined,
             () => this.loadChatList(),
             undefined,
             () => this.infoRef()?.loadUser(),
           );
-
           this.chatInputRef?.clearFiles();
         });
       return;
     }
 
     this.chatService.submit(
-      this.selectedModel()?.id ?? '',
-      this.reasoning(),
+      this.modelService.selectedModel()?.id ?? '',
+      this.modelService.reasoning() as EffortEnum,
       this.appendedFiles(),
       this.newChatUseCrypto() && this.newChatCryptoKey ? this.newChatCryptoKey : undefined,
       () => this.loadChatList(),
@@ -900,6 +820,14 @@ export class OpenAiApi implements OnDestroy, OnInit {
 
   resend(): void {
     this.submit();
+  }
+
+  selectReasoning(value: ChatRequestDto.ReasoningEnum | ReasoningDto.EffortEnum): void {
+    this.modelService.setEffort(value as ReasoningDto.EffortEnum);
+    const chatId = this.chatService.currentChatId();
+    if (chatId) {
+      this.chatMetaService.updateChatMetadata(chatId, { reasoningMode: value }).subscribe();
+    }
   }
 
   // ── Chat rename / delete ──────────────────────────────────────────────────
