@@ -464,6 +464,8 @@ The final response must be a direct answer to the decrypted message, not a repet
       cryptoKey?: string;
       chatName?: string;
       letAiDecideChatName?: boolean;
+      useInvoke?: boolean;
+      invokeModel?: InvokeAiModel;
     },
   ): Promise<void> {
     const requestId = crypto
@@ -512,6 +514,8 @@ The final response must be a direct answer to the decrypted message, not a repet
           cryptoKey: newChatConfig?.cryptoKey,
           useCrypto: newChatConfig?.useCrypto,
           usedModel: dto.model!,
+          useInvoke: newChatConfig?.useInvoke,
+          invokeAiModelToUse: newChatConfig?.invokeModel,
           lastMessageSentAt: new Date(),
           reasoningMode: dto.reasoning_effort ?? 'off',
           tools: [],
@@ -531,6 +535,7 @@ The final response must be a direct answer to the decrypted message, not a repet
       'get-content-from-file-ids',
       'generate-file-from-content-tool',
       'generate-zip-from-file-ids',
+      'generate-image-tool',
     ];
     if (chatMeta.useCrypto && chatMeta.cryptoKey) {
       allowedTools.push('decrypt-message-tool');
@@ -550,6 +555,7 @@ The final response must be a direct answer to the decrypted message, not a repet
     let tools: OpenAiFunctionTool[] = [];
     try {
       tools = await this.mcpClientService.listTools(mcpHeaders, allowedTools);
+      console.log(tools);
     } catch (error: any) {
       this.logger.error(`Failed to list MCP tools: ${error.message}`);
     }

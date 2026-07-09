@@ -75,6 +75,8 @@ export class OpenAiStreamService {
       useCrypto?: boolean;
       cryptoKey?: string;
       openAiEndpointPreference?: CreateChatMetadataDto.OpenAiEndpointPreferenceEnum;
+      useInvoke?: boolean;
+      invokeAiModelToUse?: string;
     },
   ): Promise<void> {
     try {
@@ -90,6 +92,10 @@ export class OpenAiStreamService {
         if (newChatOptions.cryptoKey) params.set('cryptoKey', newChatOptions.cryptoKey);
         if (newChatOptions.openAiEndpointPreference)
           params.set('openAiEndpointPreference', newChatOptions.openAiEndpointPreference);
+        if (newChatOptions.useInvoke != null)
+          params.set('useInvoke', String(newChatOptions.useInvoke));
+        if (newChatOptions.invokeAiModelToUse)
+          params.set('invokeModel', newChatOptions.invokeAiModelToUse);
       }
       const queryString = params.toString();
       const url = `api/openai/completions-stream${queryString ? `?${queryString}` : ''}`;

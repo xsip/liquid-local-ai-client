@@ -189,6 +189,7 @@ type ChatNameMode = 'ai' | 'custom' | 'none';
             (openChatSettings)="onOpenChatSettings($event)"
             (saveCryptoSettings)="onSaveCryptoSettings($event)"
             @sidebarAnim
+            (@sidebarAnim.done)="clearAnimTransform($event)"
           />
         }
 
@@ -937,6 +938,8 @@ export class OpenAiApi implements OnDestroy, OnInit {
           useCrypto: this.newChatUseCrypto(),
           cryptoKey: this.newChatCryptoKey || undefined,
           openAiEndpointPreference: this.newChatEndpointPreference(),
+          invokeAiModelToUse: this.invokeAiModelPreference(),
+          useInvoke: this.newChatUseInvoke(),
         },
       );
       this.chatInputRef?.clearFiles();
@@ -1050,6 +1053,20 @@ export class OpenAiApi implements OnDestroy, OnInit {
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
     if (distanceFromBottom <= 50) {
       setTimeout(() => el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' }), 0);
+    }
+  }
+
+  /**
+   * The sidebar's :enter animation leaves `transform: translateX(0)` as a
+   * permanent inline style, which — despite being visually a no-op — creates a
+   * new CSS containing block/stacking context on the sidebar. That traps any
+   * `position: fixed` overlays rendered inside it (e.g. the file preview
+   * modal) beneath sibling elements instead of the true viewport. Clearing it
+   * once the enter transition finishes is safe since translateX(0) === identity.
+   */
+  clearAnimTransform(event: { toState: string; element: HTMLElement }): void {
+    if (event.toState !== 'void') {
+      event.element.style.transform = '';
     }
   }
 }

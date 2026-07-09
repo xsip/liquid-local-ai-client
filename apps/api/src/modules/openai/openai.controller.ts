@@ -417,6 +417,8 @@ export class OpenaiController {
       internalChatId: string;
       openAiEndpointPreference: OpenAiEndpointPreference;
       letAiDecideChatName?: boolean;
+      useInvoke?: boolean;
+      invokeModel?: InvokeAiModel;
     },
   ): Promise<void> {
     const userId = (user as any)._id as Types.ObjectId;
@@ -456,6 +458,8 @@ export class OpenaiController {
         letAiDecideChatName:
           (query?.letAiDecideChatName as unknown) === 'true' ||
           query?.letAiDecideChatName === true,
+        useInvoke:
+          (query?.useInvoke as unknown) === 'true' || query?.useInvoke === true,
       } as any,
     );
     // ───────────────────────────────────────────────────────────────────────

@@ -10,9 +10,11 @@ import {
 import { OpenAiStreamErrorEvent, OpenAiStreamApiInfoEvent } from './openai-stream.service';
 import {
   ChatMetadataService,
+  ChatMetadataDto,
   CreateChatMetadataDto,
   ReasoningDto,
 } from '../../client';
+import InvokeAiModelToUseEnum = ChatMetadataDto.InvokeAiModelToUseEnum;
 import { AppendedFile } from './chat-input.component';
 import * as CryptoJS from 'crypto-js';
 
@@ -107,6 +109,8 @@ export class ChatCompletionsService {
       useCrypto?: boolean;
       cryptoKey?: string;
       openAiEndpointPreference?: CreateChatMetadataDto.OpenAiEndpointPreferenceEnum;
+      useInvoke?: boolean;
+      invokeAiModelToUse?: InvokeAiModelToUseEnum;
     },
   ): void {
     if (this.form.invalid || this.streaming()) return;
