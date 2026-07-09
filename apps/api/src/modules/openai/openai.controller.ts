@@ -448,7 +448,8 @@ export class OpenaiController {
       userId,
       dto,
       res,
-      query?.internalChatId as any,
+      token,
+      query?.internalChatId,
       query as any,
     );
     // ───────────────────────────────────────────────────────────────────────

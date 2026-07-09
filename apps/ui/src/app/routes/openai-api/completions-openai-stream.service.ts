@@ -3,12 +3,34 @@ import { Observable, ReplaySubject } from 'rxjs';
 import { Router } from '@angular/router';
 import {
   ChatCompletionChunkDto,
-  ChatStreamOpenAiRequest,
+  CompletionsStreamOpenAiRequest,
   CreateChatMetadataDto,
 } from '../../client';
-import { OpenAiChatEnd } from './openai-stream.service';
+import { OpenAiChatEnd, OpenAiStreamErrorEvent } from './openai-stream.service';
 
-export type OpenAiEvent = ChatCompletionChunkDto;
+export interface McpCallProgressEvent {
+  type: 'response.mcp_call.in_progress' | 'response.mcp_call.completed';
+  name: string;
+  arguments?: Record<string, unknown>;
+  output?: string;
+}
+
+export interface CreatedChatEvent {
+  type: 'created_chat';
+  result: string;
+}
+
+export interface ApiInfoEvent {
+  type: 'api.info';
+  message: string;
+}
+
+export type OpenAiEvent =
+  | ChatCompletionChunkDto
+  | McpCallProgressEvent
+  | CreatedChatEvent
+  | ApiInfoEvent
+  | OpenAiStreamErrorEvent;
 
 // ---------------------------------------------------------------------------
 // Service
@@ -45,7 +67,7 @@ export class OpenAiStreamService {
   // ---------------------------------------------------------------------------
 
   async chat(
-    body: ChatStreamOpenAiRequest,
+    body: CompletionsStreamOpenAiRequest,
     chatId?: string,
     newChatOptions?: {
       name?: string;
@@ -164,9 +186,45 @@ export class OpenAiStreamService {
   private dispatch(event: OpenAiEvent): void {
     this._events$.next(event);
 
-    switch (event.object) {
-      case 'chat.completion.chunk':
+    const kind = (event as any).object ?? (event as any).type;
+
+    switch (kind) {
+      case 'created_chat':
+        this._chatCreated$.next((event as CreatedChatEvent).result);
+        this._chatCreated$.complete();
         break;
+
+      case 'error':
+        console.error(
+          '[OpenAiStreamService] Stream error:',
+          (event as OpenAiStreamErrorEvent).message ??
+            (event as OpenAiStreamErrorEvent).error?.message,
+        );
+        break;
+
+      case 'response.mcp_call.in_progress':
+      case 'response.mcp_call.completed':
+        // handled by consumers via events$
+        break;
+
+      case 'chat.completion.chunk': {
+        const chunk = event as any as ChatCompletionChunkDto;
+        const choice = chunk.choices?.[0] as any;
+        const delta = choice?.delta as { content?: string } | undefined;
+        if (delta?.content) {
+          this._messageDelta$.next(delta.content);
+        }
+        // 'tool_calls' isn't the end of the turn — the backend loops back into
+        // the model after executing tools, so only finalize on a true stop.
+        if (choice?.finish_reason && choice.finish_reason !== 'tool_calls') {
+          this._chatEnd$.next({
+            responseId: chunk.id,
+            model: chunk.model,
+          });
+          this._chatEnd$.complete();
+        }
+        break;
+      }
     }
   }
 

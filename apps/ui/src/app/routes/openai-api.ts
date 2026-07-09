@@ -21,6 +21,7 @@ import {
   ResponseOutputTextDto
 } from '../client';
 import { ChatMessage, ChatService } from './openai-api/chat.service';
+import { ChatCompletionsService } from './openai-api/chat-completions.service';
 import { OpenAiModelSelectorComponent } from './openai-api/model-selector.component';
 
 // Re-use the shared sub-components from lm-studio-api — they are generic enough
@@ -110,7 +111,7 @@ type ChatNameMode = 'ai' | 'custom' | 'none';
       ]),
     ]),
   ],
-  providers: [ChatService, OpenAiModelService],
+  providers: [ChatService, ChatCompletionsService, OpenAiModelService],
   template: `
     <div
       class="h-screen bg-surface-base text-text-primary flex flex-col overflow-hidden transition-colors duration-300"
@@ -157,7 +158,7 @@ type ChatNameMode = 'ai' | 'custom' | 'none';
             [models]="modelService.models()"
             [modelsLoading]="modelService.modelsLoading()"
             [selectedModel]="modelService.selectedModel()"
-            [hasChatOpen]="chatService.hasChatOpen()"
+            [hasChatOpen]="activeChat.hasChatOpen()"
             (modelSelected)="modelService.selectModel($event)"
           />
         </div>
@@ -181,7 +182,7 @@ type ChatNameMode = 'ai' | 'custom' | 'none';
             (newChat)="newChat()"
             [chatList]="chatList()"
             [chatsLoading]="chatsLoading()"
-            [currentChatId]="chatService.currentChatId()"
+            [currentChatId]="activeChat.currentChatId()"
             (chatOpened)="openChat($event)"
             (commitRename)="onRename($event)"
             (chatDeleted)="deleteChat($event)"
@@ -198,13 +199,13 @@ type ChatNameMode = 'ai' | 'custom' | 'none';
               <app-chat-messages
                 client="OPENAI"
                 [isLoadingMessages]="this.isLoadingMessages()"
-                [messages]="$any(chatService.chatMessages())"
-                [streaming]="chatService.streaming()"
-                [showResend]="chatService.showResend()"
-                (toggleCollapsed)="chatService.toggleCollapsed($event)"
+                [messages]="$any(activeChat.chatMessages())"
+                [streaming]="activeChat.streaming()"
+                [showResend]="activeChat.showResend()"
+                (toggleCollapsed)="activeChat.toggleCollapsed($event)"
                 (resend)="resend()"
               >
-                @if (!chatService.hasChatOpen()) {
+                @if (!activeChat.hasChatOpen()) {
                   <div
                     class="flex flex-col gap-4 w-full max-w-xl mx-auto mt-6 p-5 bg-surface-raised border border-border-default rounded-xl shadow-lg shadow-black/20"
                   >
@@ -302,15 +303,14 @@ type ChatNameMode = 'ai' | 'custom' | 'none';
                           class="flex-1"
                           variant="secondary"
                           [active]="newChatEndpointPreference() === 'RESPONSES'"
-                          (clicked)="newChatEndpointPreference.set('RESPONSES')"
+                          (clicked)="selectNewChatEndpointPreference('RESPONSES')"
                           >{{ 'toolbar.responsesApi' | translate }}</ui-button
                         >
                         <ui-button
                           class="flex-1"
                           variant="secondary"
-                          [disabled]="true"
                           [active]="newChatEndpointPreference() === 'COMPLETION'"
-                          (clicked)="newChatEndpointPreference.set('COMPLETION')"
+                          (clicked)="selectNewChatEndpointPreference('COMPLETION')"
                           >{{ 'toolbar.chatCompletions' | translate }}</ui-button
                         >
                       </div>
@@ -335,7 +335,7 @@ type ChatNameMode = 'ai' | 'custom' | 'none';
                           [models]="modelService.models()"
                           [modelsLoading]="modelService.modelsLoading()"
                           [selectedModel]="modelService.selectedModel()"
-                          [hasChatOpen]="chatService.hasChatOpen()"
+                          [hasChatOpen]="activeChat.hasChatOpen()"
                           (modelSelected)="modelService.selectModel($event)"
                         />
                       </div>
@@ -428,13 +428,13 @@ type ChatNameMode = 'ai' | 'custom' | 'none';
 
             <app-openai-chat-input
               #chatInput
-              [form]="chatService.form"
-              [streaming]="chatService.streaming()"
+              [form]="activeChat.form"
+              [streaming]="activeChat.streaming()"
               [reasoning]="$any(modelService.reasoning())"
               [modelReasoningCap]="modelService.modelReasoningCap()"
               (submitted)="submit()"
               [newChatIdProvider]="newChatIdProvider"
-              (reset)="chatService.reset()"
+              (reset)="activeChat.reset()"
               (reasoningChanged)="selectReasoning($event)"
               (appendedFilesChanged)="appendedFiles.set($event)"
             />
@@ -471,7 +471,14 @@ type ChatNameMode = 'ai' | 'custom' | 'none';
 })
 export class OpenAiApi implements OnDestroy, OnInit {
   readonly chatService = inject(ChatService);
+  readonly chatCompletionsService = inject(ChatCompletionsService);
   readonly modelService = inject(OpenAiModelService);
+  /** Whether the currently open/new chat uses the Chat Completions API instead of Responses. */
+  readonly useCompletions = signal(false);
+  /** Common facade over whichever backend service is active for the current chat. */
+  get activeChat(): ChatService | ChatCompletionsService {
+    return this.useCompletions() ? this.chatCompletionsService : this.chatService;
+  }
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly chatsApi = inject(ChatsService);
@@ -514,14 +521,14 @@ export class OpenAiApi implements OnDestroy, OnInit {
 
   constructor() {
     effect(() => {
-      this.chatService.chatMessages();
+      this.activeChat.chatMessages();
       this.scrollToBottom(this.messageContainer);
     });
 
     effect(() => {
       const cap = this.modelService.modelReasoningCap();
       if (!cap && this.modelService.reasoning()) this.modelService.setReasoning(undefined);
-      if (!this.chatService.hasChatOpen())
+      if (!this.activeChat.hasChatOpen())
         this.modelService.setReasoning(
           (cap?.allowed_options?.find((e) => e.startsWith(cap?.default)) as any) ?? undefined,
         );
@@ -529,9 +536,11 @@ export class OpenAiApi implements OnDestroy, OnInit {
   }
 
   readonly newChatIdProvider = (): Observable<string> => {
-    if (this.chatService.currentChatId()) {
-      return of(this.chatService.currentChatId()!);
+    if (this.activeChat.currentChatId()) {
+      return of(this.activeChat.currentChatId()!);
     }
+
+    this.useCompletions.set(this.newChatEndpointPreference() === 'COMPLETION');
 
     return this.chatMetaService
       .createChatMetadata({
@@ -548,10 +557,9 @@ export class OpenAiApi implements OnDestroy, OnInit {
       .pipe(
         map((res) => res._id),
         tap((chatId) => {
-          this.chatService.currentChatId.set(chatId);
+          this.activeChat.currentChatId.set(chatId);
           this.chatId = chatId ?? undefined;
           if (chatId) {
-            this.loadChatHistory(chatId);
             this.loadChatMeta(chatId);
             this.location.replaceState(`/chat-openai/${chatId}`);
             this.loadChatList();
@@ -569,23 +577,33 @@ export class OpenAiApi implements OnDestroy, OnInit {
     this.modelService.loadModels();
 
     const chatId = this.route.snapshot.paramMap.get('chatId');
-    this.chatService.currentChatId.set(chatId);
     this.chatId = chatId ?? undefined;
     if (chatId) {
-      this.loadChatHistory(chatId);
       this.loadChatMeta(chatId);
+    } else {
+      this.activeChat.currentChatId.set(null);
     }
   }
 
   ngOnDestroy(): void {
     this.chatService.destroy();
+    this.chatCompletionsService.destroy();
   }
 
   // ── Model management ──────────────────────────────────────────────────────
 
+  /**
+   * Resolves the endpoint preference for `chatId` before touching any state,
+   * since chatMessages/history live on different service instances depending
+   * on whether the chat uses the Responses or Chat Completions API.
+   */
   private loadChatMeta(chatId: string): void {
     this.chatMetaService.getChatMetadata(chatId).subscribe({
       next: (meta) => {
+        this.useCompletions.set(meta.openAiEndpointPreference === 'COMPLETION');
+        this.activeChat.currentChatId.set(chatId);
+        this.loadChatHistory(chatId);
+
         const reasoningValue = meta.reasoningMode as ReasoningDto.EffortEnum | undefined;
         const match = this.modelService.models()?.find((m) => m.id === meta.usedModel);
         if (match) this.modelService.selectModel(match);
@@ -651,6 +669,10 @@ export class OpenAiApi implements OnDestroy, OnInit {
   }
 
   private loadChatHistory(chatId: string): void {
+    if (this.useCompletions()) {
+      this.loadCompletionsChatHistory(chatId);
+      return;
+    }
     this.isLoadingMessages.set(true);
     this.chatsApi.getChatEntries(chatId).subscribe((res) => {
       const messages: any[] = [];
@@ -730,6 +752,75 @@ export class OpenAiApi implements OnDestroy, OnInit {
     });
   }
 
+  /** Extracts plain text from a Chat Completions message's `content`, which may be
+   * a plain string (assistant/tool turns) or an array of content parts (user turns). */
+  private extractCompletionsMessageText(content: unknown): string {
+    if (typeof content === 'string') return content;
+    if (Array.isArray(content)) {
+      return content
+        .map((part) => (typeof part === 'string' ? part : (part?.text ?? '')))
+        .filter(Boolean)
+        .join('\n');
+    }
+    return '';
+  }
+
+  /** History loader for Chat Completions sessions — reads the rolling `messages[]` array,
+   * reconstructing tool-call banners from assistant `tool_calls` + matching `tool` replies. */
+  private loadCompletionsChatHistory(chatId: string): void {
+    this.isLoadingMessages.set(true);
+    this.chatsApi.getChatEntries(chatId).subscribe((res) => {
+      const latest = res[res.length - 1] as any;
+      const rawMessages: any[] = latest?.messages ?? [];
+      const date = new Date(latest?.createdAt ?? Date.now());
+
+      // Index tool results by tool_call_id so they can be attached to their originating call.
+      const toolResultsById = new Map<string, string>();
+      for (const m of rawMessages) {
+        if (m.role === 'tool' && m.tool_call_id) {
+          toolResultsById.set(m.tool_call_id, this.extractCompletionsMessageText(m.content));
+        }
+      }
+
+      const messages: ChatMessage[] = [];
+      for (const m of rawMessages) {
+        if (m.role === 'user') {
+          const text = this.extractCompletionsMessageText(m.content);
+          if (text) messages.push({ role: 'user', text, date });
+        } else if (m.role === 'assistant') {
+          if (Array.isArray(m.tool_calls)) {
+            for (const tc of m.tool_calls) {
+              messages.push({
+                role: 'tool_call',
+                text: '',
+                toolName: tc.function?.name,
+                toolArguments: this.safeParseJson(tc.function?.arguments),
+                toolOutput: toolResultsById.get(tc.id),
+                collapsed: true,
+                date,
+              });
+            }
+          }
+          const text = this.extractCompletionsMessageText(m.content);
+          if (text) messages.push({ role: 'ai', text, date });
+        }
+      }
+
+      this.isLoadingMessages.set(false);
+      this.chatCompletionsService.chatMessages.set(messages as any);
+    });
+  }
+
+  private safeParseJson(value: unknown): object | undefined {
+    if (typeof value === 'object' && value !== null) return value as object;
+    if (typeof value !== 'string') return undefined;
+    try {
+      return JSON.parse(value);
+    } catch {
+      return undefined;
+    }
+  }
+
   // ── Helpers ───────────────────────────────────────────────────────────────
 
   /**
@@ -752,19 +843,34 @@ export class OpenAiApi implements OnDestroy, OnInit {
   // ── Navigation ────────────────────────────────────────────────────────────
 
   openChat(chatId: string): void {
-    if (this.chatService.streaming()) return;
+    if (this.activeChat.streaming()) return;
     this.chatService.chatMessages.set([]);
-    this.chatService.currentChatId.set(chatId);
+    this.chatCompletionsService.chatMessages.set([]);
     this.router.navigate(['/chat-openai', chatId]);
     this.chatId = chatId;
-    this.loadChatHistory(chatId);
     this.loadChatMeta(chatId);
   }
 
+  /**
+   * Keeps `useCompletions` (which determines which service's form the input
+   * box is actually bound to) in sync with the endpoint radio buttons —
+   * otherwise the user types into the wrong service's form and submit()
+   * silently no-ops against an empty, invalid form on the other one.
+   */
+  selectNewChatEndpointPreference(
+    pref: CreateChatMetadataDto.OpenAiEndpointPreferenceEnum,
+  ): void {
+    this.newChatEndpointPreference.set(pref);
+    this.useCompletions.set(pref === 'COMPLETION');
+  }
+
   newChat(): void {
-    if (this.chatService.streaming()) return;
+    if (this.activeChat.streaming()) return;
     this.chatService.chatMessages.set([]);
     this.chatService.currentChatId.set(null);
+    this.chatCompletionsService.chatMessages.set([]);
+    this.chatCompletionsService.currentChatId.set(null);
+    this.useCompletions.set(false);
     this.router.navigate(['/chat-openai']);
     // Reset new-chat options to defaults
     this.newChatEndpointPreference.set('RESPONSES');
@@ -779,6 +885,19 @@ export class OpenAiApi implements OnDestroy, OnInit {
 
   submit(): void {
     if (this.chatId) {
+      if (this.useCompletions()) {
+        this.chatCompletionsService.submit(
+          this.modelService.selectedModel()?.id ?? '',
+          this.modelService.reasoning() as EffortEnum,
+          this.appendedFiles(),
+          undefined,
+          () => this.loadChatList(),
+          undefined,
+        );
+        this.chatInputRef?.clearFiles();
+        return;
+      }
+
       this.chatMetaService
         .getChatMetadata(this.chatId)
         .pipe(take(1))
@@ -794,6 +913,24 @@ export class OpenAiApi implements OnDestroy, OnInit {
           );
           this.chatInputRef?.clearFiles();
         });
+      return;
+    }
+
+    if (this.newChatEndpointPreference() === 'COMPLETION') {
+      this.chatCompletionsService.submit(
+        this.modelService.selectedModel()?.id ?? '',
+        this.modelService.reasoning() as EffortEnum,
+        this.appendedFiles(),
+        undefined,
+        () => this.loadChatList(),
+        {
+          name: this.resolvedChatName(),
+          useCrypto: this.newChatUseCrypto(),
+          cryptoKey: this.newChatCryptoKey || undefined,
+          openAiEndpointPreference: this.newChatEndpointPreference(),
+        },
+      );
+      this.chatInputRef?.clearFiles();
       return;
     }
 
@@ -824,7 +961,7 @@ export class OpenAiApi implements OnDestroy, OnInit {
 
   selectReasoning(value: ChatRequestDto.ReasoningEnum | ReasoningDto.EffortEnum): void {
     this.modelService.setEffort(value as ReasoningDto.EffortEnum);
-    const chatId = this.chatService.currentChatId();
+    const chatId = this.activeChat.currentChatId();
     if (chatId) {
       this.chatMetaService.updateChatMetadata(chatId, { reasoningMode: value }).subscribe();
     }
@@ -848,7 +985,7 @@ export class OpenAiApi implements OnDestroy, OnInit {
     this.chatMetaService.deleteChatMetadata(chatId).subscribe({
       next: () => {
         this.chatList.update((list) => list.filter((c) => c._id !== chatId));
-        if (this.chatService.currentChatId() === chatId) this.newChat();
+        if (this.activeChat.currentChatId() === chatId) this.newChat();
       },
     });
   }

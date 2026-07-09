@@ -64,6 +64,62 @@ export class ChatsService {
   }
 
   /**
+   * Persist a Chat Completions exchange as a rolling message array.
+   * Unlike saveEntry (Responses API), there is no previous_response_id
+   * chaining — the latest doc for internalChatId holds full history.
+   */
+  async saveCompletionEntry(
+    userId: Types.ObjectId,
+    internalChatId: string,
+    messages: Record<string, unknown>[],
+    name?: string,
+    chatInternalId?: string,
+  ): Promise<ChatDocument> {
+    const doc = new this.chatModel({
+      userId,
+      internalChatId: chatInternalId,
+      name: name ?? null,
+      // Non-empty placeholders — Mongoose strips `{}` embedded objects on
+      // save (minimize: true), which would otherwise leave `request`/
+      // `response` undefined on reload and crash Responses-API-only readers.
+      request: { type: 'chat_completions' },
+      response: { type: 'chat_completions' },
+      messages,
+      chatInternalId: chatInternalId ?? null,
+    });
+    const saved = await doc.save();
+    this.logger.log(
+      `Saved completion chat entry — user=${userId} chatId=${internalChatId}`,
+    );
+    return saved;
+  }
+
+  /**
+   * Fetch the most recent message-array history for a Chat Completions
+   * session. Returns an empty array when the session has no entries yet.
+   */
+  async getMessageHistory(
+    userId: Types.ObjectId,
+    internalChatId: string,
+  ): Promise<Record<string, unknown>[]> {
+    const latest = await this.chatModel
+      .findOne({ internalChatId, messages: { $ne: null } })
+      .sort({ createdAt: -1 })
+      .lean()
+      .exec();
+
+    if (!latest) return [];
+
+    if (!latest.userId.equals(userId)) {
+      throw new ForbiddenException(
+        'You do not have access to this chat session',
+      );
+    }
+
+    return (latest.messages as Record<string, unknown>[]) ?? [];
+  }
+
+  /**
    * Fetch the most-recent response_id for a given session belonging to a user.
    * Returns null when the session has no entries yet (first message).
    * Throws ForbiddenException if entries exist but none belong to this user.
@@ -123,6 +179,12 @@ export class ChatsService {
     );
 
     return entries.map((e) => {
+      // Chat Completions entries carry their own `messages[]` array and have
+      // no Responses-API-shaped `request.input` to decrypt — pass through.
+      if (e.messages) {
+        return e as unknown as ChatEntryDto;
+      }
+
       return {
         ...e,
         request: {

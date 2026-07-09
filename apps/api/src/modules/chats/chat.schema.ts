@@ -55,6 +55,15 @@ export class Chat {
   @Prop({ required: false, default: null, type: String })
   responseId: string | null;
 
+  /**
+   * Rolling Chat Completions message array (system/user/assistant/tool turns)
+   * for sessions using the Chat Completions API instead of the Responses API.
+   * The latest entry for an internalChatId holds the full history — no
+   * previous_response_id-style chaining is needed for this shape.
+   */
+  @Prop({ required: false, default: null, type: [Object] })
+  messages: Record<string, unknown>[] | null;
+
   // `createdAt` / `updatedAt` are injected automatically by { timestamps: true }
 }
 

@@ -9,6 +9,7 @@ import {
   ViewChild,
   AfterViewChecked,
   inject,
+  effect,
 } from '@angular/core';
 import Prism from 'prismjs';
 import { CommonModule } from '@angular/common';
@@ -35,7 +36,7 @@ import {
   heroXMark,
 } from '@ng-icons/heroicons/outline';
 import { ChatService } from './chat.service';
-import { Observable, of, Subject, switchMap, take } from 'rxjs';
+import { Observable, of, Subject, Subscription, switchMap, take } from 'rxjs';
 
 // Re-export AppendedFile so existing consumers importing from this file keep working.
 export type { AppendedFile };
@@ -314,25 +315,45 @@ export class OpenAiChatInputComponent implements AfterViewInit, AfterViewChecked
   /** Focus state for the glow ring. */
   readonly focused = signal<boolean>(false);
 
+  private _viewReady = false;
+  private _formSub?: Subscription;
+
+  constructor() {
+    // Re-bind whenever the parent swaps which service's FormGroup is active
+    // (e.g. toggling between Responses and Chat Completions) — a one-time
+    // ngAfterViewInit subscription would keep listening to the stale form.
+    effect(() => {
+      const form = this.form();
+      if (!this._viewReady) return;
+      this._bindForm(form);
+    });
+  }
+
   ngAfterViewInit(): void {
-    const ctrl = this.form().get('input');
-    if (ctrl?.value) {
-      this.rawText.set(ctrl.value);
-      this._syncEditableDiv(ctrl.value);
-    }
+    this._viewReady = true;
+    this._bindForm(this.form());
+  }
+
+  ngOnDestroy(): void {
+    this._formSub?.unsubscribe();
+  }
+
+  private _bindForm(form: FormGroup): void {
+    this._formSub?.unsubscribe();
+    const ctrl = form.get('input');
+
+    const value = ctrl?.value ?? '';
+    this.rawText.set(value);
+    this._syncEditableDiv(value);
 
     // Stay in sync if the parent patches the form control programmatically
     // (e.g. reply pre-fill or clear after send).
-    ctrl?.valueChanges.subscribe((v: string) => {
+    this._formSub = ctrl?.valueChanges.subscribe((v: string) => {
       if (v !== this.rawText()) {
         this.rawText.set(v ?? '');
         this._syncEditableDiv(v ?? '');
       }
     });
-  }
-
-  ngOnDestroy(): void {
-    /* no-op – subscription cleaned up by Angular */
   }
 
   // ── Editable div ────────────────────────────────────────────────────────────
