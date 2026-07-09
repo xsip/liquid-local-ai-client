@@ -1,6 +1,8 @@
 # <img src="https://raw.githubusercontent.com/xsip/lm-studio-extender/refs/heads/main/apps/ui/public/logo-cropped.png" alt="Logo" width="30"/> LM Studio Extender | [Preview on youtube](https://www.youtube.com/watch?v=mjuXny-zRAE)  
 
-A full-stack AI chat client that connects to a locally running [LM Studio](https://lmstudio.ai/) instance via both its native API and its OpenAI-compatible `responses/create` endpoint. Built with Angular, NestJS, and MongoDB, with first-class MCP (Model Context Protocol) tool support, AI image generation via [InvokeAI](https://invoke-ai.github.io/InvokeAI/), image upload into chat, and optional end-to-end AES message encryption.
+A full-stack AI chat client that connects to any OpenAI-compatible local inference server (LM Studio, Ollama, llama.cpp, vLLM, ...) via the standard `/v1/chat/completions` endpoint. Built with Angular, NestJS, and MongoDB, with first-class MCP (Model Context Protocol) tool support, AI image generation via [InvokeAI](https://invoke-ai.github.io/InvokeAI/), image upload into chat, and optional end-to-end AES message encryption.
+
+> **⚠️ Breaking change:** LM Studio's native `/api/v1/chat` API and the OpenAI-compatible `/v1/responses/create` (Responses API) endpoint are **disabled**. See [Chat Completions API (current default)](#chat-completions-api-current-default) below for why and what replaced them.
 
 ---
 ![Header](https://raw.githubusercontent.com/xsip/lm-studio-extender/refs/heads/main/img_3.png)
@@ -9,6 +11,7 @@ A full-stack AI chat client that connects to a locally running [LM Studio](https
 ## Table of Contents
 
 - [Overview](#overview)
+- [Chat Completions API (current default)](#chat-completions-api-current-default)
 - [Architecture](#architecture)
 - [Features](#features)
 - [Tech Stack](#tech-stack)
@@ -35,7 +38,28 @@ This monorepo hosts two applications:
 | `api` | `apps/api` | NestJS REST backend, MCP server, and LM Studio proxy |
 | `ui` | `apps/ui` | Angular 21 single-page chat interface |
 
-The backend acts as an authenticated proxy between the Angular frontend and LM Studio. All chat sessions are persisted in MongoDB, token usage is tracked per user, and the backend exposes itself as an MCP server so LM Studio can call back into it during inference. The MCP toolset now includes an image generation tool that connects to a local InvokeAI instance, and uploaded images are stored as binary blobs in MongoDB and served back through the API.
+The backend acts as an authenticated proxy between the Angular frontend and your local inference server. All chat sessions are persisted in MongoDB, token usage is tracked per user, and the backend runs its own **MCP client** that calls tools on-demand as the model requests them — rather than relying on the inference server to orchestrate tool calls itself. The MCP toolset includes an image generation tool that connects to a local InvokeAI instance, and uploaded images are stored as binary blobs in MongoDB and served back through the API.
+
+---
+
+## Chat Completions API (current default)
+
+LM Studio recently disabled connecting to localhost MCP servers, which broke this project's original architecture: the Responses API (`/v1/responses/create`) worked by handing LM Studio a `type: 'mcp'` tool pointing at this backend's MCP server, and relying on LM Studio itself to connect, list tools, call them, and feed results back to the model. With per-request localhost MCP connections disabled, that flow no longer works — and it was never portable to other backends anyway, since `type: 'mcp'` tool passthrough is a Responses-API-only convenience that virtually no other OpenAI-compatible server implements.
+
+The fix was to stop depending on the inference server for MCP orchestration entirely and do it ourselves:
+
+- The backend now runs its own MCP client (`apps/api/src/modules/mcp-client`) that connects directly to the MCP tool server, lists available tools, and translates them into plain OpenAI **function-tool** definitions.
+- Chat requests go out over the standard **Chat Completions API** (`/v1/chat/completions`) with those function tools attached — no `type: 'mcp'` passthrough involved.
+- When the model returns a `tool_calls` response, the backend executes the call itself via the MCP client, appends the result as a `tool` role message, and loops back into the model until it produces a final answer.
+
+Because this only requires standard OpenAI function-calling support, it works against **any** OpenAI-compatible backend — LM Studio, Ollama, llama.cpp, vLLM, etc. — not just LM Studio.
+
+**As a result:**
+- LM Studio's own native `/api/v1/chat` API is disabled in this project going forward, in favor of the OpenAI-compatible `/v1/chat/completions` route, which is the more broadly standardized way to talk to local inference servers.
+- The OpenAI Responses API (`/v1/responses/create`) is disabled, since it depended entirely on the now-broken `type: 'mcp'` passthrough.
+- **Chat Completions (`/v1/chat/completions`) is the only supported chat path.** All new chats use it; existing Responses-API chat history remains viewable but can no longer be continued.
+
+One known limitation of the Chat Completions path: file attachments are text-only-friendly (images are inlined as vision content; other file types are referenced by ID and fetched on demand via the `get-content-from-file-ids` tool) — reasoning-effort and AI-decided chat naming are supported, matching the old Responses-API experience.
 
 ---
 
@@ -44,31 +68,33 @@ The backend acts as an authenticated proxy between the Angular frontend and LM S
 ```
 ┌──────────────────────────────────────────────────────────┐
 │                     Angular UI (port 4200)               │
-│   LM Studio API route │ OpenAI Responses API route       │
-└───────────────┬───────────────────────┬──────────────────┘
-                │ SSE stream             │ SSE stream
-┌───────────────▼───────────────────────▼──────────────────┐
+│              OpenAI Chat Completions route                │
+└────────────────────────────┬──────────────────────────────┘
+                             │ SSE stream
+┌────────────────────────────▼──────────────────────────────┐
 │                 NestJS API (port 8888)                    │
 │                                                          │
-│  ┌──────────────┐  ┌──────────────┐  ┌────────────────┐  │
-│  │ LmStudio     │  │ OpenAI       │  │ Auth / JWT     │  │
-│  │ Module       │  │ Module       │  │ Module         │  │
-│  └──────┬───────┘  └──────┬───────┘  └────────────────┘  │
-│         │                 │                               │
-│  ┌──────▼─────────────────▼───────┐  ┌────────────────┐  │
-│  │     Chats / ChatMetadata       │  │ MCP Server     │  │
-│  │     MongoDB persistence        │  │ (@rekog/mcp-   │  │
-│  └────────────────────────────────┘  │  nest)         │  │
-│                                      └────────┬───────┘  │
-│  ┌─────────────────────────────────────────┐  │           │
-│  │  Assets Module                          │  │           │
-│  │  Image blobs stored in MongoDB          │  │           │
-│  └─────────────────────────────────────────┘  │           │
-└──────────────────────────────────────────────┼───────────┘
-                                               │ MCP callback (SSE / HTTP)
-┌──────────────────────────────────────────────▼───────────┐
-│                     LM Studio (port 1234)                │
-│            /api/v1/chat  │  /v1/responses/create         │
+│  ┌──────────────┐  ┌────────────────┐                    │
+│  │ OpenAI       │  │ Auth / JWT     │                    │
+│  │ Module       │  │ Module         │                    │
+│  └──────┬───────┘  └────────────────┘                    │
+│         │ tool_calls loop                                 │
+│  ┌──────▼───────┐  ┌────────────────┐  ┌────────────────┐│
+│  │ McpClient    │  │ Chats /        │  │ MCP Server     ││
+│  │ Module       │  │ ChatMetadata   │  │ (@rekog/mcp-   ││
+│  │ (MCP client) │◄─┤ MongoDB        │  │  nest)         ││
+│  └──────┬───────┘  │ persistence    │  └────────┬───────┘│
+│         │           └────────────────┘           ▲        │
+│         └──────────── connects as MCP client ─────┘        │
+│  ┌─────────────────────────────────────────┐              │
+│  │  Assets Module                          │              │
+│  │  Image blobs stored in MongoDB          │              │
+│  └─────────────────────────────────────────┘              │
+└────────────────────────────┬──────────────────────────────┘
+                             │ /v1/chat/completions
+┌────────────────────────────▼──────────────────────────────┐
+│      Any OpenAI-compatible inference server                │
+│   LM Studio  │  Ollama  │  llama.cpp  │  vLLM  │  ...      │
 └──────────────────────────────────────────────────────────┘
                            │ generate-image-tool triggers
 ┌──────────────────────────▼───────────────────────────────┐
@@ -78,19 +104,21 @@ The backend acts as an authenticated proxy between the Angular frontend and LM S
 └──────────────────────────────────────────────────────────┘
 ```
 
-During inference, LM Studio calls back into the NestJS MCP server with the user's JWT token forwarded in the `Authorization` header, so MCP tools have full access to the authenticated user's context.
+Unlike the old Responses-API flow — where LM Studio itself connected to the MCP server mid-inference — the NestJS backend now acts as the MCP client itself: it lists tools from its own MCP server, attaches them to the Chat Completions request as plain function tools, and executes any `tool_calls` the model returns before looping back into the model. The inference server never talks to MCP directly, so this works with any backend that supports standard OpenAI function calling.
 
 ---
 
 ## Features
 
-- **Dual API modes** — use LM Studio's native `/api/v1/chat` endpoint or the OpenAI-compatible `/v1/responses/create` endpoint from the same UI
-- **OpenAI completions endpoint** — additional support for `/v1/chat/completions` (streaming)
-- **Real-time SSE streaming** — responses are streamed token-by-token to the browser
-- **Persistent chat history** — every exchange is stored in MongoDB and rehydrated on demand
-- **Conversation continuity** — `previous_response_id` chaining keeps multi-turn context alive across page refreshes
-- **MCP tool server** — the backend registers itself as an MCP server; LM Studio can call tools mid-inference
+- **OpenAI-compatible Chat Completions** — talks to any backend that implements `/v1/chat/completions` (LM Studio, Ollama, llama.cpp, vLLM, ...); LM Studio's native API and the OpenAI Responses API are disabled (see [above](#chat-completions-api-current-default))
+- **Client-side MCP orchestration** — the backend runs its own MCP client, translates MCP tools into OpenAI function-tool definitions, and executes `tool_calls` itself in a loop — no dependency on the inference server's own MCP support
+- **Real-time SSE streaming** — responses are streamed token-by-token to the browser, including reasoning/"thinking" deltas where the model provides them
+- **Persistent chat history** — every exchange is stored in MongoDB as a rolling message array and rehydrated on demand, including reconstructed tool-call banners and image attachments
+- **MCP tool server** — the backend registers itself as an MCP server and also calls itself as an MCP client
     - `get-token-usage-tool` — returns the authenticated user's current token usage and limit
+    - `get-content-from-file-ids` — fetches uploaded file content on demand by file ID
+    - `generate-file-from-content-tool` / `generate-zip-from-file-ids` — lets the model generate downloadable files and bundle them into a ZIP
+    - `get-image-tool` — fetches an image from a URL
     - `decrypt-message-tool` — decrypts an AES-encrypted user message at inference time
     - `greeting-tool` — example tool with progress reporting
     - `generate-image-tool` — generates an image via InvokeAI from a natural-language prompt and injects it into the chat as a persistent asset
@@ -135,33 +163,36 @@ apps/
 │       ├── app.module.ts         # Root module — MCP, Mongo, guards
 │       ├── main.ts               # Bootstrap, CORS, Swagger, body-parser
 │       ├── tools/
-│       │   └── api.tools.ts      # MCP tools (greeting, token-usage, decrypt, generate-image)
+│       │   └── api.tools.ts      # MCP server tools (token-usage, file gen/zip, image, decrypt, ...)
 │       └── modules/
 │           ├── auth/             # JWT auth, guards, user schema
 │           ├── assets/           # Image blob storage & retrieval (MongoDB)
-│           ├── chats/            # Chat message persistence
+│           ├── chats/            # Chat message persistence (Responses entries + Completions message arrays)
 │           ├── chat-metadata/    # Per-session metadata (model, crypto config, etc.)
 │           ├── invoke/           # InvokeAI integration (image generation)
-│           ├── lm-studio/        # Native LM Studio API proxy + streaming
-│           ├── openai/           # OpenAI-compatible responses + completions proxy
+│           ├── lm-studio/        # Native LM Studio API proxy — disabled, kept for reference only
+│           ├── mcp-client/       # MCP client — connects to the MCP server, executes tool_calls for Chat Completions
+│           ├── openai/           # OpenAI-compatible Chat Completions (active) + legacy Responses API (disabled) proxy
 │           └── token-limit/      # Token budget tracking & rate-limit enforcement
 └── ui/                           # Angular frontend
     └── src/app/
         ├── app.ts                # Root component — JWT expiry guard
-        ├── lmstudio-stream.service.ts   # SSE client for LM Studio API
-        ├── openai-stream.service.ts     # SSE client for OpenAI Responses API
+        ├── lmstudio-stream.service.ts   # SSE client for LM Studio API (unused — endpoint disabled)
         ├── client/               # Auto-generated API client DTOs
         └── routes/
             ├── login.ts          # Login / register page
-            ├── lm-studio-api/    # Chat UI for native LM Studio endpoint
+            ├── lm-studio-api/    # Legacy chat UI for native LM Studio endpoint — disabled
             │   ├── chat-input.component.ts
-            │   ├── chat-messages.component.ts  # Renders text, images, tool calls
+            │   ├── chat-messages.component.ts  # Renders text, images, tool calls (shared by both routes)
             │   ├── chat-sidebar.component.ts
             │   ├── model-selector.component.ts
             │   └── info.component.ts
-            └── openai-api/       # Chat UI for OpenAI Responses endpoint
-                ├── chat-input.component.ts     # Includes image attach button
-                ├── chat.service.ts
+            └── openai-api/       # Chat UI for OpenAI Chat Completions endpoint (active) + legacy Responses (disabled)
+                ├── chat-input.component.ts             # Includes image/file attach button
+                ├── chat.service.ts                     # Legacy Responses API chat state
+                ├── chat-completions.service.ts          # Active Chat Completions chat state
+                ├── openai-stream.service.ts             # SSE client for legacy Responses API
+                ├── completions-openai-stream.service.ts # SSE client for Chat Completions
                 └── model-selector.component.ts
 ```
 
@@ -171,8 +202,8 @@ apps/
 
 - **Node.js** 18+
 - **MongoDB** running locally (default: `mongodb://localhost:27017/lmStudioWrapper`) or a remote URI
-- **LM Studio** running locally with the local server enabled (default: `http://localhost:1234`)
-- A loaded model in LM Studio that supports tool/function calling for MCP features
+- **An OpenAI-compatible inference server** running locally with its `/v1` API enabled (LM Studio, Ollama, llama.cpp, vLLM, ...) — default assumes LM Studio on `http://localhost:1234`
+- A loaded model that supports tool/function calling for MCP features
 - **InvokeAI** *(optional)* — required only for AI image generation; default: `http://127.0.0.1:9090`
 
 ---
@@ -185,16 +216,19 @@ Create a `.env` file in `apps/api/` (or set variables in your shell):
 # MongoDB connection URI
 MONGODB_URI=mongodb://localhost:27017/lmStudioWrapper
 
-# LM Studio local server
+# OpenAI-compatible inference server base URL (LM Studio, Ollama, llama.cpp, vLLM, ...)
 LM_STUDIO_BASE_URL=http://localhost:1234
-LM_STUDIO_API_TOKEN=                        # optional — set if LM Studio requires a token
+LM_STUDIO_API_TOKEN=                        # optional — set if your backend requires a token
 
 # JWT signing secret — use a long random string in production
 JWT_SECRET=your-very-secret-key
 
-# URL the backend advertises to LM Studio for MCP callbacks
-# Must be reachable FROM LM Studio (use your machine's LAN IP if running in Docker)
+# URL the backend's MCP client connects to in order to call MCP tools.
+# This is the backend calling itself — safe to leave as localhost/LAN IP of this machine.
 SELF_MCP_URL=http://192.168.0.34:8888/tools/mcp
+
+# Additional external MCP servers to connect to, comma-separated (optional)
+# MCP_SERVER_URLS=http://example.com/mcp,http://another-host:9000/mcp
 
 # Public base URL of this backend — used to construct asset URLs returned by generate-image-tool
 # Must be reachable from the browser (e.g. http://localhost:8888 or your LAN IP)
@@ -207,7 +241,7 @@ PORT=8888
 USE_SWAGGER=true
 ```
 
-> **Note on `SELF_MCP_URL`:** LM Studio calls this URL during inference to invoke MCP tools. It must be the address where the NestJS server is reachable from LM Studio's perspective, not `localhost`, if LM Studio is running in a separate process or container.
+> **Note on `SELF_MCP_URL`:** since the backend's own `McpClientService` is now what calls MCP tools (see [Chat Completions API](#chat-completions-api-current-default)), this only needs to be reachable from the backend process itself — it's no longer required to be reachable from LM Studio.
 
 > **Note on `SELF_URL`:** Used by `generate-image-tool` to build the public image URL returned to the chat. Set this to the address the browser uses to reach the NestJS API. If omitted, asset links will be broken.
 
@@ -266,23 +300,34 @@ Then log in at `POST /auth/login` to receive a JWT.
 
 ![Header](https://raw.githubusercontent.com/xsip/lm-studio-extender/refs/heads/main/apps/ui/public/mcp-preview-light.png)
 
-The NestJS backend registers itself as an MCP server using `@rekog/mcp-nest`. It exposes two transports at `http://localhost:8888/tools/mcp`:
+The NestJS backend plays **both** MCP roles at once:
 
-- **Streamable HTTP** (with JSON response mode enabled)
-- **SSE**
+- **MCP server** (`apps/api/src/tools/api.tools.ts`) — registered via `@rekog/mcp-nest`, exposing Streamable HTTP + SSE transports at `http://localhost:8888/tools/mcp`.
+- **MCP client** (`apps/api/src/modules/mcp-client`) — connects to that same MCP server (and any others configured via `MCP_SERVER_URLS`), lists its tools, and calls them on the model's behalf.
 
-When the backend initiates a chat request to LM Studio, it injects an `ephemeral_mcp` integration pointing to `SELF_MCP_URL` with the user's JWT forwarded in the `Authorization` header. This means any MCP tool called by the model during inference has access to the authenticated user's data.
+For every Chat Completions request, the backend:
+
+1. Calls `McpClientService.listTools()` to fetch the current tool list and converts each into a plain OpenAI function-tool definition.
+2. Sends the chat request with those tools attached over `/v1/chat/completions`.
+3. If the model responds with `tool_calls`, executes each one via `McpClientService.callTool()`, forwarding the authenticated user's JWT and the current `chatId` as MCP request headers so tools have full access to the user's context.
+4. Appends the tool results as `tool` role messages and loops back into the model until it produces a final answer (capped at 8 iterations as a safety guard).
+
+This means MCP tools work with **any** OpenAI-compatible backend the model server happens to be — the inference server itself never needs to know MCP exists.
 
 ### Available Tools
 
 | Tool | Description |
 |------|-------------|
 | `get-token-usage-tool` | Returns the user's current token consumption, subscription tier, limit, and next reset time |
+| `get-content-from-file-ids` | Returns the base64 content of previously uploaded/generated files, by file ID |
+| `generate-file-from-content-tool` | Generates a downloadable file from provided content and stores it as an asset |
+| `generate-zip-from-file-ids` | Bundles multiple previously generated/uploaded files into a downloadable ZIP archive |
+| `get-image-tool` | Fetches an image from a URL and stores it as an asset |
 | `decrypt-message-tool` | Decrypts an AES-encrypted user message using the per-chat crypto key stored in `chat_metadata` |
 | `greeting-tool` | Example tool — returns a greeting with streaming progress updates |
 | `generate-image-tool` | Generates an image from a text prompt via InvokeAI, stores it in MongoDB, and returns a chat-renderable image URL |
 
-To add new tools, create an `@Injectable()` class in `apps/api/src/tools/`, decorate methods with `@Tool(...)` from `@rekog/mcp-nest`, and register the class as a provider in `AppModule`.
+To add new tools, create an `@Injectable()` class in `apps/api/src/tools/`, decorate methods with `@Tool(...)` from `@rekog/mcp-nest`, register the class as a provider in `AppModule`, and add its name to the `allowedTools` list in `OpenAiService.chatStreamCompletions` so it's actually offered to the model.
 
 ---
 
@@ -340,7 +385,7 @@ Maximum file size: **10 MB** per file.
 
 ## Message Encryption
 
-Per-chat AES-256 message encryption can be opted into when creating a new chat session on the OpenAI Responses API route. The goal is to keep plaintext message content out of LM Studio's own message store — only ciphertext is ever forwarded to the model server.
+Per-chat AES-256 message encryption can be opted into when creating a new chat session. The goal is to keep plaintext message content out of the inference server's own message store/logs — only ciphertext is ever forwarded to the model server.
 
 ### How It Works
 
@@ -414,12 +459,12 @@ Token limits can be managed via the `TokenLimitModule` controller.
 |--------|------|-------------|
 | `POST` | `/auth/register` | Create a new user account |
 | `POST` | `/auth/login` | Authenticate and receive a JWT |
-| `GET` | `/lm-studio/models` | List models available in LM Studio |
-| `POST` | `/lm-studio/chat` | Non-streaming chat (LM Studio native API) |
-| `POST` | `/lm-studio/chat/stream` | Streaming SSE chat (LM Studio native API) |
+| `GET` | `/lm-studio/models` | ⚠️ Disabled — list models via native LM Studio API |
+| `POST` | `/lm-studio/chat` | ⚠️ Disabled — non-streaming chat (LM Studio native API) |
+| `POST` | `/lm-studio/chat/stream` | ⚠️ Disabled — streaming SSE chat (LM Studio native API) |
 | `GET` | `/openai/models` | List models via OpenAI SDK |
-| `POST` | `/openai/chat/stream` | Streaming SSE via OpenAI Responses API |
-| `POST` | `/openai/completions/stream` | Streaming SSE via OpenAI Completions API |
+| `POST` | `/openai/chat-stream` | ⚠️ Disabled — streaming SSE via OpenAI **Responses** API |
+| `POST` | `/openai/completions-stream` | ✅ **Active** — streaming SSE via OpenAI **Chat Completions** API, with client-side MCP tool orchestration |
 | `GET` | `/chat-metadata` | List the user's chat sessions |
 | `GET` | `/chat-metadata/:id` | Get a single chat session |
 | `POST` | `/chat-metadata` | Create a chat session |
