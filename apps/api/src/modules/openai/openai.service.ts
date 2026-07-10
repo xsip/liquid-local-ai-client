@@ -11,6 +11,7 @@ import { ChatsService } from '../chats/chats.service';
 import { ChatMetadataService } from '../chat-metadata/chat-metadata.service';
 import { TokenLimitService } from '../token-limit/token-limit.service';
 import * as crypto from 'crypto';
+import * as CryptoJS from 'crypto-js';
 import OpenAI from 'openai';
 import { ModelOpenAiDto } from './dto/model-dtos';
 import { Stream } from 'openai/streaming';
@@ -284,7 +285,12 @@ export class OpenAiService {
               content: `Current datetime (authoritative): ${formatted}. You MUST use this for any time-related questions.`,
             },
           ];
-    messages.push(...((dto.messages ?? []) as any[]));
+    const incomingMessages = (dto.messages ?? []) as any[];
+    messages.push(
+      ...(chatMeta.useCrypto && chatMeta.cryptoKey
+        ? this.encryptCompletionsMessages(incomingMessages, chatMeta.cryptoKey)
+        : incomingMessages),
+    );
 
     const MAX_TOOL_ITERATIONS = 8;
     let totalTokensUsed = 0;
@@ -489,6 +495,47 @@ export class OpenAiService {
 
   private generateChatId(): string {
     return crypto.randomBytes(16).toString('hex');
+  }
+
+  /**
+   * Encrypts the text content of user-turn Chat Completions messages before
+   * they're sent to the inference server, so only ciphertext ever reaches its
+   * message store. The model is instructed (via decryptToolInstructions) to
+   * call decrypt-message-tool with the exact ciphertext to recover the
+   * plaintext. Image parts are left untouched — only `type: 'text'` parts
+   * (and plain string content) are encrypted.
+   */
+  private encryptCompletionsMessages(
+    messages: any[],
+    cryptoKey: string,
+  ): any[] {
+    return messages.map((m) => {
+      if (m.role !== 'user') return m;
+
+      if (typeof m.content === 'string') {
+        return {
+          ...m,
+          content: CryptoJS.AES.encrypt(m.content, cryptoKey).toString(),
+        };
+      }
+
+      if (Array.isArray(m.content)) {
+        return {
+          ...m,
+          content: m.content.map((part: any) => {
+            if (part?.type === 'text' && typeof part.text === 'string') {
+              return {
+                ...part,
+                text: CryptoJS.AES.encrypt(part.text, cryptoKey).toString(),
+              };
+            }
+            return part;
+          }),
+        };
+      }
+
+      return m;
+    });
   }
 
   private buildToolInstructions(toolNames: string[]): string {

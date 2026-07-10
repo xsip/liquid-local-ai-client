@@ -229,7 +229,8 @@ import {
                 LM Studio's native <code class="bg-surface-overlay px-1 rounded">/api/v1/chat</code>
                 API and the OpenAI-compatible
                 <code class="bg-surface-overlay px-1 rounded">/v1/responses/create</code>
-                (Responses API) endpoint are <strong>disabled</strong>. See
+                (Responses API) endpoint have been <strong>removed</strong> — the modules, routes,
+                and UI code that supported them no longer exist in this repo. See
                 <a href="#why-completions" class="underline">Chat Completions API</a> below for why
                 and what replaced them.
               </p>
@@ -329,21 +330,21 @@ import {
           <div class="grid sm:grid-cols-3 gap-3">
             <div class="bg-error-bg border border-error-border rounded-lg p-4">
               <p class="text-error-text text-xs uppercase tracking-wider font-semibold mb-1">
-                Disabled
+                Removed
               </p>
               <p class="font-medium text-sm text-text-primary">/api/v1/chat</p>
               <p class="text-text-muted text-xs mt-1">LM Studio native API</p>
             </div>
             <div class="bg-error-bg border border-error-border rounded-lg p-4">
               <p class="text-error-text text-xs uppercase tracking-wider font-semibold mb-1">
-                Disabled
+                Removed
               </p>
               <p class="font-medium text-sm text-text-primary">/v1/responses/create</p>
               <p class="text-text-muted text-xs mt-1">OpenAI Responses API</p>
             </div>
             <div class="bg-success-bg border border-success-border rounded-lg p-4">
               <p class="text-success-text text-xs uppercase tracking-wider font-semibold mb-1">
-                Active — only supported path
+                Only supported path
               </p>
               <p class="font-medium text-sm text-text-primary">/v1/chat/completions</p>
               <p class="text-text-muted text-xs mt-1">Works with any OpenAI-compatible backend</p>
@@ -1237,38 +1238,14 @@ export class ReadmeComponent {
     },
     {
       method: 'GET',
-      path: '/lm-studio/models',
-      desc: '⚠️ Disabled — list models via native LM Studio API',
-      methodClass: 'bg-error-bg text-error-text border border-error-border',
-    },
-    {
-      method: 'POST',
-      path: '/lm-studio/chat',
-      desc: '⚠️ Disabled — non-streaming chat (LM Studio native API)',
-      methodClass: 'bg-error-bg text-error-text border border-error-border',
-    },
-    {
-      method: 'POST',
-      path: '/lm-studio/chat/stream',
-      desc: '⚠️ Disabled — streaming SSE chat (LM Studio native API)',
-      methodClass: 'bg-error-bg text-error-text border border-error-border',
-    },
-    {
-      method: 'GET',
       path: '/openai/models',
       desc: 'List models via OpenAI SDK',
       methodClass: 'bg-tool-bg text-tool-text border border-tool-border',
     },
     {
       method: 'POST',
-      path: '/openai/chat-stream',
-      desc: '⚠️ Disabled — streaming SSE via OpenAI Responses API',
-      methodClass: 'bg-error-bg text-error-text border border-error-border',
-    },
-    {
-      method: 'POST',
       path: '/openai/completions-stream',
-      desc: '✅ Active — streaming SSE via Chat Completions API with client-side MCP tool orchestration',
+      desc: 'Streaming SSE via Chat Completions API with client-side MCP tool orchestration — the only supported chat path',
       methodClass: 'bg-success-bg text-success-text border border-success-border',
     },
     {
