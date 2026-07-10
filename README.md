@@ -202,7 +202,7 @@ apps/
 
 - **Node.js** 18+
 - **MongoDB** running locally (default: `mongodb://localhost:27017/lmStudioWrapper`) or a remote URI
-- **An OpenAI-compatible inference server** running locally with its `/v1` API enabled (LM Studio, Ollama, llama.cpp, vLLM, ...) — default assumes LM Studio on `http://localhost:1234`
+- **An OpenAI-compatible inference server** running locally with its `/v1` API enabled (LM Studio, Ollama, llama.cpp, vLLM, ...) — default assumes on `http://localhost:1234` 
 - A loaded model that supports tool/function calling for MCP features
 - **InvokeAI** *(optional)* — required only for AI image generation; default: `http://127.0.0.1:9090`
 
@@ -258,16 +258,26 @@ USE_SWAGGER=true
 npm install
 ```
 
-### 2. Start the API
+### 2. Start OpenAI server (LM Studio, Ollama, llama.cpp, vLLM, ...)
+
+```bash
+# Example with llama.cpp
+llama-server.exe -m "gemma-4-E4B-it-Q4_K_M.gguf" --mmproj "mmproj-gemma-4-E4B-it-BF16.gguf" --host 0.0.0.0 --port 1234 -ngl 999 -c 8192 -ub 1024 -b 1024
+
+```
+
+
+### 3. Start the API
 
 ```bash
 nx serve api
 ```
 
+
 The API will be available at `http://localhost:8888`.  
 If `USE_SWAGGER=true`, Swagger UI is at `http://localhost:8888/api`.
 
-### 3. Start the UI
+### 4. Start the UI
 
 ```bash
 nx serve ui
@@ -275,14 +285,14 @@ nx serve ui
 
 The UI will be available at `http://localhost:4200`.
 
-### 4. Start both simultaneously
+### 5. Start both simultaneously
 
 ```bash
 npm start
 # runs: nx run-many --target=serve --projects=api,ui
 ```
 
-### 5. Register a user
+### 6. Register a user
 
 Either use the Swagger UI or send a `POST /auth/register` request:
 
