@@ -842,8 +842,101 @@ import {
             is reached, an
             <code class="text-reasoning-text">api.info</code>
             SSE event is emitted with the reset timestamp. Limits reset automatically when
-            <code class="text-reasoning-text">tokenCountResetDate</code> elapses. Token limits can
-            be managed via the <code class="text-reasoning-text">TokenLimitModule</code> controller.
+            <code class="text-reasoning-text">tokenCountResetDate</code> elapses. Token limits are
+            managed exclusively through the <a href="#admin-cms" class="text-accent underline">Admin CMS</a> —
+            the <code class="text-reasoning-text">TokenLimitModule</code> controller is gated
+            behind <code class="text-reasoning-text">&#64;Roles(Role.Admin)</code>.
+          </p>
+        </section>
+
+        <!-- ADMIN CMS -->
+        <section id="admin-cms">
+          <h2 class="text-2xl font-bold text-text-primary mb-2">Admin CMS</h2>
+          <p class="text-text-secondary mb-6">
+            A role-gated <code class="text-accent">/admin</code> route (Angular reactive forms
+            throughout — no <code class="text-accent">ngModel</code>) for managing users and
+            token-limit configs without touching MongoDB by hand. Only visible/reachable for
+            users with <code class="text-accent">role: 'admin'</code> — the link appears in the
+            account info panel only for admins, and is enforced twice: an Angular
+            <code class="text-accent">adminGuard</code> route guard, and
+            <code class="text-accent">&#64;Roles(Role.Admin)</code> on every backend endpoint.
+          </p>
+
+          <h3 class="text-base font-semibold text-text-primary mb-2">User Management</h3>
+          <img
+            class="dark:hidden block mb-2 rounded-xl border border-border-default"
+            src="admin-users-preview-light.png"
+            alt="admin CMS user management light"
+          />
+          <img
+            class="dark:block hidden mb-6 rounded-xl border border-border-default"
+            src="admin-users-preview-dark.png"
+            alt="admin CMS user management dark"
+          />
+          <p class="text-text-secondary mb-6">
+            List every user with role, subscription, activation status, and current token usage.
+            Create a user directly (bypassing the normal registration/activation-email flow),
+            edit an existing user's role, subscription, activation status, or password, reset
+            their token-usage counter on demand, or delete them (an admin cannot delete their own
+            account, to avoid accidental lockout).
+          </p>
+
+          <h3 class="text-base font-semibold text-text-primary mb-2">Token Limit Config Management</h3>
+          <img
+            class="dark:hidden block mb-2 rounded-xl border border-border-default"
+            src="admin-tokens-preview-light.png"
+            alt="admin CMS token limit config management light"
+          />
+          <img
+            class="dark:block hidden mb-6 rounded-xl border border-border-default"
+            src="admin-tokens-preview-dark.png"
+            alt="admin CMS token limit config management dark"
+          />
+          <p class="text-text-secondary mb-6">
+            List, create, edit, and delete <code class="text-accent">token_limit_configs</code>
+            documents. <strong>Creating a config with a brand-new tier name is how a new
+            subscription type is defined</strong> — there's no separate "add subscription type"
+            step. The tier-name field is free text when creating a config (validated against
+            <code class="text-accent">^[a-z0-9_-]&#123;2,32&#125;$</code>), and locked once a
+            config exists (one config per tier, enforced by a unique index). The "assign
+            subscription" dropdown in the user-edit dialog is populated from
+            <code class="text-accent">GET /admin/users/subscription-types</code>, which unions
+            the built-in defaults (<code class="text-accent">free</code>,
+            <code class="text-accent">basic</code>), every tier with a config, and any tier
+            already assigned to a user — so a user's tier stays selectable even if its config was
+            later deleted.
+          </p>
+
+          <div class="overflow-x-auto rounded-xl border border-border-default">
+            <table class="w-full text-sm">
+              <thead>
+              <tr class="bg-surface-overlay text-xs text-text-muted uppercase tracking-wider">
+                <th class="text-left px-4 py-3 font-semibold w-20">Method</th>
+                <th class="text-left px-4 py-3 font-semibold">Path</th>
+                <th class="text-left px-4 py-3 font-semibold hidden sm:table-cell">
+                  Description
+                </th>
+              </tr>
+              </thead>
+              <tbody>
+              <ng-container *ngFor="let route of adminApiRoutes; let odd = odd">
+                <tr [class]="odd ? 'bg-surface-raised' : 'bg-surface-base'">
+                  <td class="px-4 py-2.5">
+                    <span [class]="'badge-pill ' + route.methodClass">{{ route.method }}</span>
+                  </td>
+                  <td class="px-4 py-2.5 font-mono text-xs text-text-secondary">
+                    {{ route.path }}
+                  </td>
+                  <td class="px-4 py-2.5 text-xs text-text-muted hidden sm:table-cell">
+                    {{ route.desc }}
+                  </td>
+                </tr>
+              </ng-container>
+              </tbody>
+            </table>
+          </div>
+          <p class="mt-3 text-xs text-text-muted">
+            All admin routes require both a valid JWT and <code class="text-accent">role: 'admin'</code>.
           </p>
         </section>
 
@@ -1033,10 +1126,17 @@ export class ReadmeComponent {
     },
     {
       title: 'Subscription-Aware Token Limiting',
-      desc: 'Configurable token budgets per subscription tier (free / basic) with automatic reset intervals and SSE limit notifications.',
+      desc: 'Configurable token budgets per subscription tier — not limited to free/basic, new tiers can be created on the fly — with automatic reset intervals and SSE limit notifications.',
       icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
       iconBg: 'bg-error-bg',
       iconColor: 'text-error-text',
+    },
+    {
+      title: 'Admin CMS',
+      desc: 'Role-gated /admin UI (reactive forms, no ngModel) for managing users — role, subscription, activation, password, token-usage reset — and token-limit configs, including defining brand-new subscription tiers.',
+      icon: 'M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z',
+      iconBg: 'bg-warn-bg',
+      iconColor: 'text-warn-text',
     },
     {
       title: 'JWT Authentication',
@@ -1313,6 +1413,87 @@ export class ReadmeComponent {
       path: '/tools/mcp',
       desc: 'MCP server endpoint (SSE + Streamable HTTP)',
       methodClass: 'bg-tool-bg text-tool-text border border-tool-border',
+    },
+    {
+      method: 'GET/POST/PATCH/DELETE',
+      path: '/admin/users[/...]',
+      desc: 'Admin CMS — user management (role: admin only, see Admin CMS section)',
+      methodClass: 'bg-warn-bg text-warn-text border border-warn-border',
+    },
+    {
+      method: 'GET/POST/PUT/DELETE',
+      path: '/token-limit-configs[/...]',
+      desc: 'Admin CMS — token-limit config management (role: admin only)',
+      methodClass: 'bg-warn-bg text-warn-text border border-warn-border',
+    },
+  ];
+
+  adminApiRoutes = [
+    {
+      method: 'GET',
+      path: '/admin/users',
+      desc: 'List all users',
+      methodClass: 'bg-tool-bg text-tool-text border border-tool-border',
+    },
+    {
+      method: 'GET',
+      path: '/admin/users/subscription-types',
+      desc: 'List every subscription tier name currently known to the system',
+      methodClass: 'bg-tool-bg text-tool-text border border-tool-border',
+    },
+    {
+      method: 'GET',
+      path: '/admin/users/:id',
+      desc: 'Get a single user',
+      methodClass: 'bg-tool-bg text-tool-text border border-tool-border',
+    },
+    {
+      method: 'POST',
+      path: '/admin/users',
+      desc: 'Create a user',
+      methodClass: 'bg-success-bg text-success-text border border-success-border',
+    },
+    {
+      method: 'PATCH',
+      path: '/admin/users/:id',
+      desc: 'Update a user (role, subscription, activation, password)',
+      methodClass: 'bg-warn-bg text-warn-text border border-warn-border',
+    },
+    {
+      method: 'DELETE',
+      path: '/admin/users/:id',
+      desc: 'Delete a user (not your own account)',
+      methodClass: 'bg-error-bg text-error-text border border-error-border',
+    },
+    {
+      method: 'POST',
+      path: '/admin/users/:id/reset-tokens',
+      desc: "Reset a user's token-usage counter",
+      methodClass: 'bg-success-bg text-success-text border border-success-border',
+    },
+    {
+      method: 'GET/POST',
+      path: '/token-limit-configs',
+      desc: 'List / create token-limit configs',
+      methodClass: 'bg-tool-bg text-tool-text border border-tool-border',
+    },
+    {
+      method: 'GET',
+      path: '/token-limit-configs/:id',
+      desc: 'Get a config by id',
+      methodClass: 'bg-tool-bg text-tool-text border border-tool-border',
+    },
+    {
+      method: 'PUT',
+      path: '/token-limit-configs/:id',
+      desc: 'Update a config',
+      methodClass: 'bg-warn-bg text-warn-text border border-warn-border',
+    },
+    {
+      method: 'DELETE',
+      path: '/token-limit-configs/:id',
+      desc: 'Delete a config',
+      methodClass: 'bg-error-bg text-error-text border border-error-border',
     },
   ];
 }

@@ -25,6 +25,7 @@ A full-stack AI chat client that connects to any OpenAI-compatible local inferen
 - [Message Encryption](#message-encryption)
 - [Authentication & Authorization](#authentication--authorization)
 - [Token Usage & Rate Limiting](#token-usage--rate-limiting)
+- [Admin CMS](#admin-cms)
 - [API Overview](#api-overview)
 
 ---
@@ -127,7 +128,8 @@ Unlike the old Responses-API flow — where LM Studio itself connected to the MC
 - **End-to-end AES message encryption** — per-chat opt-in; messages are encrypted with CryptoJS AES before leaving the browser, and the model decrypts them via MCP during inference
 - **JWT authentication** — login / register with bcrypt-hashed passwords; tokens expire after 1 hour
 - **Role-based access control** — `User` and `Admin` roles via `RolesGuard`
-- **Subscription-aware token rate limiting** — configurable token budgets per subscription tier (`free` / `basic`), with automatic reset intervals
+- **Subscription-aware token rate limiting** — configurable token budgets per subscription tier, with automatic reset intervals; tiers are **not** limited to `free`/`basic` — new tiers can be created on the fly (see [Admin CMS](#admin-cms))
+- **Admin CMS** — role-gated `/admin` UI for managing users (role, subscription, activation, password, token-usage reset) and token-limit configs (including defining brand-new subscription tiers), built with Angular reactive forms
 - **Model selector** — dynamically fetches available models from the running LM Studio instance
 - **Reasoning mode** — pass reasoning effort (`off` / `low` / `medium` / `high`) to supported models
 - **Swagger UI** — optional OpenAPI documentation (enabled via `USE_SWAGGER=true`)
@@ -166,21 +168,26 @@ apps/
 │       │   └── api.tools.ts      # MCP server tools (token-usage, file gen/zip, image, decrypt, ...)
 │       └── modules/
 │           ├── auth/             # JWT auth, guards, user schema
+│           ├── admin/            # Admin-only user CRUD + subscription-type discovery (role-gated)
 │           ├── assets/           # Image blob storage & retrieval (MongoDB)
 │           ├── chats/            # Chat message persistence (rolling Chat Completions message arrays)
 │           ├── chat-metadata/    # Per-session metadata (model, crypto config, sharing, etc.)
 │           ├── invoke/           # InvokeAI integration (image generation)
 │           ├── mcp-client/       # MCP client — connects to the MCP server, executes tool_calls for Chat Completions
 │           ├── openai/           # OpenAI-compatible Chat Completions proxy (only supported chat path)
-│           └── token-limit/      # Token budget tracking & rate-limit enforcement
+│           └── token-limit/      # Token budget tracking & rate-limit enforcement (admin-gated CRUD)
 └── ui/                           # Angular frontend
     └── src/app/
         ├── app.ts                # Root component — JWT expiry guard
+        ├── admin.guard.ts        # Route guard — only allows role: 'admin' into /admin
         ├── client/               # Auto-generated API client DTOs
         ├── shared/
         │   └── components/       # Cross-route UI: chat-messages, chat-sidebar, info panel, markdown pipe, ...
         └── routes/
             ├── login.ts          # Login / register page
+            ├── admin.ts          # Admin CMS — user & token-limit-config management (role: admin only)
+            ├── admin/
+            │   └── admin.service.ts  # Hand-written client for the admin-only backend endpoints
             └── openai-api/       # Chat UI for the OpenAI Chat Completions endpoint (the only chat route)
                 ├── chat-input.component.ts             # Includes image/file attach button
                 ├── chat-completions.service.ts          # Chat Completions chat state
@@ -448,11 +455,57 @@ Token consumption is tracked per user and enforced against subscription-tier lim
 |-------|-------------|
 | `tokensPerInterval` | Maximum tokens allowed within one reset window |
 | `minutesTillReset` | How many minutes until the counter resets |
-| `subscription` | Which tier this config applies to (`free` or `basic`) |
+| `subscription` | Which tier this config applies to — a **free-form string**, not a fixed enum. `free` and `basic` are just the built-in defaults; creating a config with any other name (e.g. `pro`, `enterprise`) defines a brand-new tier |
 
 After each completed inference, `TokenLimitService.updateUsedTokens()` increments the user's `usedTokens` counter. If the limit is reached, a `api.info` SSE event is emitted to the client with the reset timestamp. The counter resets automatically when `tokenCountResetDate` elapses.
 
-Token limits can be managed via the `TokenLimitModule` controller.
+Token limits are managed exclusively through the [Admin CMS](#admin-cms) — the `TokenLimitModule` controller (`/token-limit-configs`) is gated behind `@Roles(Role.Admin)`.
+
+---
+
+## Admin CMS
+
+![Admin CMS — Users (dark)](https://raw.githubusercontent.com/xsip/liquid-local-ai-client/refs/heads/main/apps/ui/public/admin-users-preview-dark.png)
+![Admin CMS — Token Limit Configs (dark)](https://raw.githubusercontent.com/xsip/liquid-local-ai-client/refs/heads/main/apps/ui/public/admin-tokens-preview-dark.png)
+
+A role-gated `/admin` route (Angular reactive forms throughout — no `ngModel`) for managing users and token-limit configs, without touching MongoDB by hand.
+
+### Access
+
+- Only visible/reachable for users with `role: 'admin'`. The link appears in the account info panel (`app-info`, the slide-out panel opened from the chat toolbar) only when the logged-in user is an admin.
+- Enforced twice: `adminGuard` (Angular route guard, checks `GET /auth/me` before allowing navigation) and `@Roles(Role.Admin)` on every backend endpoint via the existing `RolesGuard`.
+
+### User Management
+
+- List all users with role, subscription, activation status, and current token usage.
+- Create a new user (username, password, role, subscription, activated flag) — bypasses the normal registration/activation-email flow, useful for seeding admin or test accounts.
+- Edit an existing user: change role, subscription, activation status, or reset their password. Username is immutable once created.
+- Reset a user's token-usage counter on demand (calls the same `TokenLimitService.resetTokenLimit()` used by the automatic reset-on-expiry flow).
+- Delete a user (an admin cannot delete their own account, to avoid accidental lockout).
+
+### Token Limit Config Management
+
+- List, create, edit, and delete `token_limit_configs` documents.
+- **Creating a config with a brand-new tier name *is* how you define a new subscription type** — there's no separate "add subscription type" step. The tier-name field is free text (validated against `^[a-z0-9_-]{2,32}$`) when creating, and locked once a config exists (one config per tier, enforced by a unique index).
+- The "assign subscription" dropdown in the user-edit dialog is populated from `GET /admin/users/subscription-types`, which unions: the two built-in defaults (`free`, `basic`), every tier with a config, and any tier already assigned to a user (so a user's tier stays selectable even if its config was later deleted).
+
+### Admin API Routes
+
+| Method | Path | Description |
+|--------|------|--------------|
+| `GET` | `/admin/users` | List all users |
+| `GET` | `/admin/users/subscription-types` | List every subscription tier name currently known to the system |
+| `GET` | `/admin/users/:id` | Get a single user |
+| `POST` | `/admin/users` | Create a user |
+| `PATCH` | `/admin/users/:id` | Update a user (role, subscription, activation, password) |
+| `DELETE` | `/admin/users/:id` | Delete a user (not your own account) |
+| `POST` | `/admin/users/:id/reset-tokens` | Reset a user's token-usage counter |
+| `GET` / `POST` | `/token-limit-configs` | List / create token-limit configs |
+| `GET` | `/token-limit-configs/:id` | Get a config by id |
+| `PUT` | `/token-limit-configs/:id` | Update a config |
+| `DELETE` | `/token-limit-configs/:id` | Delete a config |
+
+All of the above require both a valid JWT and `role: 'admin'`.
 
 ---
 
@@ -475,5 +528,7 @@ Token limits can be managed via the `TokenLimitModule` controller.
 | `GET` | `/assets/filequery/:filename?chatId=` | Retrieve an image by query param (authenticated, used for AI-generated image references) |
 | `GET` | `/invoke/test` | Test endpoint — generates a sample image via InvokeAI |
 | `GET` `/POST` | `/tools/mcp` | MCP server endpoint (SSE + Streamable HTTP) |
+| `GET`/`POST`/`PATCH`/`DELETE` | `/admin/users[/...]` | Admin CMS — user management (`role: admin` only, see [Admin CMS](#admin-cms)) |
+| `GET`/`POST`/`PUT`/`DELETE` | `/token-limit-configs[/...]` | Admin CMS — token-limit config management (`role: admin` only) |
 
 Full interactive documentation is available at `http://localhost:8888/api` when `USE_SWAGGER=true`.

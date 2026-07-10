@@ -380,6 +380,9 @@ export class OpenAiService {
               type: 'function',
               function: { name: tc.name, arguments: tc.arguments },
             })),
+            ...(assembledReasoning
+              ? { reasoning_content: assembledReasoning }
+              : {}),
           });
 
           for (const tc of toolCallsArr) {
