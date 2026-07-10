@@ -310,8 +310,9 @@ function optionalMinLength(min: number) {
               formControlName="subscription"
               class="w-full bg-surface-base border border-border-default rounded-xl px-3 py-2 text-xs text-text-primary focus:outline-none"
             >
-              <option value="free">free</option>
-              <option value="basic">basic</option>
+              @for (t of subscriptionTypes(); track t) {
+                <option [value]="t">{{ t }}</option>
+              }
             </select>
           </div>
 
@@ -336,15 +337,18 @@ function optionalMinLength(min: number) {
         <span slot="header">{{ editingConfig() ? 'Edit Token Limit Config' : 'New Token Limit Config' }}</span>
         <form [formGroup]="configForm" (ngSubmit)="submitConfig()" class="flex flex-col gap-4 w-full">
           <div>
-            <ui-label class="mb-1.5">Subscription</ui-label>
-            <select
+            <ui-label class="mb-1.5">
+              {{ editingConfig() ? 'Subscription' : 'Subscription (new or existing tier name)' }}
+            </ui-label>
+            <ui-text-input
               formControlName="subscription"
-              [disabled]="!!editingConfig()"
-              class="w-full bg-surface-base border border-border-default rounded-xl px-3 py-2 text-xs text-text-primary focus:outline-none disabled:opacity-50"
-            >
-              <option value="free">free</option>
-              <option value="basic">basic</option>
-            </select>
+              [placeholder]="editingConfig() ? '' : 'e.g. pro'"
+            />
+            @if (configForm.get('subscription')?.invalid && configForm.get('subscription')?.touched) {
+              <p class="text-[10px] text-error-text mt-1">
+                2-32 characters: lowercase letters, digits, underscore, or dash.
+              </p>
+            }
           </div>
 
           <div>
@@ -410,6 +414,9 @@ export class AdminCms implements OnInit {
     isActivated: [true],
   });
 
+  /** Every subscription tier name currently known to the system (from configs + assigned users). */
+  readonly subscriptionTypes = signal<string[]>(['free', 'basic']);
+
   // ── Token limit configs ──────────────────────────────────────────────────
   readonly configs = signal<TokenLimitConfig[]>([]);
   readonly configsLoading = signal(false);
@@ -418,7 +425,10 @@ export class AdminCms implements OnInit {
   readonly savingConfig = signal(false);
 
   readonly configForm = this.fb.group({
-    subscription: ['free' as AdminSubscription, Validators.required],
+    subscription: [
+      '' as AdminSubscription,
+      [Validators.required, Validators.pattern(/^[a-z0-9_-]{2,32}$/)],
+    ],
     tokensPerInterval: [9000, [Validators.required, Validators.min(1)]],
     minutesTillReset: [60, [Validators.required, Validators.min(1)]],
   });
@@ -429,6 +439,16 @@ export class AdminCms implements OnInit {
   ngOnInit(): void {
     this.loadUsers();
     this.loadConfigs();
+    this.loadSubscriptionTypes();
+  }
+
+  loadSubscriptionTypes(): void {
+    this.adminService.listSubscriptionTypes().subscribe({
+      next: (types) => this.subscriptionTypes.set(types),
+      error: () => {
+        // Non-fatal — keep whatever list we already have (defaults to free/basic).
+      },
+    });
   }
 
   toggleTheme(): void {
@@ -564,7 +584,7 @@ export class AdminCms implements OnInit {
 
   openCreateConfig(): void {
     this.editingConfig.set(null);
-    this.configForm.reset({ subscription: 'free', tokensPerInterval: 9000, minutesTillReset: 60 });
+    this.configForm.reset({ subscription: '', tokensPerInterval: 9000, minutesTillReset: 60 });
     this.configForm.get('subscription')?.enable();
     this.showConfigModal.set(true);
   }
@@ -576,6 +596,7 @@ export class AdminCms implements OnInit {
       tokensPerInterval: config.tokensPerInterval,
       minutesTillReset: config.minutesTillReset,
     });
+    this.configForm.get('subscription')?.disable();
     this.showConfigModal.set(true);
   }
 
@@ -615,7 +636,10 @@ export class AdminCms implements OnInit {
           minutesTillReset: Number(raw.minutesTillReset),
         })
         .subscribe({
-          next: onDone,
+          next: () => {
+            onDone();
+            this.loadSubscriptionTypes();
+          },
           error: (err) => onError(err?.error?.message ?? 'Failed to create config (one config per tier).'),
         });
     }

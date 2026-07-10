@@ -88,6 +88,28 @@ export class AdminUsersService {
     return this.toDto(updated.toObject());
   }
 
+  /**
+   * Every subscription tier name currently known to the system — the
+   * built-in defaults, any tier that has a TokenLimitConfig, and any tier
+   * already assigned to a user (in case its config was later deleted).
+   * Used by the admin UI to populate the "assign subscription" dropdown.
+   */
+  async listSubscriptionTypes(): Promise<string[]> {
+    const [configs, userSubscriptions] = await Promise.all([
+      this.tokenLimitService.findAll(),
+      this.userModel.distinct('subscription').exec(),
+    ]);
+
+    const set = new Set<string>([
+      SubscriptionType.FREE,
+      SubscriptionType.BASIC,
+      ...configs.map((c) => c.subscription),
+      ...(userSubscriptions as string[]),
+    ]);
+
+    return Array.from(set).sort();
+  }
+
   private assertObjectId(id: string): void {
     if (!Types.ObjectId.isValid(id)) {
       throw new NotFoundException(`Invalid id: ${id}`);

@@ -7,7 +7,6 @@ import {
   MinLength,
 } from 'class-validator';
 import { Role } from '../../auth/roles.decorator';
-import { SubscriptionType } from '../../auth/user.schema';
 
 export class UpdateAdminUserDto {
   @ApiPropertyOptional({ description: 'New password — leave unset to keep the current one' })
@@ -21,10 +20,13 @@ export class UpdateAdminUserDto {
   @IsEnum(Role)
   role?: Role;
 
-  @ApiPropertyOptional({ enum: SubscriptionType })
+  @ApiPropertyOptional({
+    description:
+      'Any existing subscription tier name (free-form — see GET /admin/subscription-types)',
+  })
   @IsOptional()
-  @IsEnum(SubscriptionType)
-  subscription?: SubscriptionType;
+  @IsString()
+  subscription?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

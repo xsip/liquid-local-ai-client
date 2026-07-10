@@ -15,7 +15,7 @@ import {
   CreateTokenLimitConfigDto,
   UpdateTokenLimitConfigDto,
 } from './dto/token-limit-config.dto';
-import { User, UserDocument, SubscriptionType } from '../auth/user.schema';
+import { User, UserDocument } from '../auth/user.schema';
 
 @Injectable()
 export class TokenLimitService {
@@ -40,9 +40,7 @@ export class TokenLimitService {
     return this.configModel.find().exec();
   }
 
-  async findBySubscription(
-    subscription: SubscriptionType,
-  ): Promise<TokenLimitConfig> {
+  async findBySubscription(subscription: string): Promise<TokenLimitConfig> {
     const doc = await this.configModel.findOne({ subscription }).exec();
     if (!doc) {
       throw new NotFoundException(
@@ -133,7 +131,7 @@ export class TokenLimitService {
    * Convenience: return the `tokensPerIntervall` limit for a given user.
    * Falls back to `process.env.MAX_TOKENS_PER_MINUTE` if no DB config exists.
    */
-  async getTokensPerIntervall(subscription: SubscriptionType): Promise<number> {
+  async getTokensPerIntervall(subscription: string): Promise<number> {
     try {
       const cfg = await this.findBySubscription(subscription);
       return cfg.tokensPerInterval;
@@ -154,9 +152,7 @@ export class TokenLimitService {
     return user;
   }
 
-  private async _resolveMinutesTillReset(
-    subscription: SubscriptionType,
-  ): Promise<number> {
+  private async _resolveMinutesTillReset(subscription: string): Promise<number> {
     try {
       const cfg = await this.findBySubscription(subscription);
       return cfg.minutesTillReset;

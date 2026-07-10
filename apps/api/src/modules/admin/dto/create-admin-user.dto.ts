@@ -25,10 +25,14 @@ export class CreateAdminUserDto {
   @IsEnum(Role)
   role?: Role;
 
-  @ApiPropertyOptional({ enum: SubscriptionType, default: SubscriptionType.FREE })
+  @ApiPropertyOptional({
+    default: SubscriptionType.FREE,
+    description:
+      'Any existing subscription tier name (free-form — see GET /admin/subscription-types)',
+  })
   @IsOptional()
-  @IsEnum(SubscriptionType)
-  subscription?: SubscriptionType;
+  @IsString()
+  subscription?: string;
 
   @ApiPropertyOptional({ default: true })
   @IsOptional()

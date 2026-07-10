@@ -12,7 +12,6 @@ import {
 import {
   ApiBearerAuth,
   ApiOperation,
-  ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
 
@@ -22,7 +21,6 @@ import {
   CreateTokenLimitConfigDto,
   UpdateTokenLimitConfigDto,
 } from './dto/token-limit-config.dto';
-import { SubscriptionType } from '../auth/user.schema';
 import { Roles } from '../auth/roles.decorator';
 import { Role } from '../auth/roles.decorator';
 
@@ -56,9 +54,8 @@ export class TokenLimitController {
     summary: 'Get the token-limit config for a specific subscription tier',
     operationId: 'findTokenLimitConfigBySubscription',
   })
-  @ApiParam({ name: 'subscription', enum: SubscriptionType })
   findBySubscription(
-    @Param('subscription') subscription: SubscriptionType,
+    @Param('subscription') subscription: string,
   ): Promise<TokenLimitConfig> {
     return this.tokenLimitService.findBySubscription(subscription);
   }

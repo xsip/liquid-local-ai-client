@@ -1,6 +1,5 @@
-import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { IsEnum, IsInt, IsPositive } from 'class-validator';
-import { SubscriptionType } from '../../auth/user.schema';
+import { ApiProperty, PartialType } from '@nestjs/swagger';
+import { IsInt, IsPositive, IsString, Matches } from 'class-validator';
 
 export class CreateTokenLimitConfigDto {
   @ApiProperty({ example: 1 })
@@ -13,9 +12,18 @@ export class CreateTokenLimitConfigDto {
   @IsPositive()
   tokensPerInterval: number;
 
-  @ApiProperty({ enum: SubscriptionType, example: SubscriptionType.BASIC })
-  @IsEnum(SubscriptionType)
-  subscription: SubscriptionType;
+  @ApiProperty({
+    example: 'basic',
+    description:
+      'Free-form subscription tier name. Creating a config with a new ' +
+      'name defines a new subscription type.',
+  })
+  @IsString()
+  @Matches(/^[a-z0-9_-]{2,32}$/, {
+    message:
+      'subscription must be 2-32 characters, lowercase letters/digits/underscore/dash only',
+  })
+  subscription: string;
 }
 
 export class UpdateTokenLimitConfigDto extends PartialType(

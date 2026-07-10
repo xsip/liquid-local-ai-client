@@ -1,6 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
-import { SubscriptionType } from '../auth/user.schema';
 
 export type TokenLimitConfigDocument = TokenLimitConfig & Document;
 
@@ -14,13 +13,13 @@ export class TokenLimitConfig {
   @Prop({ required: true })
   tokensPerInterval: number;
 
-  /** Which subscription tier this config applies to */
-  @Prop({
-    required: true,
-    enum: Object.values(SubscriptionType),
-    unique: true,
-  })
-  subscription: SubscriptionType;
+  /**
+   * Which subscription tier this config applies to — a free-form string
+   * (not restricted to SubscriptionType). Creating a config with a new
+   * tier name effectively defines a new subscription type.
+   */
+  @Prop({ required: true, type: String, unique: true })
+  subscription: string;
 }
 
 export const TokenLimitConfigSchema =

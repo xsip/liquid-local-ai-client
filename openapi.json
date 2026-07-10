@@ -177,10 +177,6 @@
             "required": true,
             "in": "path",
             "schema": {
-              "enum": [
-                "free",
-                "basic"
-              ],
               "type": "string"
             }
           }
@@ -1180,6 +1176,26 @@
         ]
       }
     },
+    "/admin/users/subscription-types": {
+      "get": {
+        "operationId": "adminListSubscriptionTypes",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List every subscription tier name currently known to the system",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
     "/admin/users/{id}": {
       "get": {
         "operationId": "adminGetUser",
@@ -1438,11 +1454,8 @@
           },
           "subscription": {
             "type": "string",
-            "enum": [
-              "free",
-              "basic"
-            ],
-            "example": "basic"
+            "example": "basic",
+            "description": "Free-form subscription tier name. Creating a config with a new name defines a new subscription type."
           }
         },
         "required": [
@@ -1464,11 +1477,8 @@
           },
           "subscription": {
             "type": "string",
-            "enum": [
-              "free",
-              "basic"
-            ],
-            "example": "basic"
+            "example": "basic",
+            "description": "Free-form subscription tier name. Creating a config with a new name defines a new subscription type."
           }
         }
       },
@@ -3743,11 +3753,8 @@
           },
           "subscription": {
             "type": "string",
-            "enum": [
-              "free",
-              "basic"
-            ],
-            "default": "free"
+            "default": "free",
+            "description": "Any existing subscription tier name (free-form — see GET /admin/subscription-types)"
           },
           "isActivated": {
             "type": "boolean",
@@ -3775,10 +3782,7 @@
           },
           "subscription": {
             "type": "string",
-            "enum": [
-              "free",
-              "basic"
-            ]
+            "description": "Any existing subscription tier name (free-form — see GET /admin/subscription-types)"
           },
           "isActivated": {
             "type": "boolean"

@@ -25,13 +25,17 @@ export class User {
   @Prop({ required: true, default: false })
   isActivated: boolean;
 
-  /** Subscription tier */
+  /**
+   * Subscription tier — a free-form string, not restricted to SubscriptionType.
+   * New tiers are created via TokenLimitConfig documents in the admin CMS;
+   * SubscriptionType only documents the two built-in defaults.
+   */
   @Prop({
     required: true,
-    enum: Object.values(SubscriptionType),
+    type: String,
     default: SubscriptionType.FREE,
   })
-  subscription: SubscriptionType;
+  subscription: string;
 
   /** MD5-based random hash sent to the user to activate their account */
   @Prop({ required: false, default: null, type: String })

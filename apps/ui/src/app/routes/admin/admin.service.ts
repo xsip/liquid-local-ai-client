@@ -3,7 +3,8 @@ import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
 export type AdminRole = 'admin' | 'user';
-export type AdminSubscription = 'free' | 'basic';
+/** Free-form subscription tier name — not restricted to 'free'/'basic'. */
+export type AdminSubscription = string;
 
 export interface AdminUser {
   _id: string;
@@ -74,6 +75,11 @@ export class AdminService {
 
   resetUserTokens(id: string): Observable<AdminUser> {
     return this.http.post<AdminUser>(`api/admin/users/${id}/reset-tokens`, {});
+  }
+
+  /** Every subscription tier name currently known to the system. */
+  listSubscriptionTypes(): Observable<string[]> {
+    return this.http.get<string[]>('api/admin/users/subscription-types');
   }
 
   // ── Token limit configs ─────────────────────────────────────────────────

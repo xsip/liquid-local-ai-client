@@ -284,8 +284,7 @@ export class ApiTools {
   async getTokenUsage(data, context: Context, request: Request) {
     // @ts-ignore
     const user = request.user as User;
-    const subscription: SubscriptionType =
-      user.subscription ?? SubscriptionType.FREE;
+    const subscription: string = user.subscription ?? SubscriptionType.FREE;
 
     const limit =
       await this.tokenLimitService.getTokensPerIntervall(subscription);

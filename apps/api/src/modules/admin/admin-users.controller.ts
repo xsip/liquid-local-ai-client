@@ -34,6 +34,15 @@ export class AdminUsersController {
     return this.adminUsersService.findAll();
   }
 
+  @Get('subscription-types')
+  @ApiOperation({
+    summary: 'List every subscription tier name currently known to the system',
+    operationId: 'adminListSubscriptionTypes',
+  })
+  listSubscriptionTypes(): Promise<string[]> {
+    return this.adminUsersService.listSubscriptionTypes();
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a user by id', operationId: 'adminGetUser' })
   findById(@Param('id') id: string): Promise<AdminUserDto> {
