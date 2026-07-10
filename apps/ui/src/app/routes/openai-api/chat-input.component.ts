@@ -26,7 +26,7 @@ import {
   readFilesAsDataUrls,
 } from '../../shared/utils/file.utils';
 import { TranslateModule } from '@ngx-translate/core';
-import { MarkdownPipe } from '../lm-studio-api/markdown.pipe';
+import { MarkdownPipe } from '../../shared/components/markdown.pipe';
 import { NgIconComponent, provideIcons } from '@ng-icons/core';
 import {
   heroPencilSquare,
@@ -36,8 +36,8 @@ import {
   heroXMark,
   heroLockClosed,
 } from '@ng-icons/heroicons/outline';
-import { ChatService } from './chat.service';
-import { Observable, of, Subject, Subscription, switchMap, take } from 'rxjs';
+import { ChatCompletionsService } from './chat-completions.service';
+import { Observable, of, Subscription, switchMap, take } from 'rxjs';
 
 // Re-export AppendedFile so existing consumers importing from this file keep working.
 export type { AppendedFile };
@@ -311,7 +311,7 @@ export class OpenAiChatInputComponent implements AfterViewInit, AfterViewChecked
   readonly modelReasoningCap = input.required<ModelReasoningCapability | null>();
   readonly newChatIdProvider = input.required<() => Observable<string>>();
 
-  readonly chatService = inject(ChatService);
+  readonly chatCompletionsService = inject(ChatCompletionsService);
   readonly chatMetadataService = inject(ChatMetadataService);
 
   readonly submitted = output<void>();
@@ -335,8 +335,7 @@ export class OpenAiChatInputComponent implements AfterViewInit, AfterViewChecked
   private _formSub?: Subscription;
 
   constructor() {
-    // Re-bind whenever the parent swaps which service's FormGroup is active
-    // (e.g. toggling between Responses and Chat Completions) — a one-time
+    // Re-bind whenever the parent swaps the FormGroup instance — a one-time
     // ngAfterViewInit subscription would keep listening to the stale form.
     effect(() => {
       const form = this.form();
@@ -441,8 +440,8 @@ export class OpenAiChatInputComponent implements AfterViewInit, AfterViewChecked
         });
       });
     } else {
-      (this.chatService.currentChatId()
-        ? of(this.chatService.currentChatId()!)
+      (this.chatCompletionsService.currentChatId()
+        ? of(this.chatCompletionsService.currentChatId()!)
         : this.newChatIdProvider()()
       )
         .pipe(

@@ -11,49 +11,8 @@ import { ChatsService } from '../chats/chats.service';
 import { ChatMetadataService } from '../chat-metadata/chat-metadata.service';
 import { TokenLimitService } from '../token-limit/token-limit.service';
 import * as crypto from 'crypto';
-// ---------------------------------------------------------------------------
-// SSE event shapes we care about
-// ---------------------------------------------------------------------------
 import OpenAI from 'openai';
 import { ModelOpenAiDto } from './dto/model-dtos';
-
-import {
-  ApplyPatchCallDto,
-  ApplyPatchCallOutputDto,
-  ComputerCallOutputDto,
-  EasyInputMessageDto,
-  FunctionCallOutputDto,
-  ImageGenerationCallDto,
-  ItemReferenceDto,
-  LocalShellCallDto,
-  LocalShellCallOutputDto,
-  McpApprovalRequestDto,
-  McpApprovalResponseDto,
-  McpDto,
-  McpListToolsDto,
-  MessageDto,
-  ResponseCodeInterpreterToolCallDto,
-  ResponseCompactionItemParamDto,
-  ResponseComputerToolCallDto,
-  ResponseCreateParamsNonStreamingDto,
-  ResponseCreateParamsStreamingDto,
-  ResponseCustomToolCallDto,
-  ResponseCustomToolCallOutputDto,
-  ResponseFileSearchToolCallDto,
-  ResponseFunctionToolCallDto,
-  ResponseFunctionWebSearchDto, ResponseInputTextDto,
-  ResponseOutputMessageDto,
-  ResponseReasoningItemDto,
-  ResponseToolSearchOutputItemParamDto,
-  ShellCallDto,
-  ShellCallOutputDto,
-  ToolSearchCallDto,
-} from './dto/create-response-dtos';
-import {
-  ResponseInputText,
-  ResponseOutputMessage,
-  ResponseStreamEvent,
-} from 'openai/resources/responses/responses';
 import { Stream } from 'openai/streaming';
 import dayjs from 'dayjs';
 import {
@@ -61,13 +20,9 @@ import {
   ChatMetadataDocument,
   OpenAiEndpointPreference,
 } from '../chat-metadata/chat-metadata.schema';
-import { McpCallDto } from './dto/get-response-dtos';
-import * as CryptoJS from 'crypto-js';
 import { ChatCompletionCreateParamsStreamingDto } from './dto/completions-dtos/ChatCompletionCreateParamsStreamingDto';
 import { ChatCompletionCreateParamsNonStreamingDto } from './dto/completions-dtos/ChatCompletionCreateParamsNonStreamingDto';
 import { ChatCompletionDto } from './dto/completions-dtos/ChatCompletionDto';
-import { ChatCompletionCustomToolDto } from './dto/completions-dtos/ChatCompletionCustomToolDto';
-import { ChatCompletionFunctionToolDto } from './dto/completions-dtos/ChatCompletionFunctionToolDto';
 import { InvokeAiModel } from '../invoke/invoke.service';
 import { OpenAiResponseService } from './open-ai-response.service';
 import {
@@ -75,11 +30,6 @@ import {
   McpToolHeaders,
   OpenAiFunctionTool,
 } from '../mcp-client/mcp-client.service';
-
-interface ChatEndEvent {
-  type: 'chat.end';
-  result: any;
-}
 
 // ---------------------------------------------------------------------------
 
@@ -151,51 +101,6 @@ export class OpenAiService {
     }
   }
 
-  async getChatTitleDependingOnContext(
-    userMessage: string | undefined,
-    model: string | undefined,
-  ): Promise<string | undefined> {
-    if(!userMessage)
-      return undefined;
-
-    if (!model) return undefined;
-
-    const mappedDto:
-      | ResponseCreateParamsNonStreamingDto
-      | ResponseCreateParamsStreamingDto = {
-      model: model,
-      input: `
-      The user says: "${userMessage}".
-      Dont answer to that, only give me ONE chat title name matching the context above with a max char length of 70`,
-      reasoning: {
-        effort: 'low',
-      },
-      instructions: '',
-      stream: true,
-
-      store: false,
-    };
-    let title: string | undefined = undefined;
-
-    try {
-      const stream: Stream<ResponseStreamEvent> =
-        (await this.openAi.responses.create(mappedDto as any)) as any;
-      for await (const event of stream) {
-        if (event.type === 'response.completed') {
-          const resObj = event.response.output.find(
-            (r) => r.type === 'message' && r.status === 'completed',
-          ) as ResponseOutputMessage;
-          if (resObj) {
-            title = resObj.content.find((c) => c.type === 'output_text')?.text;
-          }
-        }
-      }
-    } catch (error: any) {
-      console.error(error);
-    }
-    return title;
-  }
-
   async getChatTitleDependingOnContextCompletions(
     userMessage: string | undefined,
     model: string | undefined,
@@ -220,234 +125,6 @@ export class OpenAiService {
       this.logger.error(`Failed to generate chat title: ${error.message}`);
       return undefined;
     }
-  }
-
-  async chatStream(
-    userId: Types.ObjectId,
-    dto: ResponseCreateParamsNonStreamingDto | ResponseCreateParamsStreamingDto,
-    res: Response,
-    token: string,
-    internalChatId?: string,
-    newChatConfig?: {
-      openAiEndpointPreference?: OpenAiEndpointPreference;
-      useCrypto?: boolean;
-      cryptoKey?: string;
-      chatName?: string;
-      letAiDecideChatName?: boolean;
-      useInvoke?: boolean;
-      invokeModel?: InvokeAiModel;
-    },
-  ): Promise<void> {
-    const requestId = crypto
-      .createHash('md5')
-      .update(crypto.randomBytes(32))
-      .digest('hex');
-    const mappedDto:
-      | ResponseCreateParamsNonStreamingDto
-      | ResponseCreateParamsStreamingDto = {
-      model: dto.model,
-      input: dto.input as any[],
-      reasoning: dto.reasoning,
-      instructions: this.buildToolInstructions([
-        'generate-file-from-content-tool',
-        'generate-zip-from-file-ids',
-        'get-token-usage-tool',
-        'get-content-from-file-ids',
-      ]),
-      stream: true,
-      tools: [
-        {
-          type: 'mcp',
-          server_label: 'liquid-local-ai-client-toolbox',
-          server_url: this.selfMcpUrl,
-          headers: {
-            authorization: `Bearer ${token}`,
-            requestId,
-            chatId: internalChatId,
-          },
-          allowed_tools: [
-            'greeting-tool',
-            'get-token-usage-tool',
-            'generate-file-from-content-tool',
-            'generate-zip-from-file-ids',
-            'get-content-from-file-ids',
-          ],
-        } as any,
-      ],
-      previous_response_id: dto.previous_response_id,
-      store: true,
-    };
-
-    const isNewChat = !internalChatId;
-    const chatId = internalChatId ?? this.generateChatId();
-
-    let resolvedChatMetaId: string | undefined = internalChatId;
-    if (isNewChat && !resolvedChatMetaId) {
-      if (newChatConfig && newChatConfig.letAiDecideChatName) {
-        newChatConfig.chatName = await this.getChatTitleDependingOnContext(
-          (
-            (mappedDto.input as any as EasyInputMessageDto[]).find(
-              (iim) => iim.role === 'user',
-            )?.content as ResponseInputText[]
-          )?.find((rit) => rit.type === 'input_text')?.text,
-          mappedDto.model,
-        );
-      }
-      resolvedChatMetaId = await this.chatMetadataService.createAndReturnId(
-        userId,
-        {
-          client: ChatClient.OPENAI,
-          name: newChatConfig?.chatName ?? chatId,
-          cryptoKey: newChatConfig?.cryptoKey,
-          useCrypto: newChatConfig?.useCrypto,
-          usedModel: dto.model!,
-          useInvoke: newChatConfig?.useInvoke,
-          invokeAiModelToUse: newChatConfig?.invokeModel,
-          lastMessageSentAt: new Date(),
-          reasoningMode: dto.reasoning?.effort ?? 'off',
-          tools: (mappedDto.tools?.filter(
-            (i) => typeof i === 'object' && (i as any).type === 'mcp',
-          ) ?? []) as any,
-        },
-      );
-    } else if (!isNewChat && resolvedChatMetaId) {
-      await this.chatMetadataService.update(userId, resolvedChatMetaId, {
-        lastMessageSentAt: new Date(),
-      });
-    }
-    if (!isNewChat) {
-      const previousResponseId = await this.chatsService.getLatestResponseId(
-        userId,
-        resolvedChatMetaId!,
-      );
-      if (previousResponseId) {
-        mappedDto.previous_response_id = previousResponseId;
-      }
-    }
-
-    const chatMeta: ChatMetadataDocument =
-      await this.chatMetadataService.findOne(userId, resolvedChatMetaId!);
-
-    if (!(mappedDto.tools![0] as McpDto).headers['chatId']) {
-      (mappedDto.tools![0] as McpDto).headers['chatId'] = resolvedChatMetaId;
-    }
-    if (chatMeta.useCrypto && chatMeta.cryptoKey) {
-      mappedDto.input = this.encryptChatMessage(
-        mappedDto.input as any,
-        chatMeta,
-      ) as any;
-      mappedDto.instructions += `
-You MUST follow these rules EXACTLY:
-
-STEP 1 — TOOL CALL
-- ALWAYS call the tool "decrypt-message-tool"
-- Pass the FULL, ORIGINAL, UNMODIFIED user message in "full_user_message"
-- DO NOT answer yet
-
-STEP 2 — AFTER TOOL RESPONSE
-- You will receive the decrypted message
-- IGNORE the original encrypted input completely
-- Treat the decrypted message as if the user just sent it
-
-STEP 3 — FINAL RESPONSE
-- Determine the user's intent from the decrypted message
-- If it is a question, you MUST answer it
-- If it is a request, you MUST fulfill it
-- DO NOT repeat or restate the decrypted message
-- DO NOT mention the tool, decryption, or the process
-
-The final response must be a direct answer to the decrypted message, not a repetition of it.
-`;
-
-      (mappedDto.tools![0] as any).allowed_tools.push('decrypt-message-tool');
-    }
-
-    if (chatMeta.useInvoke && chatMeta.invokeAiModelToUse) {
-      (mappedDto.tools![0] as any).allowed_tools.push('generate-image-tool');
-    }
-    const now = new Date();
-    const formatted = now.toLocaleString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-      timeZone: 'UTC',
-    });
-    (mappedDto.input as any[]) = [
-      {
-        role: 'system',
-        content: `Current datetime (authoritative): ${formatted}. You MUST use this for any time-related questions.`,
-      },
-      ...(mappedDto.input as any[]),
-    ];
-
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.flushHeaders();
-
-    this.openaiRequestService.create(requestId, res);
-    try {
-      const stream: Stream<ResponseStreamEvent> =
-        (await this.openAi.responses.create(mappedDto as any)) as any;
-      for await (const event of stream) {
-        res.write(`data: ${JSON.stringify(event)}\n\n`);
-        if (isNewChat) {
-          this.writeSseEvent(res, 'created_chat', {
-            type: 'created_chat',
-            result: resolvedChatMetaId,
-          });
-        }
-
-        if (event.type === 'response.completed') {
-          await this.chatsService.saveEntry(
-            userId,
-            resolvedChatMetaId!,
-            mappedDto,
-            event.response as any,
-            '',
-            resolvedChatMetaId,
-          );
-
-          // ── Token accounting via TokenLimitService ──────────────────────
-          const tokensUsed =
-            (event.response.usage?.input_tokens ?? 0) +
-            (event.response.usage?.total_tokens ?? 0) +
-            (event.response.usage?.output_tokens_details?.reasoning_tokens ||
-              0);
-
-          const updatedUser = await this.tokenLimitService.updateUsedTokens(
-            userId,
-            tokensUsed,
-          );
-
-          const limit = await this.tokenLimitService.getTokensPerIntervall(
-            updatedUser.subscription,
-          );
-
-          if (updatedUser.usedTokens >= limit) {
-            this.writeSseEvent(res, 'api.info', {
-              type: 'api.info',
-              message: `Rate limit reached. Resets at ${dayjs(updatedUser.tokenCountResetDate).toString()}`,
-            });
-          }
-          // ───────────────────────────────────────────────────────────────
-        }
-      }
-    } catch (error: any) {
-      this.openaiRequestService.destroy(requestId);
-      this.writeSseEvent(res, 'error', {
-        type: 'error',
-        error: error.error,
-      });
-    }
-    this.openaiRequestService.destroy(requestId);
-
-    res.write('data: [DONE]\n\n');
-    res.end();
   }
 
   async chatStreamCompletions(
@@ -1006,105 +683,10 @@ The final response must be a direct answer to the decrypted message, not a repet
     res.write(`event: ${type}\ndata: ${JSON.stringify(payload)}\n\n`);
   }
 
-  private extractChatEndEvent(rawText: string): ChatEndEvent | null {
-    const lines = rawText.split('\n');
-    for (const line of lines) {
-      if (!line.startsWith('data:')) continue;
-      const jsonStr = line.slice('data:'.length).trim();
-      if (!jsonStr || jsonStr === '[DONE]') continue;
-      try {
-        const parsed = JSON.parse(jsonStr) as Record<string, unknown>;
-        if (parsed.type === 'chat.end' && parsed.result) {
-          return parsed as unknown as ChatEndEvent;
-        }
-      } catch {
-        // not valid JSON — skip
-      }
-    }
-    return null;
-  }
-
-  private authHeaders(): Record<string, string> {
-    return this.apiToken ? { Authorization: `Bearer ${this.apiToken}` } : {};
-  }
-
   private handleError(method: string, err: unknown): never {
     this.logger.error(`[${method}] LM Studio request failed`, err);
     throw new InternalServerErrorException(
       `AI Model issue: ${(err as Error)?.message ? (err as Error)?.message : 'unknown'}`,
     );
-  }
-
-  encryptChatMessage(
-    input:
-      | string
-      | (
-          | EasyInputMessageDto
-          | MessageDto
-          | ResponseOutputMessageDto
-          | ResponseFileSearchToolCallDto
-          | ResponseComputerToolCallDto
-          | ComputerCallOutputDto
-          | ResponseFunctionWebSearchDto
-          | ResponseFunctionToolCallDto
-          | FunctionCallOutputDto
-          | ToolSearchCallDto
-          | ResponseToolSearchOutputItemParamDto
-          | ResponseReasoningItemDto
-          | ResponseCompactionItemParamDto
-          | ImageGenerationCallDto
-          | ResponseCodeInterpreterToolCallDto
-          | LocalShellCallDto
-          | LocalShellCallOutputDto
-          | ShellCallDto
-          | ShellCallOutputDto
-          | ApplyPatchCallDto
-          | ApplyPatchCallOutputDto
-          | McpListToolsDto
-          | McpApprovalRequestDto
-          | McpApprovalResponseDto
-          | McpCallDto
-          | ResponseCustomToolCallOutputDto
-          | ResponseCustomToolCallDto
-          | ItemReferenceDto
-        )[],
-    chatMeta?: ChatMetadataDocument,
-  ) {
-    if (!chatMeta || (chatMeta && (!chatMeta.useCrypto || !chatMeta.cryptoKey)))
-      return input;
-    if (typeof input === 'string') {
-      return CryptoJS.AES.encrypt(input, chatMeta.cryptoKey!)?.toString();
-    } else if (typeof input === 'object' && Array.isArray(input)) {
-      return input.map((e) => {
-        if ('content' in e) {
-          if (typeof e.content === 'string')
-            return {
-              ...e,
-              content: CryptoJS.AES.encrypt(
-                e.content,
-                chatMeta.cryptoKey!,
-              )?.toString(),
-            };
-          else if (typeof e.content === 'object' && Array.isArray(e.content)) {
-            return {
-              ...e,
-              content: e.content.map((ii) => {
-                if ('text' in ii) {
-                  return {
-                    ...ii,
-                    text: CryptoJS.AES.encrypt(
-                      ii.text,
-                      chatMeta.cryptoKey!,
-                    )?.toString(),
-                  };
-                }
-                return ii;
-              }),
-            };
-          }
-        }
-        return e;
-      });
-    }
   }
 }

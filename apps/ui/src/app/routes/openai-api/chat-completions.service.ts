@@ -7,7 +7,7 @@ import {
   OpenAiStreamService,
   McpCallProgressEvent,
 } from './completions-openai-stream.service';
-import { OpenAiStreamErrorEvent, OpenAiStreamApiInfoEvent } from './openai-stream.service';
+import { OpenAiStreamErrorEvent, OpenAiStreamApiInfoEvent } from './openai-stream-events.model';
 import {
   ChatMetadataService,
   ChatMetadataDto,

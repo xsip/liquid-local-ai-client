@@ -6,7 +6,7 @@ import {
   CompletionsStreamOpenAiRequest,
   CreateChatMetadataDto,
 } from '../../client';
-import { OpenAiChatEnd, OpenAiStreamErrorEvent } from './openai-stream.service';
+import { OpenAiChatEnd, OpenAiStreamErrorEvent } from './openai-stream-events.model';
 
 export interface McpCallProgressEvent {
   type: 'response.mcp_call.in_progress' | 'response.mcp_call.completed';

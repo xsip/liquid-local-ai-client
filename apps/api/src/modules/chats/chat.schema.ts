@@ -1,11 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ChatRequestDto } from '../lm-studio/dto/chat.dto';
-import { ChatResponseDto } from '../lm-studio/dto/chat-response.dto';
-import { ResponseCreateParamsNonStreamingDto } from '../openai/dto/create-response-dtos';
-import { ResponseCreateParamsStreamingDto } from '../openai/dto/create-response-dtos/ResponseCreateParamsStreamingDto';
-import { ResponseDto } from '../openai/dto/get-response-dtos';
 
 export type ChatDocument = Chat & Document;
 
@@ -21,7 +16,7 @@ export class Chat {
 
   /**
    * ObjectId (hex string) of the ChatMetadata document that owns this message.
-   * Set automatically when a new chat is created via LmStudioService.
+   * Set automatically when a new chat is created.
    * Null for legacy entries created before ChatMetadata was introduced.
    */
   @Prop({ required: false, default: null, type: String, index: true })
@@ -31,35 +26,9 @@ export class Chat {
   @Prop({ required: false, default: null, type: String })
   name: string | null;
 
-  /** Snapshot of the request that produced this entry */
-  @Prop({ required: true, type: Object })
-  request:
-    | ChatRequestDto
-    | ResponseCreateParamsNonStreamingDto
-    | ResponseCreateParamsStreamingDto;
-  /** Snapshot of the response (extracted from the SSE stream) */
-  @Prop({ required: true, type: Object })
-  response: ChatResponseDto | ResponseDto;
-
   /**
-   * LM Studio response ID from the previous turn — taken from request.previous_response_id.
-   * Null for the first message in a session.
-   */
-  @Prop({ required: false, default: null, type: String })
-  previousResponseId: string | null;
-
-  /**
-   * LM Studio response ID returned for this turn — taken from response.response_id.
-   * Present when store=true was sent (which chatStream always sets).
-   */
-  @Prop({ required: false, default: null, type: String })
-  responseId: string | null;
-
-  /**
-   * Rolling Chat Completions message array (system/user/assistant/tool turns)
-   * for sessions using the Chat Completions API instead of the Responses API.
-   * The latest entry for an internalChatId holds the full history — no
-   * previous_response_id-style chaining is needed for this shape.
+   * Rolling Chat Completions message array (system/user/assistant/tool turns).
+   * The latest entry for an internalChatId holds the full history.
    */
   @Prop({ required: false, default: null, type: [Object] })
   messages: Record<string, unknown>[] | null;
@@ -89,24 +58,6 @@ export class ChatEntryDto {
 
   @ApiPropertyOptional({ nullable: true })
   name: string | null;
-
-  @ApiProperty()
-  request: ChatRequestDto;
-
-  @ApiProperty()
-  response: ChatResponseDto;
-
-  @ApiPropertyOptional({
-    nullable: true,
-    description: 'LM Studio response ID of the previous turn',
-  })
-  previousResponseId: string | null;
-
-  @ApiPropertyOptional({
-    nullable: true,
-    description: 'LM Studio response ID returned for this turn',
-  })
-  responseId: string | null;
 
   @ApiProperty()
   createdAt: Date;

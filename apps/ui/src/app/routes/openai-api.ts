@@ -8,28 +8,17 @@ import {
   ChatMetadataService,
   ChatRequestDto,
   ChatsService,
-  ContentDto,
   CreateChatMetadataDto,
-  EasyInputMessageDtoContentInner,
-  MessageDtoContentInner,
   ReasoningDto,
-  ResponseInputFileDto,
-  ResponseInputImageDto,
-  ResponseInputTextDto,
-  ResponseOutputMessageDtoContentInner,
-  ResponseOutputRefusalDto,
-  ResponseOutputTextDto
 } from '../client';
-import { ChatMessage, ChatService } from './openai-api/chat.service';
-import { ChatCompletionsService } from './openai-api/chat-completions.service';
+import { ChatMessage, ChatCompletionsService } from './openai-api/chat-completions.service';
 import { OpenAiModelSelectorComponent } from './openai-api/model-selector.component';
 
-// Re-use the shared sub-components from lm-studio-api — they are generic enough
-import { ChatSidebarComponent } from './lm-studio-api/chat-sidebar.component';
-import { ChatMessagesComponent } from './lm-studio-api/chat-messages.component';
-import { InfoComponent } from './lm-studio-api/info.component';
+import { ChatSidebarComponent } from '../shared/components/chat-sidebar.component';
+import { ChatMessagesComponent } from '../shared/components/chat-messages.component';
+import { InfoComponent } from '../shared/components/info.component';
 import { AppendedFile, OpenAiChatInputComponent } from './openai-api/chat-input.component';
-import { Observable, of, take, tap } from 'rxjs';
+import { Observable, of, tap } from 'rxjs';
 import { ButtonComponent, IconButtonComponent, LabelComponent, TextInputComponent, ToggleComponent } from '../shared';
 import { TranslateModule } from '@ngx-translate/core';
 import { NgIconComponent, provideIcons } from '@ng-icons/core';
@@ -111,7 +100,7 @@ type ChatNameMode = 'ai' | 'custom' | 'none';
       ]),
     ]),
   ],
-  providers: [ChatService, ChatCompletionsService, OpenAiModelService],
+  providers: [ChatCompletionsService, OpenAiModelService],
   template: `
     <div
       class="h-screen bg-surface-base text-text-primary flex flex-col overflow-hidden transition-colors duration-300"
@@ -298,34 +287,6 @@ type ChatNameMode = 'ai' | 'custom' | 'none';
                       }
                     </div>
 
-                    <!-- Endpoint Preference -->
-                    <div>
-                      <ui-label class="mb-1.5">{{ 'toolbar.endpoint' | translate }}</ui-label>
-                      <div class="flex gap-2">
-                        <ui-button
-                          class="flex-1"
-                          variant="secondary"
-                          [disabled]="true"
-                          [active]="newChatEndpointPreference() === 'RESPONSES'"
-                          (clicked)="selectNewChatEndpointPreference('RESPONSES')"
-                          >{{ 'toolbar.responsesApi' | translate }}</ui-button
-                        >
-                        <ui-button
-                          class="flex-1"
-                          variant="secondary"
-                          [active]="newChatEndpointPreference() === 'COMPLETION'"
-                          (clicked)="selectNewChatEndpointPreference('COMPLETION')"
-                          >{{ 'toolbar.chatCompletions' | translate }}</ui-button
-                        >
-                      </div>
-                      <p class="mt-1.5 text-[10px] text-text-muted">
-                        @if (newChatEndpointPreference() === 'RESPONSES') {
-                          {{ 'toolbar.endpointResponsesDesc' | translate }}
-                        } @else {
-                          {{ 'toolbar.endpointCompletionsDesc' | translate }}
-                        }
-                      </p>
-                    </div>
                     <!-- Model selector -->
                     <div class="flex items-center justify-between">
                       <div class="flex flex-col items-start">
@@ -466,7 +427,7 @@ type ChatNameMode = 'ai' | 'custom' | 'none';
               </ui-icon-button>
             </div>
             <div class="flex-1 overflow-hidden">
-              <app-info [uiType]="'OPENAI'" />
+              <app-info />
             </div>
           </div>
         }
@@ -475,14 +436,11 @@ type ChatNameMode = 'ai' | 'custom' | 'none';
   `,
 })
 export class OpenAiApi implements OnDestroy, OnInit {
-  readonly chatService = inject(ChatService);
   readonly chatCompletionsService = inject(ChatCompletionsService);
   readonly modelService = inject(OpenAiModelService);
-  /** Whether the currently open/new chat uses the Chat Completions API instead of Responses. */
-  readonly useCompletions = signal(true);
-  /** Common facade over whichever backend service is active for the current chat. */
-  get activeChat(): ChatService | ChatCompletionsService {
-    return this.useCompletions() ? this.chatCompletionsService : this.chatService;
+  /** The Chat Completions service is the only supported chat backend. */
+  get activeChat(): ChatCompletionsService {
+    return this.chatCompletionsService;
   }
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -545,8 +503,6 @@ export class OpenAiApi implements OnDestroy, OnInit {
       return of(this.activeChat.currentChatId()!);
     }
 
-    this.useCompletions.set(this.newChatEndpointPreference() === 'COMPLETION');
-
     return this.chatMetaService
       .createChatMetadata({
         name: this.resolvedChatName() ?? 'New Chat',
@@ -591,29 +547,20 @@ export class OpenAiApi implements OnDestroy, OnInit {
   }
 
   ngOnDestroy(): void {
-    this.chatService.destroy();
     this.chatCompletionsService.destroy();
   }
 
   // ── Model management ──────────────────────────────────────────────────────
 
-  /**
-   * Resolves the endpoint preference for `chatId` before touching any state,
-   * since chatMessages/history live on different service instances depending
-   * on whether the chat uses the Responses or Chat Completions API.
-   */
   private loadChatMeta(chatId: string): void {
     this.chatMetaService.getChatMetadata(chatId).subscribe({
       next: (meta) => {
-        this.useCompletions.set(meta.openAiEndpointPreference === 'COMPLETION');
         this.activeChat.currentChatId.set(chatId);
-        this.loadChatHistory(chatId);
+        this.loadCompletionsChatHistory(chatId);
         this.chatCompletionsService.updateLockPolling(
           chatId,
           (meta.sharedWith?.length ?? 0) > 0,
-          () => {
-            if (this.useCompletions()) this.loadCompletionsChatHistory(chatId);
-          },
+          () => this.loadCompletionsChatHistory(chatId),
         );
 
         const reasoningValue = meta.reasoningMode as ReasoningDto.EffortEnum | undefined;
@@ -641,126 +588,6 @@ export class OpenAiApi implements OnDestroy, OnInit {
         this.chatsLoading.set(false);
       },
       error: () => this.chatsLoading.set(false),
-    });
-  }
-
-  private fromContentToText(
-    content:
-      | string
-      | Array<EasyInputMessageDtoContentInner>
-      | Array<MessageDtoContentInner>
-      | Array<ResponseOutputMessageDtoContentInner>
-      | Array<ContentDto>,
-    createdAt: string,
-  ): ChatMessage[] {
-    if (typeof content === 'string') {
-      return [{ role: 'user', text: content, date: new Date(createdAt) }];
-    }
-    if (typeof content === 'object' && Array.isArray(content)) {
-      return content.map((c) => {
-        if (typeof c === 'string') {
-          return { role: 'user', text: c, date: new Date(createdAt) };
-        }
-        if (c.type === ResponseInputTextDto.TypeEnum.InputText) {
-          return { role: 'user', text: c.text, date: new Date(createdAt) };
-        } else if (c.type === ResponseOutputRefusalDto.TypeEnum.Refusal) {
-          return { role: 'user', text: c.refusal, date: new Date(createdAt) };
-        } else if (c.type === ContentDto.TypeEnum.ReasoningText) {
-          return { role: 'user', text: c.text, date: new Date(createdAt) };
-        } else if (c.type === ResponseInputImageDto.TypeEnum.InputImage) {
-          return { role: 'user', type: 'image', image: c.image_url, date: new Date(createdAt) };
-        } else if (c.type === ResponseOutputTextDto.TypeEnum.OutputText) {
-          return { role: 'user', text: c.text, date: new Date(createdAt) };
-        } else if (c.type === ResponseInputFileDto.TypeEnum.InputFile) {
-          return { role: 'user', file: c.file_data ?? c.file_url, date: new Date(createdAt) };
-        }
-        return { role: 'user', text: JSON.stringify(c), date: new Date(createdAt) };
-      });
-    }
-    return [{ role: 'user', text: JSON.stringify(content), date: new Date(createdAt) }];
-  }
-
-  private loadChatHistory(chatId: string): void {
-    if (this.useCompletions()) {
-      this.loadCompletionsChatHistory(chatId);
-      return;
-    }
-    this.isLoadingMessages.set(true);
-    this.chatsApi.getChatEntries(chatId).subscribe((res) => {
-      const messages: any[] = [];
-      for (const entry of res) {
-        if (typeof entry.request.input === 'string')
-          messages.push({
-            role: 'user',
-            text: entry.request.input as string,
-            date: new Date(entry.createdAt),
-          });
-        else if (typeof entry.request.input === 'object' && Array.isArray(entry.request.input)) {
-          for (const inputEntry of entry.request.input) {
-            if (
-              inputEntry.type === 'message' ||
-              (!inputEntry.type && (inputEntry as any).role !== 'developer')
-            ) {
-              if ((inputEntry as any).role !== 'system')
-                messages.push(...this.fromContentToText(inputEntry.content, entry.createdAt));
-            }
-          }
-        }
-
-        const u = (entry.response as any)?.usage;
-        const statsStr = u
-          ? `${u.input_tokens} in · ${u.output_tokens} out${u.output_tokens_details?.reasoning_tokens ? ` · ${u.output_tokens_details.reasoning_tokens} reasoning` : ''}`
-          : undefined;
-
-        for (const output of entry.response.output) {
-          if (output.type === 'reasoning') {
-            const content =
-              (output as any).content?.[0]?.text ?? (output as any).summary?.[0]?.text ?? '';
-            messages.push({
-              role: 'reasoning',
-              text: content,
-              date: new Date(entry.createdAt),
-              collapsed: true,
-            });
-          } else {
-            // @ts-ignore
-            if (output.type === 'mcp_call' || output.type === 'tool_call') {
-              const tc = output as any;
-              let parsedOutput: string = tc.output ?? '';
-              try {
-                const arr = JSON.parse(parsedOutput);
-                if (Array.isArray(arr) && arr[0]?.text != null) parsedOutput = arr[0].text;
-              } catch {
-                /* leave as-is */
-              }
-              messages.push({
-                role: 'tool_call',
-                text: tc.name ?? tc.tool ?? '',
-                toolName: tc.name ?? tc.tool ?? '',
-                toolArguments: tc.arguments
-                  ? typeof tc.arguments === 'string'
-                    ? JSON.parse(tc.arguments)
-                    : tc.arguments
-                  : undefined,
-                toolOutput: parsedOutput || undefined,
-                providerLabel: tc.server_label ?? tc.provider_info?.server_label ?? undefined,
-                date: new Date(entry.createdAt),
-                collapsed: true,
-              });
-            } else if (output.type === 'message') {
-              const content = (output as any).content?.[0]?.text ?? (output as any).content ?? '';
-              messages.push({
-                role: 'ai',
-                text: typeof content === 'string' ? content : JSON.stringify(content),
-                date: new Date(entry.createdAt),
-                stats: statsStr,
-              });
-            }
-          }
-        }
-      }
-      this.isLoadingMessages.set(false);
-      this.chatService.chatMessages.set(messages);
     });
   }
 
@@ -871,37 +698,19 @@ export class OpenAiApi implements OnDestroy, OnInit {
 
   openChat(chatId: string): void {
     if (this.activeChat.streaming()) return;
-    this.chatService.chatMessages.set([]);
     this.chatCompletionsService.chatMessages.set([]);
     this.router.navigate(['/chat-openai', chatId]);
     this.chatId = chatId;
     this.loadChatMeta(chatId);
   }
 
-  /**
-   * Keeps `useCompletions` (which determines which service's form the input
-   * box is actually bound to) in sync with the endpoint radio buttons —
-   * otherwise the user types into the wrong service's form and submit()
-   * silently no-ops against an empty, invalid form on the other one.
-   */
-  selectNewChatEndpointPreference(
-    pref: CreateChatMetadataDto.OpenAiEndpointPreferenceEnum,
-  ): void {
-    this.newChatEndpointPreference.set(pref);
-    this.useCompletions.set(pref === 'COMPLETION');
-  }
-
   newChat(): void {
     if (this.activeChat.streaming()) return;
-    this.chatService.chatMessages.set([]);
-    this.chatService.currentChatId.set(null);
     this.chatCompletionsService.chatMessages.set([]);
     this.chatCompletionsService.currentChatId.set(null);
     this.chatCompletionsService.stopLockPolling();
-    this.useCompletions.set(true);
     this.router.navigate(['/chat-openai']);
     // Reset new-chat options to defaults
-    this.newChatEndpointPreference.set('COMPLETION');
     this.newChatUseCrypto.set(false);
     this.newChatUseCryptoModel = false;
     this.newChatCryptoKey = '';
@@ -913,76 +722,34 @@ export class OpenAiApi implements OnDestroy, OnInit {
 
   submit(): void {
     if (this.chatId) {
-      if (this.useCompletions()) {
-        this.chatCompletionsService.submit(
-          this.modelService.selectedModel()?.id ?? '',
-          this.modelService.reasoning() as EffortEnum,
-          this.appendedFiles(),
-          undefined,
-          () => this.loadChatList(),
-          undefined,
-        );
-        this.chatInputRef?.clearFiles();
-        return;
-      }
-
-      this.chatMetaService
-        .getChatMetadata(this.chatId)
-        .pipe(take(1))
-        .subscribe((res) => {
-          this.chatService.submit(
-            this.modelService.selectedModel()?.id ?? '',
-            this.modelService.reasoning() as EffortEnum,
-            this.appendedFiles(),
-            res.useCrypto && res.cryptoKey ? res.cryptoKey : undefined,
-            () => this.loadChatList(),
-            undefined,
-            () => this.infoRef()?.loadUser(),
-          );
-          this.chatInputRef?.clearFiles();
-        });
-      return;
-    }
-
-    if (this.newChatEndpointPreference() === 'COMPLETION') {
       this.chatCompletionsService.submit(
         this.modelService.selectedModel()?.id ?? '',
         this.modelService.reasoning() as EffortEnum,
         this.appendedFiles(),
         undefined,
         () => this.loadChatList(),
-        {
-          name: this.resolvedChatName(),
-          letAiDecideChatName: this.newChatNameMode() === 'ai',
-          useCrypto: this.newChatUseCrypto(),
-          cryptoKey: this.newChatCryptoKey || undefined,
-          openAiEndpointPreference: this.newChatEndpointPreference(),
-          invokeAiModelToUse: this.invokeAiModelPreference(),
-          useInvoke: this.newChatUseInvoke(),
-        },
+        undefined,
       );
       this.chatInputRef?.clearFiles();
       return;
     }
 
-    this.chatService.submit(
+    this.chatCompletionsService.submit(
       this.modelService.selectedModel()?.id ?? '',
       this.modelService.reasoning() as EffortEnum,
       this.appendedFiles(),
-      this.newChatUseCrypto() && this.newChatCryptoKey ? this.newChatCryptoKey : undefined,
+      undefined,
       () => this.loadChatList(),
       {
         name: this.resolvedChatName(),
         letAiDecideChatName: this.newChatNameMode() === 'ai',
         useCrypto: this.newChatUseCrypto(),
         cryptoKey: this.newChatCryptoKey || undefined,
-        openAiEndpointPreference: this.newChatEndpointPreference(),
+        openAiEndpointPreference: 'COMPLETION',
         invokeAiModelToUse: this.invokeAiModelPreference(),
         useInvoke: this.newChatUseInvoke(),
       },
-      () => this.infoRef()?.loadUser(),
     );
-
     this.chatInputRef?.clearFiles();
   }
 

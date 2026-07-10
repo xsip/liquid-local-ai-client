@@ -1,5 +1,4 @@
 import { Routes } from '@angular/router';
-import { LmStudioApi } from './routes/lm-studio-api';
 import { OpenAiApi } from './routes/openai-api';
 import { Login } from './routes/login';
 import { ReadmeComponent } from './routes/readme';
@@ -15,19 +14,6 @@ export const routes: Routes = [
     path: 'readme',
     component: ReadmeComponent,
     pathMatch: 'full',
-  },
-  {
-    path: 'chat-lm-studio',
-    pathMatch: 'full',
-    canActivate: [authGuard],
-    component: LmStudioApi,
-  },
-  {
-    path: 'chat-lm-studio/:chatId',
-    pathMatch: 'full',
-    runGuardsAndResolvers: 'paramsChange',
-    canActivate: [authGuard],
-    component: LmStudioApi,
   },
   {
     path: 'chat-openai',

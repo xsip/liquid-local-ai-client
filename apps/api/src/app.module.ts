@@ -2,7 +2,6 @@ import { MiddlewareConsumer, Module } from '@nestjs/common';
 import { AppService } from './app.service';
 import { McpModule, McpTransportType } from '@rekog/mcp-nest';
 import { ApiTools } from './tools/api.tools';
-import { LmStudioModule } from './modules/lm-studio/lmstudio.module';
 import { ChatsModule } from './modules/chats/chats.module';
 import { ChatMetadataModule } from './modules/chat-metadata/chat-metadata.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -44,7 +43,6 @@ import { ToolsHelperService } from './tools/tools-helper.service';
       },
     }),
     HttpModule,
-    LmStudioModule,
     OpenaiModule,
     ChatsModule,
     ChatMetadataModule,

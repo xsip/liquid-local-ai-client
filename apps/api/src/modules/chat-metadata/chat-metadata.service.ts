@@ -196,11 +196,11 @@ export class ChatMetadataService {
     this.logger.log(`Deleted ChatMetadata id=${id}`);
   }
 
-  // ── Internal helper used by LmStudioService ───────────────────────────────
+  // ── Internal helper used by OpenAiService ─────────────────────────────────
 
   /**
    * Create a ChatMetadata record and return its hex ObjectId string so
-   * LmStudioService can stamp `chatInternalId` on each chat message.
+   * OpenAiService can stamp `chatInternalId` on each chat message.
    */
   async createAndReturnId(
     userId: Types.ObjectId,

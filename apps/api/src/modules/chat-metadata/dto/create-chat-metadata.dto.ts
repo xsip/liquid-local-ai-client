@@ -9,7 +9,7 @@ import {
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { EphemeralMcpIntegrationDto } from '../../lm-studio/dto/chat.dto';
+import { EphemeralMcpIntegrationDto } from './ephemeral-mcp-integration.dto';
 import { OpenAiEndpointPreference } from '../chat-metadata.schema';
 import { InvokeAiModel } from '../../invoke/invoke.service';
 

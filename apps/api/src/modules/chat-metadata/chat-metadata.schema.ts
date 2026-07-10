@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { EphemeralMcpIntegrationDto } from '../lm-studio/dto/chat.dto';
+import { EphemeralMcpIntegrationDto } from './dto/ephemeral-mcp-integration.dto';
 import { IsIn, IsOptional } from 'class-validator';
 import { SubscriptionType } from '../auth/user.schema';
 import { InvokeAiModel } from '../invoke/invoke.service';

@@ -22,6 +22,6 @@ import { User, UserSchema } from '../auth/user.schema';
   ],
   controllers: [ChatsController],
   providers: [ChatsService, ChatMetadataService],
-  exports: [ChatsService], // exported so LmStudioModule can inject it
+  exports: [ChatsService], // exported so OpenaiModule can inject it
 })
 export class ChatsModule {}

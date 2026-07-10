@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterOutlet } from '@angular/router';
 import { jwtDecode } from 'jwt-decode';
-import { ImageLightboxComponent } from './routes/lm-studio-api/markdown.pipe';
+import { ImageLightboxComponent } from './shared/components/markdown.pipe';
 
 interface DecodedToken {
   exp: number; // Expiration time in seconds since epoch

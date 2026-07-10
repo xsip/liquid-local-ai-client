@@ -23,7 +23,7 @@ import {
   CodeBlockMountDirective,
   FileCardComponent,
   FileCardMountDirective,
-} from '../../routes/lm-studio-api/markdown.pipe';
+} from './markdown.pipe';
 import { ChatMetadataDto } from '../../client';
 import { debounceTime, distinctUntilChanged, Subject, takeUntil } from 'rxjs';
 
