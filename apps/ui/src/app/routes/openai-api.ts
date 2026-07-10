@@ -486,8 +486,6 @@ export class OpenAiApi implements OnDestroy, OnInit {
   readonly newChatNameMode = signal<ChatNameMode>('ai');
 
   private chatId?: string;
-  /** Whether the currently open chat is shared with other users. */
-  private isSharedChat = false;
   /** Model used by the currently open chat, shown above AI messages. */
   private usedModel?: string;
 
@@ -568,7 +566,6 @@ export class OpenAiApi implements OnDestroy, OnInit {
     this.chatMetaService.getChatMetadata(chatId).subscribe({
       next: (meta) => {
         this.activeChat.currentChatId.set(chatId);
-        this.isSharedChat = (meta.sharedWith?.length ?? 0) > 0;
         this.usedModel = meta.usedModel;
         this.loadCompletionsChatHistory(chatId);
         this.chatCompletionsService.updateLockPolling(
@@ -648,10 +645,8 @@ export class OpenAiApi implements OnDestroy, OnInit {
 
       const messages: ChatMessage[] = [];
       rawMessages.forEach((m, index) => {
-        const username =
-          senderByIndex[index] === this.currentUsername || !this.isSharedChat
-            ? 'You'
-            : (senderByIndex[index] ?? 'You');
+        const sender = senderByIndex[index];
+        const username = !sender || sender === this.currentUsername ? 'You' : sender;
         if (m.role === 'user') {
           if (Array.isArray(m.content)) {
             for (const part of m.content) {
