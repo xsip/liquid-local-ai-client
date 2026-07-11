@@ -1,6 +1,6 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { Location } from '@angular/common';
-import { FormBuilder, Validators } from '@angular/forms';
+import { FormBuilder } from '@angular/forms';
 import { Router } from '@angular/router';
 import { interval, Subscription, switchMap } from 'rxjs';
 import { McpCallProgressEvent, OpenAiStreamService } from './completions-openai-stream.service';
@@ -13,6 +13,8 @@ export interface ChatMessage {
   role: 'user' | 'ai' | 'error' | 'info' | 'tool_call' | 'reasoning' | 'mcp_list_tools';
   text: string;
   image?: string;
+  /** Data URL (audio/wav base64) for a recorded voice message. */
+  audio?: string;
   date?: Date;
   stats?: string;
   streaming?: boolean;
@@ -34,8 +36,10 @@ export class ChatCompletionsService {
   private readonly chatMetaService = inject(ChatMetadataService);
   readonly fb = inject(FormBuilder);
 
+  // No required validator — a message can be audio/file-only with empty text.
+  // submit() itself still refuses to send if there's neither text nor attachments.
   readonly form = this.fb.group({
-    input: ['', [Validators.required, Validators.minLength(1)]],
+    input: [''],
   });
 
   readonly streaming = signal(false);
@@ -110,8 +114,8 @@ export class ChatCompletionsService {
       mcpOverrides?: Array<{ mcpId: string; active: boolean; allowedTools: string[] }>;
     },
   ): void {
-    if (this.form.invalid || this.streaming() || this.locked()) return;
     let input = this.form.getRawValue().input!.trim();
+    if ((!input && !appendedFiles?.length) || this.streaming() || this.locked()) return;
 
     this.lastUserInput.set(input);
     this.form.reset();
@@ -124,6 +128,12 @@ export class ChatCompletionsService {
           { role: 'user', text: '', image: f.image_url, date: new Date(), username: 'You' },
         ]);
       }
+      if (f.type === 'input_audio' && f.audio_url) {
+        this.chatMessages.update((msgs) => [
+          ...msgs,
+          { role: 'user', text: '', audio: f.audio_url, date: new Date(), username: 'You' },
+        ]);
+      }
     }
 
     this.chatMessages.update((msgs) => [
@@ -134,7 +144,7 @@ export class ChatCompletionsService {
         text:
           (appendedFiles
             ?.map((f) =>
-              f.type === 'input_image'
+              f.type === 'input_image' || f.type === 'input_audio'
                 ? undefined
                 : `::file[${f.filename}](${f.assetUrl}){size=${f.sizeKb} type=${f.filename.split('.')[1]}}`,
             )
@@ -303,6 +313,12 @@ export class ChatCompletionsService {
     return appendedFiles.map((file) => {
       if (file.type === 'input_image' && file.image_url) {
         return { type: 'image_url', image_url: { url: file.image_url } };
+      }
+      if (file.type === 'input_audio' && file.audio_data) {
+        return {
+          type: 'input_audio',
+          input_audio: { data: file.audio_data, format: file.audio_format ?? 'wav' },
+        };
       }
       return { type: 'text', text: `[Attached file: ${file.filename}] (${file.assetUrl ?? ''})` };
     });

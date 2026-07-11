@@ -321,6 +321,14 @@ export class OpenAiService {
       ...history.filter((m: any) => m.role !== 'system'),
     ];
     const incomingMessages = (dto.messages ?? []) as any[];
+    const hasAudio = incomingMessages.some(
+      (m) =>
+        Array.isArray(m?.content) &&
+        m.content.some((part: any) => part?.type === 'input_audio'),
+    );
+    if (hasAudio) {
+      messages.push({ role: 'system', content: this.audioInstructions });
+    }
     messages.push(
       ...(chatMeta.useCrypto && chatMeta.cryptoKey
         ? this.encryptCompletionsMessages(incomingMessages, chatMeta.cryptoKey)
@@ -742,6 +750,12 @@ RULE: When the user requests a ZIP, output ONLY the ZIP file's markdown field.
 Do NOT output the markdown fields of any individual files that were packaged into it.
 The ZIP card is the only thing the user needs to see.`;
   }
+
+  private readonly audioInstructions = `
+The user's message includes a voice recording as an "input_audio" content part.
+Listen to it and treat what was said as the user's actual message — respond to
+the spoken content directly, the same way you would to typed text. Any
+accompanying text content is additional context, not a replacement for the audio.`;
 
   private readonly decryptToolInstructions = `
 You MUST follow these rules EXACTLY:

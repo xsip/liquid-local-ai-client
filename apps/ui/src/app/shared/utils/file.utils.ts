@@ -15,13 +15,16 @@ export function fileSizeLabel(dataUrl: string): string {
 }
 
 export interface AppendedFile {
-  type: 'input_image' | 'input_file';
+  type: 'input_image' | 'input_file' | 'input_audio';
   filename: string;
   id?: string;
   sizeKb?: number;
   assetUrl?: string;
   fileName?: string;
   image_url?: string; // data:<mime>;base64,<data>
+  audio_url?: string; // data:audio/wav;base64,<data> — playable data URL
+  audio_data?: string; // bare base64, no data-url prefix — what's sent to the model
+  audio_format?: string; // e.g. 'wav'
 }
 
 /**

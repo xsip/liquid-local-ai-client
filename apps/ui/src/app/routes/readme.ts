@@ -733,6 +733,46 @@ import {
           </div>
         </section>
 
+        <!-- VOICE INPUT -->
+        <section>
+          <h2 class="text-2xl font-bold text-text-primary mb-2">Voice Input</h2>
+          <p class="text-text-secondary mb-6">
+            A microphone button next to the chat input records a voice message and sends it
+            straight to the model as audio — no separate speech-to-text step in this codebase;
+            the inference server itself (llama.cpp, etc.) handles transcription/understanding via
+            its own audio input support. A text message is optional whenever a recording is
+            attached — you can send audio-only.
+          </p>
+          <div class="space-y-3">
+            <ng-container *ngFor="let step of voiceInputSteps">
+              <div
+                class="bg-surface-raised border border-border-default rounded-xl p-4 flex gap-3 items-start"
+              >
+                <span
+                  class="flex-shrink-0 w-7 h-7 rounded-full bg-tool-bg border border-tool-border flex items-center justify-center text-tool-text font-bold text-xs"
+                >{{ step.n }}</span
+                >
+                <p class="text-sm text-text-secondary leading-relaxed">
+                  <strong class="text-text-primary">{{ step.title }}</strong> — {{ step.detail }}
+                </p>
+              </div>
+            </ng-container>
+          </div>
+          <div
+            class="mt-4 flex gap-2 items-start bg-info-bg border border-info-border rounded-lg px-4 py-3"
+          >
+            <ng-icon
+              name="heroInformationCircle"
+              class="w-4 h-4 text-info-text flex-shrink-0 mt-0.5"
+            />
+            <p class="text-xs text-info-text">
+              Requires a model with audio understanding support (e.g. an audio-capable llama.cpp
+              build/model). If the loaded model can't process <code class="bg-info-bg px-1 rounded">input_audio</code>,
+              expect it to ignore or error on the audio content.
+            </p>
+          </div>
+        </section>
+
         <!-- ENCRYPTION -->
         <section>
           <h2 class="text-2xl font-bold text-text-primary mb-2">Message Encryption</h2>
@@ -1154,6 +1194,13 @@ export class ReadmeComponent {
       iconColor: 'text-tool-text',
     },
     {
+      title: 'Voice Input',
+      desc: 'Record a message with the mic button — hand-encoded as WAV and sent as an input_audio content part, with an automatic system prompt telling the model to treat it as the user\'s message. Text is optional when audio is attached.',
+      icon: 'M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z',
+      iconBg: 'bg-tool-bg',
+      iconColor: 'text-tool-text',
+    },
+    {
       title: 'AES Message Encryption',
       desc: 'Per-chat opt-in encryption. Only ciphertext reaches the inference server; the model decrypts via MCP at inference time.',
       icon: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z',
@@ -1304,6 +1351,39 @@ export class ReadmeComponent {
   ];
 
   imageFormats = ['JPEG', 'PNG', 'WebP', 'GIF', 'AVIF'];
+
+  voiceInputSteps = [
+    {
+      n: '1',
+      title: 'Record',
+      detail:
+        'the mic button captures microphone audio via the Web Audio API (AudioContext + ScriptProcessorNode) and hand-encodes it as 16-bit PCM WAV on stop — MediaRecorder\'s default webm/opus output isn\'t decodable by llama.cpp\'s audio input.',
+    },
+    {
+      n: '2',
+      title: 'Attach',
+      detail:
+        'the recording becomes an attachment alongside any typed text, image, or file. Text is optional when a recording is attached — audio-only messages are allowed.',
+    },
+    {
+      n: '3',
+      title: 'Send',
+      detail:
+        'the recording is base64-encoded and sent as a Chat Completions input_audio content part: { "type": "input_audio", "input_audio": { "data": "<base64 WAV>", "format": "wav" } }.',
+    },
+    {
+      n: '4',
+      title: 'System prompt injection',
+      detail:
+        'whenever a request contains an input_audio part, the backend injects an extra system message instructing the model to treat what was said as the user\'s actual message.',
+    },
+    {
+      n: '5',
+      title: 'Playback',
+      detail:
+        'recorded voice messages render as a custom audio player bubble (play/pause, seekable progress bar, elapsed/total time) matching the chat UI, both when freshly sent and after reloading chat history.',
+    },
+  ];
 
   encryptionFlow = [
     {

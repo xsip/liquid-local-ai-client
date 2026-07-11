@@ -1,6 +1,6 @@
 # <img src="https://raw.githubusercontent.com/xsip/liquid-local-ai-client/refs/heads/main/apps/ui/public/logo-cropped.png" alt="Logo" width="30"/> Liquid Local AI Client | [Preview on youtube](https://www.youtube.com/watch?v=_UhKke10JzY)  
 
-A full-stack AI chat client that connects to any OpenAI-compatible local inference server (LM Studio, Ollama, llama.cpp, vLLM, ...) via the standard `/v1/chat/completions` endpoint. Built with Angular, NestJS, and MongoDB, with first-class MCP (Model Context Protocol) tool support, AI image generation via [InvokeAI](https://invoke-ai.github.io/InvokeAI/), image upload into chat, and optional end-to-end AES message encryption.
+A full-stack AI chat client that connects to any OpenAI-compatible local inference server (LM Studio, Ollama, llama.cpp, vLLM, ...) via the standard `/v1/chat/completions` endpoint. Built with Angular, NestJS, and MongoDB, with first-class MCP (Model Context Protocol) tool support, AI image generation via [InvokeAI](https://invoke-ai.github.io/InvokeAI/), image upload into chat, voice message recording (sent as `input_audio` for models with audio support), and optional end-to-end AES message encryption.
 
 > **⚠️ Breaking change:** LM Studio's native `/api/v1/chat` API and the OpenAI-compatible `/v1/responses/create` (Responses API) endpoint have been **removed** — the modules, routes, and UI code that supported them no longer exist in this repo. See [Chat Completions API (current default)](#chat-completions-api-current-default) below for why and what replaced them.
 
@@ -23,6 +23,7 @@ A full-stack AI chat client that connects to any OpenAI-compatible local inferen
 - [Custom MCP Servers](#custom-mcp-servers)
 - [Image Generation (InvokeAI)](#image-generation-invokeai)
 - [Image Upload](#image-upload)
+- [Voice Input](#voice-input)
 - [Message Encryption](#message-encryption)
 - [Authentication & Authorization](#authentication--authorization)
 - [Token Usage & Rate Limiting](#token-usage--rate-limiting)
@@ -127,6 +128,7 @@ Unlike the old Responses-API flow — where LM Studio itself connected to the MC
     - `generate-image-tool` — generates an image via InvokeAI from a natural-language prompt and injects it into the chat as a persistent asset
 - **AI image generation** — the model can call `generate-image-tool` during inference; the backend submits a txt2img job to InvokeAI, downloads the result, stores it in MongoDB, and returns a Markdown image reference to the chat
 - **Image upload** — users can attach one or more images before sending a message; images are uploaded to MongoDB via the Assets API and forwarded to the model as vision content
+- **Voice input** — record a message with the mic button; it's hand-encoded as WAV and sent as an `input_audio` content part, with an automatic system prompt telling the model to treat the recording as the user's message (see [Voice Input](#voice-input))
 - **End-to-end AES message encryption** — per-chat opt-in; messages are encrypted with CryptoJS AES before leaving the browser, and the model decrypts them via MCP during inference
 - **JWT authentication** — login / register with bcrypt-hashed passwords; tokens expire after 1 hour
 - **Role-based access control** — `User` and `Admin` roles via `RolesGuard`
@@ -423,6 +425,25 @@ Users can attach images to their chat messages before sending. Uploaded images a
 | AVIF | `image/avif` |
 
 Maximum file size: **10 MB** per file.
+
+---
+
+## Voice Input
+
+A microphone button next to the chat input lets you record a voice message and send it straight to the model as audio — no separate speech-to-text step in this codebase; the inference server itself (llama.cpp, etc.) handles transcription/understanding via its own audio input support.
+
+### How It Works
+
+1. **Recording** — clicking the mic button (`apps/ui/src/app/routes/openai-api/chat-input.component.ts`) captures microphone audio via the Web Audio API (`AudioContext` + `ScriptProcessorNode`, not `MediaRecorder`) and hand-encodes it as 16-bit PCM **WAV** on stop — `MediaRecorder`'s default webm/opus output isn't decodable by llama.cpp's audio input, so WAV is generated directly from the raw PCM samples (`apps/ui/src/app/shared/utils/audio-recorder.utils.ts`).
+2. **Attaching** — the recording becomes an attachment alongside any typed text, image, or file — a text message is **optional** when a recording is attached; you can send audio-only.
+3. **Sending** — on submit, the recording is base64-encoded and sent as an OpenAI Chat Completions `input_audio` content part:
+   ```json
+   { "type": "input_audio", "input_audio": { "data": "<base64 WAV>", "format": "wav" } }
+   ```
+4. **System prompt injection** — whenever a request's messages contain an `input_audio` part, `OpenAiService` (`apps/api/src/modules/openai/openai.service.ts`) injects an extra system message instructing the model to treat what was said in the recording as the user's actual message, the same way it would respond to typed text.
+5. **Playback** — recorded voice messages render as a custom audio player bubble (play/pause, seekable progress bar, elapsed/total time) matching the rest of the chat UI (`apps/ui/src/app/shared/components/audio-player.component.ts`), both for freshly-sent messages and when a chat's history is reloaded.
+
+> **Requires a model with audio understanding support** (e.g. an audio-capable llama.cpp build/model). If the loaded model can't process `input_audio`, expect it to ignore or error on the audio content.
 
 ---
 

@@ -801,6 +801,16 @@ export class OpenAiApi implements OnDestroy, OnInit {
               if (part?.type === 'image_url' && part.image_url?.url) {
                 messages.push({ role: 'user', text: '', image: part.image_url.url, date, username });
               }
+              if (part?.type === 'input_audio' && part.input_audio?.data) {
+                const format = part.input_audio.format ?? 'wav';
+                messages.push({
+                  role: 'user',
+                  text: '',
+                  audio: `data:audio/${format};base64,${part.input_audio.data}`,
+                  date,
+                  username,
+                });
+              }
             }
           }
           const text = this.extractCompletionsMessageText(m.content);

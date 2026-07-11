@@ -10,6 +10,7 @@ export { ModalComponent }         from './components/ui/modal.component';
 
 // ── Shared Components ──────────────────────────────────────────────────────
 export { SpinnerComponent }       from './components/spinner.component';
+export { AudioPlayerComponent }   from './components/audio-player.component';
 export { SendButtonComponent }    from './components/send-button.component';
 export { ResetButtonComponent }   from './components/reset-button.component';
 export {
@@ -41,6 +42,9 @@ export {
 export type { AppendedFile }      from './utils/file.utils';
 
 export { readStoredTheme, applyTheme } from './utils/theme.utils';
+
+export { AudioRecorder } from './utils/audio-recorder.utils';
+export type { AudioRecording } from './utils/audio-recorder.utils';
 
 // ── Directives ─────────────────────────────────────────────────────────────
 export { TooltipDirective } from './directives/tooltip.directive';

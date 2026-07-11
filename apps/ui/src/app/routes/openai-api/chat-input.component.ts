@@ -27,6 +27,7 @@ import {
   mergeFiles,
   readFilesAsDataUrls,
 } from '../../shared/utils/file.utils';
+import { AudioRecorder } from '../../shared/utils/audio-recorder.utils';
 import { TranslateModule } from '@ngx-translate/core';
 import { MarkdownPipe } from '../../shared/components/markdown.pipe';
 import { NgIconComponent, provideIcons } from '@ng-icons/core';
@@ -35,7 +36,9 @@ import {
   heroEye,
   heroLink,
   heroLockClosed,
+  heroMicrophone,
   heroPencilSquare,
+  heroStop,
   heroXMark,
 } from '@ng-icons/heroicons/outline';
 import { ChatCompletionsService } from './chat-completions.service';
@@ -57,7 +60,16 @@ export type { AppendedFile };
     NgIconComponent,
   ],
   viewProviders: [
-    provideIcons({ heroPencilSquare, heroEye, heroLink, heroDocument, heroXMark, heroLockClosed }),
+    provideIcons({
+      heroPencilSquare,
+      heroEye,
+      heroLink,
+      heroDocument,
+      heroXMark,
+      heroLockClosed,
+      heroMicrophone,
+      heroStop,
+    }),
   ],
   styles: [
     `
@@ -129,6 +141,14 @@ export type { AppendedFile };
         color: var(--color-accent);
         border-color: var(--color-accent);
         background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+      }
+
+      @keyframes mic-pulse {
+        0%, 100% { box-shadow: 0 0 0 0 var(--color-error-bg); }
+        50% { box-shadow: 0 0 0 6px transparent; }
+      }
+      .mic-recording {
+        animation: mic-pulse 1.4s ease-in-out infinite;
       }
     `,
   ],
@@ -211,7 +231,7 @@ export type { AppendedFile };
         <!-- Action row -->
         <div class="flex items-center gap-2 flex-wrap">
           <app-send-button
-            [disabled]="form().invalid || streaming() || locked()"
+            [disabled]="(!rawText().trim() && appendedFiles().length === 0) || streaming() || locked()"
             [streaming]="streaming()"
           />
 
@@ -251,6 +271,27 @@ export type { AppendedFile };
             (change)="onFilesSelected($event)"
           />
 
+          <button
+            type="button"
+            (click)="toggleMic()"
+            [disabled]="(streaming() || locked()) && !recording()"
+            class="flex items-center gap-1.5 px-3 py-1.5 text-xs border rounded-xl select-none disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-all duration-150"
+            [class]="
+              recording()
+                ? 'mic-recording border-error-border text-error-text bg-error-bg'
+                : 'border-border-default text-text-secondary hover:border-border-strong hover:text-text-primary'
+            "
+            [title]="(recording() ? 'chatInput.stopRecording' : 'chatInput.record') | translate"
+          >
+            @if (recording()) {
+              <ng-icon name="heroStop" class="w-3.5 h-3.5 shrink-0" />
+              <span class="font-mono tabular-nums">{{ recordingElapsedLabel() }}</span>
+            } @else {
+              <ng-icon name="heroMicrophone" class="w-3.5 h-3.5 shrink-0" />
+              <span>{{ 'chatInput.record' | translate }}</span>
+            }
+          </button>
+
           @if (streaming()) {
             <app-reset-button (clicked)="reset.emit()" />
           }
@@ -274,10 +315,15 @@ export type { AppendedFile };
               <div
                 class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-surface-base border border-border-default text-xs group hover:-translate-y-0.5 hover:shadow-depth-sm animate-slide-up transition-all duration-200"
               >
-                <ng-icon name="heroDocument" class="w-3.5 h-3.5 shrink-0 text-text-muted" />
+                <ng-icon
+                  [name]="file.type === 'input_audio' ? 'heroMicrophone' : 'heroDocument'"
+                  class="w-3.5 h-3.5 shrink-0 text-text-muted"
+                />
                 <span class="truncate text-text-primary flex-1 max-w-xs">{{ file.filename }}</span>
                 <span class="text-text-muted shrink-0 text-[10px]">{{
-                  file.image_url ? fileSizeLabel(file.image_url) : file.sizeKb
+                  file.image_url || file.audio_url
+                    ? fileSizeLabel((file.image_url ?? file.audio_url)!)
+                    : file.sizeKb
                 }}</span>
                 <button
                   type="button"
@@ -331,6 +377,12 @@ export class OpenAiChatInputComponent implements AfterViewInit, AfterViewChecked
   /** Focus state for the glow ring. */
   readonly focused = signal<boolean>(false);
 
+  /** Whether a voice recording is currently in progress. */
+  readonly recording = signal<boolean>(false);
+  private readonly recordingElapsedSec = signal<number>(0);
+  private recorder?: AudioRecorder;
+  private recordingTimer?: ReturnType<typeof setInterval>;
+
   private _viewReady = false;
   private _formSub?: Subscription;
 
@@ -351,6 +403,8 @@ export class OpenAiChatInputComponent implements AfterViewInit, AfterViewChecked
 
   ngOnDestroy(): void {
     this._formSub?.unsubscribe();
+    if (this.recordingTimer) clearInterval(this.recordingTimer);
+    this.recorder?.stop();
   }
 
   private _bindForm(form: FormGroup): void {
@@ -471,6 +525,63 @@ export class OpenAiChatInputComponent implements AfterViewInit, AfterViewChecked
 
 
    */
+
+  // ── Voice recording ─────────────────────────────────────────────────────────
+
+  recordingElapsedLabel(): string {
+    const s = this.recordingElapsedSec();
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m}:${sec.toString().padStart(2, '0')}`;
+  }
+
+  async toggleMic(): Promise<void> {
+    if (this.recording()) {
+      await this.stopRecording();
+      return;
+    }
+
+    try {
+      this.recorder = new AudioRecorder();
+      await this.recorder.start();
+      this.recording.set(true);
+      this.recordingElapsedSec.set(0);
+      this.recordingTimer = setInterval(() => {
+        this.recordingElapsedSec.update((s) => s + 1);
+      }, 1000);
+    } catch (error) {
+      console.error('Microphone access failed:', error);
+      this.recorder = undefined;
+      this.recording.set(false);
+    }
+  }
+
+  private async stopRecording(): Promise<void> {
+    if (this.recordingTimer) clearInterval(this.recordingTimer);
+    this.recordingTimer = undefined;
+    this.recording.set(false);
+
+    const recorder = this.recorder;
+    this.recorder = undefined;
+    if (!recorder) return;
+
+    const { dataUrl } = await recorder.stop();
+    const base64 = dataUrl.split(',')[1] ?? '';
+
+    this.appendedFiles.update((existing) => {
+      const merged = mergeFiles(existing, [
+        {
+          type: 'input_audio',
+          filename: `voice-${Date.now()}.wav`,
+          audio_url: dataUrl,
+          audio_data: base64,
+          audio_format: 'wav',
+        },
+      ]);
+      this.appendedFilesChanged.emit(merged);
+      return merged;
+    });
+  }
 
   removeFile(index: number): void {
     this.appendedFiles.update((files) => {

@@ -15,6 +15,8 @@ export interface ChatMessage {
     | 'mcp_list_tools';
   text?: string;
   image?: string;
+  /** Data URL (audio/wav base64) for a recorded voice message. */
+  audio?: string;
   file?: string;
   date?: Date;
   username?: string;

@@ -11,6 +11,7 @@ import {
 } from './markdown.pipe';
 import { CreateChatMetadataDto } from '../../client';
 import { SpinnerComponent } from './spinner.component';
+import { AudioPlayerComponent } from './audio-player.component';
 import { NgIconComponent, provideIcons } from '@ng-icons/core';
 import {
   heroExclamationTriangle,
@@ -75,6 +76,7 @@ import ClientEnum = CreateChatMetadataDto.ClientEnum;
     MarkdownPipe,
     StripMarkdownPipe,
     SpinnerComponent,
+    AudioPlayerComponent,
     NgIconComponent,
     AuthFilesDirective,
     AuthImageMountDirective,
@@ -131,7 +133,24 @@ import ClientEnum = CreateChatMetadataDto.ClientEnum;
 
     @for (msg of messages(); track $index) {
       @if (msg.role === 'user') {
-        @if (msg.image) {
+        @if (msg.audio) {
+          <div class="flex flex-col items-end gap-1" @userMsgAnim>
+            @if (msg.username) {
+              <span class="text-[10px] text-text-muted font-medium mr-1">{{ msg.username }}</span>
+            }
+            <div
+              class="max-w-[75%] rounded-2xl rounded-br-sm px-3 py-2.5"
+              style="background: var(--color-accent-subtle); border: 1px solid var(--color-accent-glow); box-shadow: var(--shadow-sm);"
+            >
+              <app-audio-player [src]="msg.audio" />
+            </div>
+            @if (msg.date) {
+              <span class="text-[10px] text-text-disabled mr-1">{{
+                msg.date | date: 'HH:mm'
+              }}</span>
+            }
+          </div>
+        } @else if (msg.image) {
           <div class="flex flex-col items-end gap-1" @userMsgAnim>
             @if (msg.username) {
               <span class="text-[10px] text-text-muted font-medium mr-1">{{ msg.username }}</span>

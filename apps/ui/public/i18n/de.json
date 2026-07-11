@@ -71,7 +71,9 @@
     "hint": "Enter zum Senden · Shift+Enter für neue Zeile",
     "attach": "Anhängen",
     "attachedFiles": "Angehängte Dateien",
-    "locked": "Gesperrt — jemand anderes generiert gerade eine Antwort"
+    "locked": "Gesperrt — jemand anderes generiert gerade eine Antwort",
+    "record": "Aufnehmen",
+    "stopRecording": "Aufnahme stoppen"
   },
   "sendButton": {
     "send": "Senden",
