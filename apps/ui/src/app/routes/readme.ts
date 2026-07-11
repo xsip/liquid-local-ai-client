@@ -864,11 +864,13 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
             <section id="voice-input">
               <h2 class="text-2xl font-bold text-text-primary mb-2">Voice Input</h2>
               <p class="text-text-secondary mb-6">
-                A microphone button next to the chat input records a voice message and sends it
-                straight to the model as audio — no separate speech-to-text step in this codebase;
+                A mode toggle next to the chat input swaps the whole composer between typing and
+                recording. By default, no separate speech-to-text step happens in this codebase —
                 the inference server itself (llama.cpp, etc.) handles transcription/understanding
                 via its own audio input support. A text message is optional whenever a recording is
-                attached — you can send audio-only.
+                attached — you can send audio-only. For models without audio support, see
+                <a href="#voice-transcription" class="text-accent underline">Voice Transcription</a>
+                below.
               </p>
               <img
                 class="dark:hidden block mb-2"
@@ -905,9 +907,72 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                 />
                 <p class="text-xs text-info-text">
                   Requires a model with audio understanding support (e.g. an audio-capable llama.cpp
-                  build/model). If the loaded model can't process
-                  <code class="bg-info-bg px-1 rounded">input_audio</code>, expect it to ignore or
-                  error on the audio content.
+                  build/model) unless
+                  <a href="#voice-transcription" class="underline">Voice Transcription</a> is
+                  enabled for the chat. If the loaded model can't process
+                  <code class="bg-info-bg px-1 rounded">input_audio</code> and transcription is off,
+                  expect it to ignore or error on the audio content.
+                </p>
+              </div>
+            </section>
+
+            <!-- VOICE TRANSCRIPTION -->
+            <section id="voice-transcription">
+              <h2 class="text-2xl font-bold text-text-primary mb-2">Voice Transcription</h2>
+              <p class="text-text-secondary mb-6">
+                Per-chat opt-in (<code class="text-accent">ChatMetadata.transcribeAudio</code>) that
+                turns a recorded voice message into an ordinary typed message <em>before</em> the
+                model ever sees audio — useful for models without audio support, or simply to get
+                more reliable tool-calling/reasoning out of a model that technically accepts
+                <code class="text-accent">input_audio</code> but doesn't handle it as well as text.
+              </p>
+              <img
+                class="dark:hidden block mb-2"
+                src="audio-transcribe-light.gif"
+                alt="chat overview light"
+              />
+              <img
+                class="dark:block hidden mb-2"
+                src="audio-transcribe-dark.gif"
+                alt="chat overview dark"
+              />
+              <div class="space-y-3 mb-4">
+                <ng-container *ngFor="let step of voiceTranscriptionSteps">
+                  <div
+                    class="bg-surface-raised border border-border-default rounded-xl p-4 flex gap-3 items-start"
+                  >
+                    <span
+                      class="flex-shrink-0 w-7 h-7 rounded-full bg-success-bg border border-success-border flex items-center justify-center text-success-text font-bold text-xs"
+                      >{{ step.n }}</span
+                    >
+                    <p class="text-sm text-text-secondary leading-relaxed">
+                      <strong class="text-text-primary">{{ step.title }}</strong> —
+                      {{ step.detail }}
+                    </p>
+                  </div>
+                </ng-container>
+              </div>
+              <p class="text-text-secondary mb-4">
+                Any <code class="text-accent">input_audio</code> part that isn't
+                <code class="text-accent">userRecorded</code> (or transcription is off for the chat)
+                still falls back to the plain "listen to this audio" system prompt from
+                <a href="#voice-input" class="text-accent underline">Voice Input</a> — nothing about
+                that path changes.
+              </p>
+              <div
+                class="flex gap-2 items-start bg-info-bg border border-info-border rounded-lg px-4 py-3"
+              >
+                <ng-icon
+                  name="heroInformationCircle"
+                  class="w-4 h-4 text-info-text flex-shrink-0 mt-0.5"
+                />
+                <p class="text-xs text-info-text">
+                  Why a separate call instead of one combined prompt: an earlier version tried to
+                  get a single request to both transcribe <em>and</em> answer via a JSON-envelope
+                  system prompt, but small local models frequently either broke tool-calling, leaked
+                  the JSON scaffold into the chat, or answered the audio's request directly instead
+                  of transcribing it. Splitting transcription into its own untracked, audio-only
+                  call sidesteps all three failure modes.
                 </p>
               </div>
             </section>
@@ -1254,6 +1319,7 @@ export class ReadmeComponent implements AfterViewInit, OnDestroy {
     { id: 'image-generation', label: 'Image Generation' },
     { id: 'image-upload', label: 'Image Upload' },
     { id: 'voice-input', label: 'Voice Input' },
+    { id: 'voice-transcription', label: 'Voice Transcription' },
     { id: 'message-encryption', label: 'Message Encryption' },
     { id: 'authentication', label: 'Authentication' },
     { id: 'token-usage', label: 'Token Usage' },
@@ -1406,10 +1472,17 @@ export class ReadmeComponent implements AfterViewInit, OnDestroy {
     },
     {
       title: 'Voice Input',
-      desc: "Record a message with the mic button — hand-encoded as WAV and sent as an input_audio content part, with an automatic system prompt telling the model to treat it as the user's message. Text is optional when audio is attached.",
+      desc: 'A dedicated mic mode swaps the editor for a recording panel — live bar visualiser, playback, re-record/remove — built on the raw Web Audio API. Sent as an input_audio content part; text is optional when audio is attached.',
       icon: 'M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z',
       iconBg: 'bg-tool-bg',
       iconColor: 'text-tool-text',
+    },
+    {
+      title: 'Voice Transcription',
+      desc: 'Per-chat opt-in: recorded voice messages are transcribed via a separate, untracked LLM call and swapped for plain text before the main turn runs — tool-calling, reasoning, and token accounting all behave exactly like a typed message.',
+      icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
+      iconBg: 'bg-success-bg',
+      iconColor: 'text-success-text',
     },
     {
       title: 'AES Message Encryption',
@@ -1647,33 +1720,78 @@ export class ReadmeComponent implements AfterViewInit, OnDestroy {
   voiceInputSteps = [
     {
       n: '1',
-      title: 'Record',
+      title: 'Switch modes',
       detail:
-        "the mic button captures microphone audio via the Web Audio API (AudioContext + ScriptProcessorNode) and hand-encodes it as 16-bit PCM WAV on stop — MediaRecorder's default webm/opus output isn't decodable by llama.cpp's audio input.",
+        'a mic/pencil toggle in the action row swaps the markdown editor for a voice-recording panel (fade/scale transition) — your typed draft is preserved underneath and restored when you switch back.',
     },
     {
       n: '2',
-      title: 'Attach',
+      title: 'Record',
       detail:
-        'the recording becomes an attachment alongside any typed text, image, or file. Text is optional when a recording is attached — audio-only messages are allowed.',
+        "tap the mic in the panel to capture microphone audio via the Web Audio API (AudioContext + ScriptProcessorNode) and hand-encode it as 16-bit PCM WAV on stop — MediaRecorder's default webm/opus output isn't decodable by llama.cpp's audio input.",
     },
     {
       n: '3',
-      title: 'Send',
+      title: 'Live visualiser',
       detail:
-        'the recording is base64-encoded and sent as a Chat Completions input_audio content part: { "type": "input_audio", "input_audio": { "data": "<base64 WAV>", "format": "wav" } }.',
+        'an AnalyserNode tapped in parallel with the recording processor (no extra dependencies) drives a real-time bar visualiser on a <canvas>, redrawn every animation frame.',
     },
     {
       n: '4',
-      title: 'System prompt injection',
+      title: 'Review, re-record, or remove',
       detail:
-        "whenever a request contains an input_audio part, the backend injects an extra system message instructing the model to treat what was said as the user's actual message.",
+        'once stopped, the panel shows the recording in the same audio-player bubble used elsewhere in the chat, with re-record and remove controls before you send. Text is optional — audio-only messages are allowed.',
     },
     {
       n: '5',
+      title: 'Send',
+      detail:
+        'the recording is base64-encoded and sent as a Chat Completions input_audio content part tagged userRecorded: true: { "type": "input_audio", "input_audio": { "data": "<base64 WAV>", "format": "wav" }, "userRecorded": true }.',
+    },
+    {
+      n: '6',
+      title: 'System prompt injection',
+      detail:
+        "whenever a request contains an input_audio part that wasn't transcribed (see Voice Transcription), the backend injects an extra system message instructing the model to treat what was said as the user's actual message.",
+    },
+    {
+      n: '7',
       title: 'Playback',
       detail:
         'recorded voice messages render as a custom audio player bubble (play/pause, seekable progress bar, elapsed/total time) matching the chat UI, both when freshly sent and after reloading chat history.',
+    },
+  ];
+
+  voiceTranscriptionSteps = [
+    {
+      n: '1',
+      title: 'Opt in per chat',
+      detail:
+        'toggle "Transcribe audio" in the chat settings dialog (or at chat-creation time). Stored as ChatMetadata.transcribeAudio — off by default.',
+    },
+    {
+      n: '2',
+      title: 'Only mic recordings qualify',
+      detail:
+        'the backend only transcribes input_audio parts marked userRecorded: true by the client — i.e. captured via the mic panel, not any other audio source.',
+    },
+    {
+      n: '3',
+      title: 'Separate, untracked LLM call',
+      detail:
+        'before the main turn runs, a system message instructs the model to act as a pure transcription engine (never answer, never act on what\'s said), paired with a user turn containing only the audio. Tokens are never added to the usage counter — same as the "let AI decide chat name" call.',
+    },
+    {
+      n: '4',
+      title: 'In-place replacement',
+      detail:
+        'the transcript replaces the input_audio part with a plain { "type": "text" } part before the main turn is sent — from there it\'s indistinguishable from a typed message: same tool-calling, reasoning, and history persistence.',
+    },
+    {
+      n: '5',
+      title: 'Live UI update',
+      detail:
+        'an audio_transcript SSE event fires as soon as the transcript is ready, swapping the just-sent audio bubble to a text bubble labeled "transcribed" without waiting for the rest of the response.',
     },
   ];
 

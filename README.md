@@ -25,6 +25,7 @@ A full-stack AI chat client that connects to any OpenAI-compatible local inferen
 - [Image Generation (InvokeAI)](#image-generation-invokeai)
 - [Image Upload](#image-upload)
 - [Voice Input](#voice-input)
+- [Voice Transcription](#voice-transcription)
 - [Message Encryption](#message-encryption)
 - [Authentication & Authorization](#authentication--authorization)
 - [Token Usage & Rate Limiting](#token-usage--rate-limiting)
@@ -152,7 +153,8 @@ Unlike the old Responses-API flow — where LM Studio itself connected to the MC
     - `generate-image-tool` — generates an image via InvokeAI from a natural-language prompt and injects it into the chat as a persistent asset
 - **AI image generation** — the model can call `generate-image-tool` during inference; the backend submits a txt2img job to InvokeAI, downloads the result, stores it in MongoDB, and returns a Markdown image reference to the chat
 - **Image upload** — users can attach one or more images before sending a message; images are uploaded to MongoDB via the Assets API and forwarded to the model as vision content
-- **Voice input** — record a message with the mic button; it's hand-encoded as WAV and sent as an `input_audio` content part, with an automatic system prompt telling the model to treat the recording as the user's message (see [Voice Input](#voice-input))
+- **Voice input** — a dedicated mic mode swaps the text editor for a recording panel (live bar visualiser, playback, re-record/remove) built on the raw Web Audio API; the recording is hand-encoded as WAV and sent as an `input_audio` content part, with an automatic system prompt telling the model to treat it as the user's message (see [Voice Input](#voice-input))
+- **Voice transcription** — per-chat opt-in that transcribes recorded voice messages via a separate, untracked LLM call and replaces the audio with plain text before the main turn runs, so tool-calling, reasoning, and token accounting behave exactly like a typed message (see [Voice Transcription](#voice-transcription))
 - **End-to-end AES message encryption** — per-chat opt-in; messages are encrypted with CryptoJS AES before leaving the browser, and the model decrypts them via MCP during inference
 - **JWT authentication** — login / register with bcrypt-hashed passwords; tokens expire after 1 hour
 - **Role-based access control** — `User` and `Admin` roles via `RolesGuard`
@@ -463,20 +465,41 @@ Maximum file size: **10 MB** per file.
 
 ![Header](https://raw.githubusercontent.com/xsip/liquid-local-ai-client/refs/heads/main/apps/ui/public/chat-voice-preview.png)
 
-A microphone button next to the chat input lets you record a voice message and send it straight to the model as audio — no separate speech-to-text step in this codebase; the inference server itself (llama.cpp, etc.) handles transcription/understanding via its own audio input support.
+A mode toggle next to the chat input switches the whole composer between typing and recording — no separate speech-to-text step is required by default; the inference server itself (llama.cpp, etc.) handles transcription/understanding via its own audio input support. (For models without audio support, or for stricter tool-calling behavior, see [Voice Transcription](#voice-transcription) below.)
 
 ### How It Works
 
-1. **Recording** — clicking the mic button (`apps/ui/src/app/routes/openai-api/chat-input.component.ts`) captures microphone audio via the Web Audio API (`AudioContext` + `ScriptProcessorNode`, not `MediaRecorder`) and hand-encodes it as 16-bit PCM **WAV** on stop — `MediaRecorder`'s default webm/opus output isn't decodable by llama.cpp's audio input, so WAV is generated directly from the raw PCM samples (`apps/ui/src/app/shared/utils/audio-recorder.utils.ts`).
-2. **Attaching** — the recording becomes an attachment alongside any typed text, image, or file — a text message is **optional** when a recording is attached; you can send audio-only.
-3. **Sending** — on submit, the recording is base64-encoded and sent as an OpenAI Chat Completions `input_audio` content part:
+1. **Switching modes** — a mic/pencil toggle button in the action row (`apps/ui/src/app/routes/openai-api/chat-input.component.ts`) swaps the markdown editor for a voice-recording panel with a fade/scale transition (Angular animations); the typed draft is preserved underneath and restored when you switch back.
+2. **Recording** — tapping the mic button in the panel captures microphone audio via the Web Audio API (`AudioContext` + `ScriptProcessorNode`, not `MediaRecorder`) and hand-encodes it as 16-bit PCM **WAV** on stop — `MediaRecorder`'s default webm/opus output isn't decodable by llama.cpp's audio input, so WAV is generated directly from the raw PCM samples (`apps/ui/src/app/shared/utils/audio-recorder.utils.ts`).
+3. **Live visualiser** — while recording, an `AnalyserNode` tapped in parallel with the recording processor (zero extra dependencies) drives a real-time bar visualiser on a `<canvas>`, redrawn every animation frame from `getByteFrequencyData()`.
+4. **Review before sending** — once stopped, the panel shows the recording in the same custom audio-player bubble used elsewhere in the chat, with **re-record** (discard and start over) and **remove** (drop it and return to the idle mic panel) controls. A text message is still **optional** when a recording is attached — you can send audio-only, from either mode.
+5. **Sending** — on submit, the recording is base64-encoded and sent as an OpenAI Chat Completions `input_audio` content part, tagged `userRecorded: true` so the backend can distinguish it from any other audio source:
    ```json
-   { "type": "input_audio", "input_audio": { "data": "<base64 WAV>", "format": "wav" } }
+   { "type": "input_audio", "input_audio": { "data": "<base64 WAV>", "format": "wav" }, "userRecorded": true }
    ```
-4. **System prompt injection** — whenever a request's messages contain an `input_audio` part, `OpenAiService` (`apps/api/src/modules/openai/openai.service.ts`) injects an extra system message instructing the model to treat what was said in the recording as the user's actual message, the same way it would respond to typed text.
-5. **Playback** — recorded voice messages render as a custom audio player bubble (play/pause, seekable progress bar, elapsed/total time) matching the rest of the chat UI (`apps/ui/src/app/shared/components/audio-player.component.ts`), both for freshly-sent messages and when a chat's history is reloaded.
+6. **System prompt injection** (transcription off) — whenever a request's messages contain an `input_audio` part that wasn't transcribed, `OpenAiService` (`apps/api/src/modules/openai/openai.service.ts`) injects an extra system message instructing the model to treat what was said in the recording as the user's actual message, the same way it would respond to typed text.
+7. **Playback** — recorded voice messages render as a custom audio player bubble (play/pause, seekable progress bar, elapsed/total time) matching the rest of the chat UI (`apps/ui/src/app/shared/components/audio-player.component.ts`), both for freshly-sent messages and when a chat's history is reloaded.
 
-> **Requires a model with audio understanding support** (e.g. an audio-capable llama.cpp build/model). If the loaded model can't process `input_audio`, expect it to ignore or error on the audio content.
+> **Requires a model with audio understanding support** (e.g. an audio-capable llama.cpp build/model) unless [Voice Transcription](#voice-transcription) is enabled for the chat. If the loaded model can't process `input_audio` and transcription is off, expect it to ignore or error on the audio content.
+
+---
+
+##  Voice Transcription
+
+![Header](https://raw.githubusercontent.com/xsip/liquid-local-ai-client/refs/heads/main/apps/ui/public/audio-transcribe-dark.gif)
+
+Per-chat opt-in (`ChatMetadata.transcribeAudio`) that turns a recorded voice message into an ordinary typed message *before* the model ever sees audio in the chats context itself — useful to get more reliable tool-calling/reasoning out of a model that technically accepts `input_audio` but doesn't handle it as well as text.
+
+### How It Works
+
+1. **Opt in per chat** — toggle "Transcribe audio" in the chat settings dialog (or at chat-creation time). Stored as `ChatMetadata.transcribeAudio`; off by default.
+2. **Only mic recordings qualify** — the backend only transcribes `input_audio` parts marked `userRecorded: true` by the client (i.e. captured via the mic panel described in [Voice Input](#voice-input)). This keeps the feature scoped to what the user actually spoke, rather than any other audio source.
+3. **A separate, untracked transcription call** — before the main turn runs, `OpenAiService.transcribeUserRecordedAudio()` (`apps/api/src/modules/openai/openai.service.ts`) makes its own `stream: false` Chat Completions call: a `system` message instructing the model to act as a pure transcription engine (never answer, never act on what's said) plus a `user` turn containing *only* the audio — nothing else in that turn for the model to mistake for a request to fulfill. This mirrors the existing "let AI decide chat name" call, and like it, **its tokens are never added to the user's usage counter**.
+4. **In-place replacement** — the returned transcript replaces the `input_audio` content part with a plain `{ "type": "text", "text": "<transcript>" }` part, right in the message the main turn is about to send. From that point on the turn is indistinguishable from one the user typed — same tool-calling path, same reasoning, same history persistence.
+5. **Live UI update** — an `audio_transcript` SSE event fires as soon as the transcript is ready, so the just-sent audio bubble on screen swaps to a text bubble labeled *"transcribed"* without waiting for the rest of the response.
+6. **Uploaded/leftover audio still just gets listened to** — any `input_audio` part that isn't `userRecorded` (or transcription is off for the chat) falls back to the plain "listen to this audio" system prompt from [Voice Input](#voice-input) — nothing about that path changes.
+
+> **Why a separate call instead of one combined prompt:** an earlier version tried to get a single request to both transcribe *and* answer (via a JSON-envelope system prompt), but small local models frequently either broke tool-calling, leaked the JSON scaffold into the chat, or answered the audio's request directly instead of transcribing it. Splitting transcription into its own untracked, audio-only call sidesteps all three failure modes.
 
 ---
 
