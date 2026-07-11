@@ -616,6 +616,42 @@ import {
           </div>
         </section>
 
+        <!-- CUSTOM MCP SERVERS -->
+        <section>
+          <h2 class="text-2xl font-bold text-text-primary mb-2">Custom MCP Servers</h2>
+          <p class="text-text-secondary mb-6">
+            Beyond the built-in MCP server/client, each user can register their own external MCP
+            servers on their account and control exactly which tools are available —
+            account-wide or per chat. The account-level list, the New Chat dialog, and every
+            chat's settings dialog all read/write the same data, so changes made from any one of
+            them show up in the others immediately.
+          </p>
+          <div class="space-y-3 mb-4">
+            <ng-container *ngFor="let step of customMcpSteps">
+              <div
+                class="bg-surface-raised border border-border-default rounded-xl p-4 flex gap-3 items-start"
+              >
+                <span
+                  class="flex-shrink-0 w-7 h-7 rounded-full bg-success-bg border border-success-border flex items-center justify-center text-success-text font-bold text-xs"
+                >{{ step.n }}</span
+                >
+                <p class="text-sm text-text-secondary leading-relaxed">
+                  <strong class="text-text-primary">{{ step.title }}</strong> — {{ step.detail }}
+                </p>
+              </div>
+            </ng-container>
+          </div>
+          <div class="bg-surface-overlay border border-border-subtle rounded-xl p-4">
+            <p class="text-xs text-text-secondary">
+              Data model: <code class="text-accent">User.customMcps[]</code> holds
+              <code class="text-accent">{{ '{ id, name, endpoint, active, availableTools, allowedTools, headers? }' }}</code>
+              per registered server. <code class="text-accent">ChatMetadata.mcpOverrides[]</code>
+              holds <code class="text-accent">{{ '{ mcpId, active, allowedTools }' }}</code> —
+              only written when a specific chat deviates from the account default.
+            </p>
+          </div>
+        </section>
+
         <!-- IMAGE GENERATION -->
         <section>
           <h2 class="text-2xl font-bold text-text-primary mb-2">Image Generation (InvokeAI)</h2>
@@ -1083,6 +1119,13 @@ export class ReadmeComponent {
       iconColor: 'text-accent',
     },
     {
+      title: 'Custom MCP Servers',
+      desc: 'Register your own external MCP servers per account, auto-discover their tools, toggle servers/tools on/off, refresh on demand, and opt individual chats out without changing the account default.',
+      icon: 'M5 12h14M12 5l7 7-7 7',
+      iconBg: 'bg-success-bg',
+      iconColor: 'text-success-text',
+    },
+    {
       title: 'Client-side MCP orchestration',
       desc: "The backend runs its own MCP client, translates MCP tools into OpenAI function-tool definitions, and executes tool_calls itself in a loop.",
       icon: 'M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z',
@@ -1218,6 +1261,39 @@ export class ReadmeComponent {
     },
   ];
 
+  customMcpSteps = [
+    {
+      n: '1',
+      title: 'Register',
+      detail:
+        'paste an endpoint URL in the MCP Servers dialog — the backend connects and auto-discovers the server name and full tool list.',
+    },
+    {
+      n: '2',
+      title: 'Toggle',
+      detail:
+        'switch a server on/off, or allow/deny individual tools, account-wide. Saved immediately.',
+    },
+    {
+      n: '3',
+      title: 'Refresh',
+      detail:
+        're-run discovery any time — new tools are allowed by default, removed tools are dropped, existing choices are preserved.',
+    },
+    {
+      n: '4',
+      title: 'Per-chat overrides',
+      detail:
+        'opt a specific chat out of a server or tool from the New Chat dialog or a chat\'s settings, without touching the account default.',
+    },
+    {
+      n: '5',
+      title: 'Request-time merge',
+      detail:
+        'on every Chat Completions request, the backend merges each active server\'s allowed tools (minus this chat\'s overrides) in alongside the built-in tool set, routing tool calls back to the correct server.',
+    },
+  ];
+
   invokeSteps = [
     { n: '1', title: 'Tool call', detail: 'the model calls generate-image-tool with a natural-language prompt string.' },
     { n: '2', title: 'Model lookup', detail: 'InvokeService queries InvokeAI\'s /api/v2/models/ endpoint for the first model matching the requested name (default: "Dreamshaper 8").' },
@@ -1335,6 +1411,30 @@ export class ReadmeComponent {
       path: '/auth/login',
       desc: 'Authenticate and receive a JWT',
       methodClass: 'bg-success-bg text-success-text border border-success-border',
+    },
+    {
+      method: 'POST',
+      path: '/auth/mcp-servers',
+      desc: 'Register a custom MCP server (auto-discovers name + tools)',
+      methodClass: 'bg-success-bg text-success-text border border-success-border',
+    },
+    {
+      method: 'PATCH',
+      path: '/auth/mcp-servers/:id',
+      desc: 'Toggle a custom MCP server on/off or edit its allowed tools',
+      methodClass: 'bg-warn-bg text-warn-text border border-warn-border',
+    },
+    {
+      method: 'POST',
+      path: '/auth/mcp-servers/:id/refresh',
+      desc: "Re-discover a custom MCP server's tool list",
+      methodClass: 'bg-success-bg text-success-text border border-success-border',
+    },
+    {
+      method: 'DELETE',
+      path: '/auth/mcp-servers/:id',
+      desc: 'Remove a custom MCP server',
+      methodClass: 'bg-error-bg text-error-text border border-error-border',
     },
     {
       method: 'GET',

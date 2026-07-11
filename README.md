@@ -20,6 +20,7 @@ A full-stack AI chat client that connects to any OpenAI-compatible local inferen
 - [Environment Variables](#environment-variables)
 - [Getting Started](#getting-started)
 - [MCP Tool Integration](#mcp-tool-integration)
+- [Custom MCP Servers](#custom-mcp-servers)
 - [Image Generation (InvokeAI)](#image-generation-invokeai)
 - [Image Upload](#image-upload)
 - [Message Encryption](#message-encryption)
@@ -115,6 +116,7 @@ Unlike the old Responses-API flow — where LM Studio itself connected to the MC
 - **Client-side MCP orchestration** — the backend runs its own MCP client, translates MCP tools into OpenAI function-tool definitions, and executes `tool_calls` itself in a loop — no dependency on the inference server's own MCP support
 - **Real-time SSE streaming** — responses are streamed token-by-token to the browser, including reasoning/"thinking" deltas where the model provides them
 - **Persistent chat history** — every exchange is stored in MongoDB as a rolling message array and rehydrated on demand, including reconstructed tool-call banners and image attachments
+- **Custom MCP servers** — users can register their own MCP servers on their account (endpoint auto-discovers name + tool list), toggle a server or individual tools on/off account-wide, and re-run discovery on demand; per-chat overrides let a specific chat opt out of a server/tool without affecting the account default (see [Custom MCP Servers](#custom-mcp-servers))
 - **MCP tool server** — the backend registers itself as an MCP server and also calls itself as an MCP client
     - `get-token-usage-tool` — returns the authenticated user's current token usage and limit
     - `get-content-from-file-ids` — fetches uploaded file content on demand by file ID
@@ -182,7 +184,7 @@ apps/
         ├── admin.guard.ts        # Route guard — only allows role: 'admin' into /admin
         ├── client/               # Auto-generated API client DTOs
         ├── shared/
-        │   └── components/       # Cross-route UI: chat-messages, chat-sidebar, info panel, markdown pipe, ...
+        │   └── components/       # Cross-route UI: chat-messages, chat-sidebar, info panel, mcp-config-dialog, markdown pipe, ...
         └── routes/
             ├── login.ts          # Login / register page
             ├── admin.ts          # Admin CMS — user & token-limit-config management (role: admin only)
@@ -338,6 +340,37 @@ This means MCP tools work with **any** OpenAI-compatible backend the model serve
 | `generate-image-tool` | Generates an image from a text prompt via InvokeAI, stores it in MongoDB, and returns a chat-renderable image URL |
 
 To add new tools, create an `@Injectable()` class in `apps/api/src/tools/`, decorate methods with `@Tool(...)` from `@rekog/mcp-nest`, register the class as a provider in `AppModule`, and add its name to the `allowedTools` list in `OpenAiService.chatStreamCompletions` so it's actually offered to the model.
+
+---
+
+## Custom MCP Servers
+
+Beyond the backend's built-in MCP server/client, each user can register their **own external MCP servers** on their account and control exactly which of their tools are available — account-wide or per chat.
+
+### How It Works
+
+1. **Register a server** — from the account info panel, open **MCP Servers** → paste an endpoint URL. The backend connects to it via `McpClientService.discoverServer()`, reads its name (`getServerVersion()`) and full tool list (`listTools()`), and stores it on the user document (`User.customMcps`) — active, with every discovered tool allowed, by default.
+2. **Toggle servers/tools** — each registered server can be switched on/off, and individual tools can be allowed/denied, from the same dialog. Changes are persisted immediately via `PATCH /auth/mcp-servers/:id`.
+3. **Refresh** — hitting the refresh button next to a server re-runs discovery (`POST /auth/mcp-servers/:id/refresh`): newly-added tools on the remote server are allowed by default, tools that disappeared are dropped, and existing allow/deny choices for tools that are still present are preserved.
+4. **Per-chat overrides** — the New Chat dialog and each chat's settings dialog let you opt a specific chat out of a server (or a subset of its tools) without touching the account-wide configuration. These overrides are stored on `ChatMetadata.mcpOverrides` and only need an entry when something deviates from the account default — a server with no override is simply "enabled, all account-allowed tools."
+5. **Live sync everywhere** — the manage dialog, chat settings dialog, and New Chat dialog all read/write the same account-level list, so adding, refreshing, or editing a server from any one of them is reflected in the others immediately, no page refresh required.
+6. **Request-time merge** — for every Chat Completions request, `OpenAiService` reads the user's active `customMcps`, applies any `mcpOverrides` for the current chat, and calls `McpClientService.listTools()` against each server's own endpoint (with its own custom headers), merging the results in alongside the built-in tool set. Tool calls are routed back to the correct server by endpoint.
+
+### Data Model
+
+| Field | Location | Description |
+|-------|----------|-------------|
+| `User.customMcps[]` | `users` collection | `{ id, name, endpoint, active, availableTools, allowedTools, headers? }` — one entry per registered server |
+| `ChatMetadata.mcpOverrides[]` | `chat_metadata` collection | `{ mcpId, active, allowedTools }` — opt-out overrides for this specific chat only |
+
+### MCP Servers API Routes
+
+| Method | Path | Description |
+|--------|------|--------------|
+| `POST` | `/auth/mcp-servers` | Register a custom MCP server (auto-discovers name + tools) |
+| `PATCH` | `/auth/mcp-servers/:id` | Toggle a server on/off or edit its allowed tools |
+| `POST` | `/auth/mcp-servers/:id/refresh` | Re-discover a server's tool list |
+| `DELETE` | `/auth/mcp-servers/:id` | Remove a server from the account |
 
 ---
 
@@ -515,6 +548,10 @@ All of the above require both a valid JWT and `role: 'admin'`.
 |--------|------|-------------|
 | `POST` | `/auth/register` | Create a new user account |
 | `POST` | `/auth/login` | Authenticate and receive a JWT |
+| `POST` | `/auth/mcp-servers` | Register a custom MCP server (see [Custom MCP Servers](#custom-mcp-servers)) |
+| `PATCH` | `/auth/mcp-servers/:id` | Toggle a custom MCP server on/off or edit its allowed tools |
+| `POST` | `/auth/mcp-servers/:id/refresh` | Re-discover a custom MCP server's tool list |
+| `DELETE` | `/auth/mcp-servers/:id` | Remove a custom MCP server |
 | `GET` | `/openai/models` | List models via OpenAI SDK |
 | `POST` | `/openai/completions-stream` | Streaming SSE via the Chat Completions API, with client-side MCP tool orchestration — the only supported chat path |
 | `GET` | `/chat-metadata` | List the user's chat sessions |
