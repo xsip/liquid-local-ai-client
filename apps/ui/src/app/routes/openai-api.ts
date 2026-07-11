@@ -23,7 +23,7 @@ import { InfoComponent } from '../shared/components/info.component';
 import { McpConfigDialogComponent } from '../shared/components/mcp-config-dialog.component';
 import { SpinnerComponent } from '../shared/components/spinner.component';
 import { AppendedFile, OpenAiChatInputComponent } from './openai-api/chat-input.component';
-import { Observable, of, tap } from 'rxjs';
+import { interval, Observable, of, Subscription, switchMap, tap } from 'rxjs';
 import { ButtonComponent, IconButtonComponent, LabelComponent, TextInputComponent, ToggleComponent } from '../shared';
 import { TranslateModule } from '@ngx-translate/core';
 import { NgIconComponent, provideIcons } from '@ng-icons/core';
@@ -626,6 +626,11 @@ export class OpenAiApi implements OnDestroy, OnInit {
   private chatId?: string;
   /** Model used by the currently open chat, shown above AI messages. */
   private usedModel?: string;
+  /** Self-heals stale `locked` flags in the sidebar list — e.g. after
+   * navigating away from a chat we were resuming/watching, we stop getting
+   * told when its generation finishes, so its "generating" dot would
+   * otherwise stay on until something else happens to refresh the list. */
+  private staleLockCheckSub?: Subscription;
 
   constructor() {
     effect(() => {
@@ -690,6 +695,22 @@ export class OpenAiApi implements OnDestroy, OnInit {
   ngOnInit(): void {
     this.loadChatList();
     this.modelService.loadModels();
+
+    this.staleLockCheckSub = interval(5000)
+      .pipe(switchMap(() => this.chatMetaService.listChatMetadata()))
+      .subscribe({
+        next: (list) => {
+          const anyLocked = list.some((c) => c.locked);
+          const staleLocked = this.chatList().some((c) => c.locked);
+          if (!anyLocked && !staleLocked) return;
+          const sorted = [...list].sort((a, b) => {
+            const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return tb - ta;
+          });
+          this.chatList.set(sorted);
+        },
+      });
     this.authService.getMe().subscribe({
       next: (me) => {
         this.currentUsername = me.username;
@@ -708,6 +729,7 @@ export class OpenAiApi implements OnDestroy, OnInit {
 
   ngOnDestroy(): void {
     this.chatCompletionsService.destroy();
+    this.staleLockCheckSub?.unsubscribe();
   }
 
   // ── Model management ──────────────────────────────────────────────────────
@@ -724,9 +746,10 @@ export class OpenAiApi implements OnDestroy, OnInit {
           // loads so the resumed echo/delta messages land on top of it
           // rather than risking the history load overwriting them.
           if (meta.locked) {
-            this.chatCompletionsService.resumeStreaming(chatId, meta.usedModel ?? '', () =>
-              this.loadCompletionsChatHistory(chatId),
-            );
+            this.chatCompletionsService.resumeStreaming(chatId, meta.usedModel ?? '', () => {
+              this.loadCompletionsChatHistory(chatId);
+              this.loadChatList();
+            });
           }
         });
 
@@ -736,7 +759,10 @@ export class OpenAiApi implements OnDestroy, OnInit {
           chatId,
           (meta.sharedWith?.length ?? 0) > 0,
           meta.usedModel ?? '',
-          () => this.loadCompletionsChatHistory(chatId),
+          () => {
+            this.loadCompletionsChatHistory(chatId);
+            this.loadChatList();
+          },
         );
 
         const reasoningValue = meta.reasoningMode as ReasoningEffort | undefined;
@@ -751,8 +777,8 @@ export class OpenAiApi implements OnDestroy, OnInit {
 
   // ── Chat list ─────────────────────────────────────────────────────────────
 
-  loadChatList(): void {
-    this.chatsLoading.set(true);
+  loadChatList(silent = false): void {
+    if (!silent) this.chatsLoading.set(true);
     this.chatMetaService.listChatMetadata().subscribe({
       next: (list) => {
         const sorted = [...list].sort((a, b) => {
@@ -897,7 +923,11 @@ export class OpenAiApi implements OnDestroy, OnInit {
   // ── Navigation ────────────────────────────────────────────────────────────
 
   openChat(chatId: string): void {
-    if (this.activeChat.streaming()) return;
+    if (this.activeChat.currentChatId() === chatId) return;
+    // Detach from whatever this route was streaming/resuming — the server-side
+    // generation keeps running in the background regardless (see resumeStreaming),
+    // we just stop routing its deltas into the chat we're about to leave.
+    this.activeChat.reset();
     this.chatCompletionsService.chatMessages.set([]);
     this.router.navigate(['/chat-openai', chatId]);
     this.chatId = chatId;
@@ -965,7 +995,7 @@ export class OpenAiApi implements OnDestroy, OnInit {
   }
 
   newChat(): void {
-    if (this.activeChat.streaming()) return;
+    this.activeChat.reset();
     this.chatCompletionsService.chatMessages.set([]);
     this.chatCompletionsService.currentChatId.set(null);
     this.chatCompletionsService.stopLockPolling();

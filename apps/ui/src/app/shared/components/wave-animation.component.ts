@@ -31,7 +31,13 @@ import { Component, input } from '@angular/core';
     :host {
       position: absolute;
       inset: 0;
-      z-index: -1;
+      /* Intentionally not a negative z-index: a negative value paints behind
+       * the parent's own background box, which made this invisible except
+       * when the parent gained its own stacking context (e.g. mid-:active
+       * transform). Zero + DOM order (this is inserted before the row's
+       * text content) is enough to stay behind the text while still
+       * painting above the row's background. */
+      z-index: 0;
       overflow: hidden;
       pointer-events: none;
       border-radius: inherit;

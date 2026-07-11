@@ -213,16 +213,14 @@ import InvokeAiModelToUseEnum = UpdateChatMetadataDto.InvokeAiModelToUseEnum;
                 <!-- Active indicator -->
                 @if (currentChatId() === chat._id) {
                   <div
-                    class="absolute left-0 top-1/4 -translate-y-1/4 w-0.5 h-3/4 rounded-r-full bg-accent"
+                    class="absolute z-[1] left-0 top-1/4 -translate-y-1/4 w-0.5 h-3/4 rounded-r-full bg-accent"
                   ></div>
                 }
                 <!-- Generating indicator -->
                 @if (isGenerating(chat)) {
-                  <app-wave-animation
-                    class="fixed bottom-0 left-0 w-full overflow-hidden"
-                  />
+                  <app-wave-animation />
                 }
-                <div class="flex items-center gap-1.5 pl-1">
+                <div class="relative z-[1] flex items-center gap-1.5 pl-1">
                   @if (chat.useCrypto) {
                     <ng-icon name="heroLockClosed" class="w-2.5 h-2.5 shrink-0 text-amber-400/80" />
                   }
@@ -238,7 +236,7 @@ import InvokeAiModelToUseEnum = UpdateChatMetadataDto.InvokeAiModelToUseEnum;
                 </div>
                 @if (chat.usedModel) {
                   <div
-                    class="text-text-muted mt-0.5 text-[10px] pl-1 truncate"
+                    class="relative z-[1] text-text-muted mt-0.5 text-[10px] pl-1 truncate"
                     [uiTooltip]="chat.usedModel"
                     uiTooltipPosition="right"
                   >
@@ -246,30 +244,30 @@ import InvokeAiModelToUseEnum = UpdateChatMetadataDto.InvokeAiModelToUseEnum;
                   </div>
                 }
                 @if (chat.lastMessageSentAt) {
-                  <div class="text-text-muted mt-0.5 text-[10px] pl-1">
+                  <div class="relative z-[1] text-text-muted mt-0.5 text-[10px] pl-1">
                     {{ chat.lastMessageSentAt | date: 'dd MMM, HH:mm' }}
                   </div>
                 }
                 @if (currentChatId() === chat._id) {
-                  <div class="border-t border-border-subtle mx-2 my-1"></div>
+                  <div class="relative z-[1] border-t border-border-subtle mx-2 my-1"></div>
 
                   <button
                     @chatItemAnim
                     type="button"
                     (click)="$event.stopPropagation(); openGeneratedFiles(chat, 'generated')"
-                    class="w-full flex items-center rounded-md gap-2.5 px-3 py-1.5 mb-1 text-xs text-text-secondary hover:bg-secondary-accent-subtle hover:text-text-primary transition-colors text-left"
+                    class="relative z-[1] w-full flex items-center rounded-md gap-2.5 px-3 py-1.5 mb-1 text-xs text-text-secondary hover:bg-secondary-accent-subtle hover:text-text-primary transition-colors text-left"
                   >
                     <ng-icon name="heroPaperClip" class="w-3.5 h-3.5 shrink-0 opacity-60" />
                     {{ 'sidebar.generatedFiles' | translate }}
                     <ui-badge [variant]="'accent'">{{ getAssetsLength(chat) }} </ui-badge>
                   </button>
-                  <div class="border-t border-border-subtle mx-2 my-1"></div>
+                  <div class="relative z-[1] border-t border-border-subtle mx-2 my-1"></div>
 
                   <button
                     @chatItemAnim
                     type="button"
                     (click)="$event.stopPropagation(); openGeneratedFiles(chat, 'user')"
-                    class="w-full flex items-center rounded-md gap-2.5 px-3 py-1.5 mb-1 text-xs text-text-secondary hover:bg-secondary-accent-subtle hover:text-text-primary transition-colors text-left"
+                    class="relative z-[1] w-full flex items-center rounded-md gap-2.5 px-3 py-1.5 mb-1 text-xs text-text-secondary hover:bg-secondary-accent-subtle hover:text-text-primary transition-colors text-left"
                   >
                     <ng-icon name="heroPaperClip" class="w-3.5 h-3.5 shrink-0 opacity-60" />
                     {{ 'sidebar.uploadedFiles' | translate }}
