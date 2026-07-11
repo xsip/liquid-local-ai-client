@@ -491,14 +491,20 @@ export class OpenAiService {
           // In transcribe mode `delta.content` is raw JSON envelope, not
           // user-facing text — strip it so it never leaks live (it gets
           // unwrapped and re-emitted as a synthetic chunk once the full
-          // response is parsed). Everything else (reasoning, tool calls,
-          // finish_reason, usage) is unaffected by the envelope and still
-          // streams live as normal.
-          if (transcribeMode && chunk.choices?.[0]?.delta?.content) {
+          // response is parsed). The real 'stop' finish_reason is stripped
+          // too — forwarding it would end the client's stream before our
+          // synthetic content/finish chunks below ever arrive, leaving the
+          // "streaming" bubble stuck forever. Reasoning/tool-call chunks are
+          // unaffected and still stream live as normal.
+          const isContentChunk = !!chunk.choices?.[0]?.delta?.content;
+          const isRealStop = chunk.choices?.[0]?.finish_reason === 'stop';
+          if (transcribeMode && (isContentChunk || isRealStop)) {
             const sanitized = {
               ...chunk,
               choices: chunk.choices.map((c, idx) =>
-                idx === 0 ? { ...c, delta: { ...c.delta, content: '' } } : c,
+                idx === 0
+                  ? { ...c, delta: { ...c.delta, content: '' }, finish_reason: null }
+                  : c,
               ),
             };
             this.safeWrite(res, `data: ${JSON.stringify(sanitized)}\n\n`, resolvedChatMetaId);
