@@ -200,6 +200,7 @@ type ChatNameMode = 'ai' | 'custom' | 'none';
             [chatsLoading]="chatsLoading()"
             [currentChatId]="activeChat.currentChatId()"
             [customMcps]="customMcps()"
+            [currentChatGenerating]="activeChat.streaming()"
             (chatOpened)="openChat($event)"
             (commitRename)="onRename($event)"
             (chatDeleted)="deleteChat($event)"
@@ -524,6 +525,7 @@ type ChatNameMode = 'ai' | 'custom' | 'none';
               [form]="activeChat.form"
               [streaming]="activeChat.streaming()"
               [locked]="activeChat.locked()"
+              [generating]="activeChat.generating()"
               [reasoning]="$any(modelService.reasoning())"
               [modelReasoningCap]="modelService.modelReasoningCap()"
               (submitted)="submit()"
@@ -586,7 +588,7 @@ export class OpenAiApi implements OnDestroy, OnInit {
 
   readonly infoRef = viewChild(InfoComponent);
   readonly showChatsSidebar = signal(true);
-  readonly showInfoPanel = signal(false);
+  readonly showInfoPanel = signal(true);
   readonly chatList = signal<any[]>([]);
   readonly chatsLoading = signal(false);
   readonly appendedFiles = signal<AppendedFile[]>([]);
@@ -715,10 +717,25 @@ export class OpenAiApi implements OnDestroy, OnInit {
       next: (meta) => {
         this.activeChat.currentChatId.set(chatId);
         this.usedModel = meta.usedModel;
-        this.loadCompletionsChatHistory(chatId);
+        this.loadCompletionsChatHistory(chatId, () => {
+          // Already generating when we loaded this chat — most likely we
+          // refreshed mid-response. Attach to the live stream right away
+          // instead of waiting for the next lock poll. Chained after history
+          // loads so the resumed echo/delta messages land on top of it
+          // rather than risking the history load overwriting them.
+          if (meta.locked) {
+            this.chatCompletionsService.resumeStreaming(chatId, meta.usedModel ?? '', () =>
+              this.loadCompletionsChatHistory(chatId),
+            );
+          }
+        });
+
+        // Only shared chats need ongoing polling — another user could start
+        // a new generation while we're looking at this chat.
         this.chatCompletionsService.updateLockPolling(
           chatId,
           (meta.sharedWith?.length ?? 0) > 0,
+          meta.usedModel ?? '',
           () => this.loadCompletionsChatHistory(chatId),
         );
 
@@ -765,7 +782,7 @@ export class OpenAiApi implements OnDestroy, OnInit {
 
   /** History loader for Chat Completions sessions — reads the rolling `messages[]` array,
    * reconstructing tool-call banners from assistant `tool_calls` + matching `tool` replies. */
-  private loadCompletionsChatHistory(chatId: string): void {
+  private loadCompletionsChatHistory(chatId: string, onLoaded?: () => void): void {
     this.isLoadingMessages.set(true);
     this.chatsApi.getChatEntries(chatId).subscribe((res) => {
       const latest = res[res.length - 1] as any;
@@ -844,6 +861,7 @@ export class OpenAiApi implements OnDestroy, OnInit {
 
       this.isLoadingMessages.set(false);
       this.chatCompletionsService.chatMessages.set(messages as any);
+      onLoaded?.();
     });
   }
 

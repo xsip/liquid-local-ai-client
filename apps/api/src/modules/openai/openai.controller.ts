@@ -197,6 +197,37 @@ export class OpenaiController {
     // ───────────────────────────────────────────────────────────────────────
   }
 
+  @Get('completions-stream/resume')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Resume an in-flight chat generation as SSE',
+    description:
+      'Reconnects to a generation already streaming for `internalChatId` — used ' +
+      'after a page refresh (or by a shared-chat viewer) while a response is ' +
+      'still being generated. Replays every chunk already sent, then forwards ' +
+      'live chunks until the generation finishes. If nothing is currently ' +
+      'generating for this chat, the response ends immediately with no data.',
+    operationId: 'resumeCompletionsStreamOpenAi',
+  })
+  @ApiQuery({
+    name: 'internalChatId',
+    required: true,
+    description: 'MD5 hex string identifying the chat session to resume',
+  })
+  @ApiProduces('text/event-stream')
+  @ApiOkResponse({
+    description: 'Server-Sent Events stream (possibly empty if nothing is in-flight).',
+    schema: { type: 'string', format: 'binary' },
+  })
+  async resumeCompletionsStream(
+    @CurrentUser() user: User,
+    @Res() res: Response,
+    @Query('internalChatId') internalChatId: string,
+  ): Promise<void> {
+    const userId = (user as any)._id as Types.ObjectId;
+    return this.openAiService.resumeStream(userId, internalChatId, res);
+  }
+
   private parseMcpOverrides(raw?: string): any[] | undefined {
     if (!raw) return undefined;
     try {

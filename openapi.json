@@ -1111,6 +1111,45 @@
         ]
       }
     },
+    "/openai/completions-stream/resume": {
+      "get": {
+        "description": "Reconnects to a generation already streaming for `internalChatId` — used after a page refresh (or by a shared-chat viewer) while a response is still being generated. Replays every chunk already sent, then forwards live chunks until the generation finishes. If nothing is currently generating for this chat, the response ends immediately with no data.",
+        "operationId": "resumeCompletionsStreamOpenAi",
+        "parameters": [
+          {
+            "name": "internalChatId",
+            "required": true,
+            "in": "query",
+            "description": "MD5 hex string identifying the chat session to resume",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Server-Sent Events stream (possibly empty if nothing is in-flight).",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Resume an in-flight chat generation as SSE",
+        "tags": [
+          "OpenAI"
+        ]
+      }
+    },
     "/openai/completions": {
       "post": {
         "description": "Returns the LM Studio response as Server-Sent Events. Each exchange is persisted in MongoDB under the given `internalChatId`. If `internalChatId` is supplied, the latest `response_id` for that session is fetched from the DB and set as `previous_response_id` on the request so LM Studio maintains conversation context. If `internalChatId` is omitted a new session is created and its generated ID is returned via a `created_chat` SSE event before the stream closes.",

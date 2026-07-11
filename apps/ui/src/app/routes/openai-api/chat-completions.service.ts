@@ -49,6 +49,11 @@ export class ChatCompletionsService {
   /** True while this chat is locked server-side (another user's prompt is streaming). */
   readonly locked = signal(false);
 
+  /** True while we're watching a generation we didn't just submit ourselves —
+   * resumed after a refresh, or a shared chat's owner currently typing. Shown
+   * as "AI is generating a response…" rather than the generic lock message. */
+  readonly generating = signal(false);
+
   private readonly lastUserInput = signal<string>('');
   private sub?: Subscription;
   private lockPollSub?: Subscription;
@@ -157,6 +162,55 @@ export class ChatCompletionsService {
     ]);
 
     this.streamService.reset();
+    this.wireStreamSubscriptions(selectedModelId, onChatListRefresh);
+
+    this.streamService.chat(
+      {
+        model: selectedModelId,
+        messages: [
+          {
+            role: 'user',
+            content: [...this.buildAttachmentParts(appendedFiles), { type: 'text', text: input }],
+          },
+        ],
+        reasoning_effort: reasoning as any,
+        stream: true,
+      },
+      this.currentChatId() ?? undefined,
+      this.currentChatId() ? undefined : newChatOptions,
+    );
+  }
+
+  /**
+   * Reconnects to a generation already in-flight for `chatId` — used when the
+   * chat was found locked as soon as its metadata loaded (e.g. the page was
+   * refreshed while a response was still streaming). Replays the user's turn
+   * and everything the model has produced so far, then keeps receiving live
+   * chunks exactly like a freshly-submitted message.
+   */
+  resumeStreaming(chatId: string, modelName: string, onChatListRefresh: () => void): void {
+    if (this.streaming()) return;
+    this.streaming.set(true);
+    this.locked.set(true);
+    this.generating.set(true);
+
+    this.streamService.reset();
+    this.wireStreamSubscriptions(modelName, onChatListRefresh);
+
+    // Only relevant for resume — a fresh submit() already pushed its own user
+    // bubble locally, so wiring this into the shared subscriptions would
+    // double it up.
+    this.streamService.userMessageEcho$.subscribe((messages) => {
+      const userMessages = (messages ?? []).filter((m: any) => m.role === 'user');
+      for (const m of userMessages) {
+        this.chatMessages.update((msgs) => [...msgs, ...this.buildUserMessagesFromContent(m.content)]);
+      }
+    });
+
+    this.streamService.resume(chatId);
+  }
+
+  private wireStreamSubscriptions(modelName: string, onChatListRefresh: () => void): void {
     this.sub?.unsubscribe();
 
     this.sub = this.streamService.events$.subscribe({
@@ -229,8 +283,16 @@ export class ChatCompletionsService {
           }
         }
       },
-      complete: () => this.streaming.set(false),
-      error: () => this.streaming.set(false),
+      complete: () => {
+        this.streaming.set(false);
+        this.locked.set(false);
+        this.generating.set(false);
+      },
+      error: () => {
+        this.streaming.set(false);
+        this.locked.set(false);
+        this.generating.set(false);
+      },
     });
 
     // Reasoning deltas — lazily create the bubble on first delta.
@@ -260,7 +322,7 @@ export class ChatCompletionsService {
         }
         return [
           ...msgs,
-          { role: 'ai', text: chunk, streaming: true, date: new Date(), username: selectedModelId },
+          { role: 'ai', text: chunk, streaming: true, date: new Date(), username: modelName },
         ];
       });
     });
@@ -287,22 +349,6 @@ export class ChatCompletionsService {
         this.location.replaceState(`/chat-openai/${result}`);
       }
     });
-
-    this.streamService.chat(
-      {
-        model: selectedModelId,
-        messages: [
-          {
-            role: 'user',
-            content: [...this.buildAttachmentParts(appendedFiles), { type: 'text', text: input }],
-          },
-        ],
-        reasoning_effort: reasoning as any,
-        stream: true,
-      },
-      this.currentChatId() ?? undefined,
-      this.currentChatId() ? undefined : newChatOptions,
-    );
   }
 
   /** Converts appended files into Chat Completions content parts. Images go through
@@ -324,6 +370,37 @@ export class ChatCompletionsService {
     });
   }
 
+  /** Reconstructs user-bubble ChatMessages from a Chat Completions `content`
+   * value (string or content-part array) — used to render the echoed user
+   * turn when resuming a generation that isn't in persisted history yet. */
+  private buildUserMessagesFromContent(content: unknown): ChatMessage[] {
+    const parts = Array.isArray(content) ? content : [{ type: 'text', text: content }];
+    const out: ChatMessage[] = [];
+
+    for (const part of parts as any[]) {
+      if (part?.type === 'image_url' && part.image_url?.url) {
+        out.push({ role: 'user', text: '', image: part.image_url.url, date: new Date(), username: 'You' });
+      } else if (part?.type === 'input_audio' && part.input_audio?.data) {
+        const format = part.input_audio.format ?? 'wav';
+        out.push({
+          role: 'user',
+          text: '',
+          audio: `data:audio/${format};base64,${part.input_audio.data}`,
+          date: new Date(),
+          username: 'You',
+        });
+      }
+    }
+
+    const text = (parts as any[])
+      .filter((p) => p?.type === 'text' && p.text)
+      .map((p) => p.text)
+      .join('\n');
+    if (text) out.push({ role: 'user', text, date: new Date(), username: 'You' });
+
+    return out;
+  }
+
   resend(
     selectedModelId: string,
     reasoning: ReasoningEffort | undefined,
@@ -341,6 +418,8 @@ export class ChatCompletionsService {
     this.sub?.unsubscribe();
     this.streamService.reset();
     this.streaming.set(false);
+    this.locked.set(false);
+    this.generating.set(false);
     this.chatMessages.update((msgs) => msgs.filter((m) => !m.streaming));
   }
 
@@ -350,13 +429,17 @@ export class ChatCompletionsService {
   }
 
   /**
-   * Starts/stops polling this chat's lock status. Only shared chats poll —
-   * non-shared chats have no other writer who could lock them, so polling
-   * would be pure overhead.
+   * Starts/stops polling this chat's lock status — only needed for shared
+   * chats, where another user could start generating while we're looking at
+   * it. If a poll finds the chat newly locked, we attach to the live
+   * generation via `resumeStreaming` instead of just waiting for it to
+   * finish. Non-shared chats have no other writer, so polling would be pure
+   * overhead — callers should check `meta.locked` once at load time instead
+   * and call `resumeStreaming` directly (see `loadChatMeta`).
    */
-  updateLockPolling(chatId: string, isShared: boolean, onUnlocked?: () => void): void {
+  updateLockPolling(chatId: string, shouldPoll: boolean, modelName: string, onChatListRefresh: () => void): void {
     this.stopLockPolling();
-    if (!isShared) {
+    if (!shouldPoll) {
       this.locked.set(false);
       return;
     }
@@ -367,9 +450,9 @@ export class ChatCompletionsService {
           const isLocked = !!meta.locked;
           const wasLocked = this.locked();
           this.locked.set(isLocked);
-          // Lock just released: the other user's turn finished streaming, so
-          // pull in whatever they added while we were watching.
-          if (wasLocked && !isLocked) onUnlocked?.();
+          if (isLocked && !wasLocked && !this.streaming()) {
+            this.resumeStreaming(chatId, modelName, onChatListRefresh);
+          }
         },
         error: () => this.stopLockPolling(),
       });

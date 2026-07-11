@@ -72,6 +72,7 @@
     "attach": "Attach",
     "attachedFiles": "Attached files",
     "locked": "Locked — someone else is generating a response",
+    "generating": "AI is generating a response…",
     "record": "Record",
     "stopRecording": "Stop recording"
   },

@@ -72,6 +72,7 @@
     "attach": "Anhängen",
     "attachedFiles": "Angehängte Dateien",
     "locked": "Gesperrt — jemand anderes generiert gerade eine Antwort",
+    "generating": "KI generiert eine Antwort…",
     "record": "Aufnehmen",
     "stopRecording": "Aufnahme stoppen"
   },

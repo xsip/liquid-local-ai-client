@@ -26,6 +26,7 @@ import { ChatCompletionCreateParamsNonStreamingDto } from './dto/completions-dto
 import { ChatCompletionDto } from './dto/completions-dtos/ChatCompletionDto';
 import { InvokeAiModel } from '../invoke/invoke.service';
 import { OpenAiResponseService } from './open-ai-response.service';
+import { ActiveGenerationService } from './active-generation.service';
 import {
   McpClientService,
   McpToolHeaders,
@@ -49,6 +50,7 @@ export class OpenAiService {
     private readonly tokenLimitService: TokenLimitService,
     private readonly openaiRequestService: OpenAiResponseService,
     private readonly mcpClientService: McpClientService,
+    private readonly activeGenerationService: ActiveGenerationService,
   ) {
     this.baseUrl = this.configService.get<string>(
       'LM_STUDIO_BASE_URL',
@@ -203,6 +205,18 @@ export class OpenAiService {
       );
     }
 
+    // Notify the client of the new chat id immediately — this happens right after
+    // the chat name is decided and the ChatMetadata document is created, well
+    // before tool discovery/generation start. The frontend updates its URL as
+    // soon as this arrives, so a page refresh at any point afterwards re-opens
+    // the same chat instead of losing track of it and starting a duplicate.
+    if (isNewChat) {
+      this.writeSseEvent(res, 'created_chat', {
+        type: 'created_chat',
+        result: resolvedChatMetaId,
+      });
+    }
+
     // Authorizes owner-or-shared access; throws ForbiddenException otherwise.
     const chatMeta: ChatMetadataDocument =
       await this.chatMetadataService.findOne(userId, resolvedChatMetaId!);
@@ -215,8 +229,8 @@ export class OpenAiService {
             'This chat is locked — another user is currently generating a response.',
         },
       });
-      res.write('data: [DONE]\n\n');
-      res.end();
+      this.safeWrite(res, 'data: [DONE]\n\n');
+      if (!res.writableEnded) res.end();
       return;
     }
 
@@ -352,9 +366,28 @@ export class OpenAiService {
         .catch((error: any) =>
           this.logger.error(`Failed to unlock chat: ${error.message}`),
         );
-    // Belt-and-suspenders: unlock immediately if the client disconnects
-    // mid-stream, rather than waiting for the generation loop to notice.
-    res.on('close', unlock);
+    // Deliberately NOT unlocking on `res.on('close')` — a page refresh or tab
+    // close destroys the client's socket, not this generation. `safeWrite`
+    // below absorbs the resulting write failures so the tool/completion loop
+    // keeps running and the exchange still gets persisted; the chat only
+    // unlocks once that finishes (or throws), via the `finally` block.
+
+    // Registers this generation so a client that reconnects mid-stream (e.g.
+    // after refreshing the page) can replay everything sent so far and then
+    // keep receiving live chunks via GET /openai/completions-stream/resume,
+    // instead of only being able to poll the lock flag.
+    this.activeGenerationService.start(resolvedChatMetaId!);
+
+    // Echo the user's own (plaintext, pre-encryption) turn to the generation
+    // buffer so a client resuming mid-stream can render the user bubble(s)
+    // for this turn — they aren't in persisted history yet since that only
+    // happens once the whole exchange finishes (see saveCompletionEntry below).
+    this.writeSseEvent(
+      res,
+      'user_message_echo',
+      { type: 'user_message_echo', messages: incomingMessages },
+      resolvedChatMetaId,
+    );
 
     const remainingTokens = await this.tokenLimitService.getRemainingTokens(userId);
 
@@ -379,13 +412,7 @@ export class OpenAiService {
         let finishReason: string | null = null;
 
         for await (const chunk of stream) {
-          res.write(`data: ${JSON.stringify(chunk)}\n\n`);
-          if (isNewChat) {
-            this.writeSseEvent(res, 'created_chat', {
-              type: 'created_chat',
-              result: resolvedChatMetaId,
-            });
-          }
+          this.safeWrite(res, `data: ${JSON.stringify(chunk)}\n\n`, resolvedChatMetaId);
 
           if (chunk.usage) {
             totalTokensUsed += chunk.usage.total_tokens ?? 0;
@@ -439,11 +466,12 @@ export class OpenAiService {
               // leave args empty if the model produced malformed JSON
             }
 
-            this.writeSseEvent(res, 'response.mcp_call.in_progress', {
-              type: 'response.mcp_call.in_progress',
-              name: tc.name,
-              arguments: args,
-            });
+            this.writeSseEvent(
+              res,
+              'response.mcp_call.in_progress',
+              { type: 'response.mcp_call.in_progress', name: tc.name, arguments: args },
+              resolvedChatMetaId,
+            );
 
             const customTarget = customToolDispatch.get(tc.name);
             const result = await this.mcpClientService.callTool(
@@ -459,12 +487,12 @@ export class OpenAiService {
               content: result,
             });
 
-            this.writeSseEvent(res, 'response.mcp_call.completed', {
-              type: 'response.mcp_call.completed',
-              name: tc.name,
-              arguments: args,
-              output: result,
-            });
+            this.writeSseEvent(
+              res,
+              'response.mcp_call.completed',
+              { type: 'response.mcp_call.completed', name: tc.name, arguments: args, output: result },
+              resolvedChatMetaId,
+            );
           }
 
           continue;
@@ -499,26 +527,78 @@ export class OpenAiService {
       );
 
       if (updatedUser.usedTokens >= limit) {
-        this.writeSseEvent(res, 'api.info', {
-          type: 'api.info',
-          message: `Rate limit reached. Resets at ${dayjs(updatedUser.tokenCountResetDate).toString()}`,
-        });
+        this.writeSseEvent(
+          res,
+          'api.info',
+          {
+            type: 'api.info',
+            message: `Rate limit reached. Resets at ${dayjs(updatedUser.tokenCountResetDate).toString()}`,
+          },
+          resolvedChatMetaId,
+        );
       }
       // ───────────────────────────────────────────────────────────────
     } catch (error: any) {
       this.openaiRequestService.destroy(requestId);
-      this.writeSseEvent(res, 'error', {
-        type: 'error',
-        error: error.error ?? { message: error.message },
-      });
+      this.writeSseEvent(
+        res,
+        'error',
+        { type: 'error', error: error.error ?? { message: error.message } },
+        resolvedChatMetaId,
+      );
     } finally {
-      res.off('close', unlock);
       await unlock();
+      this.activeGenerationService.finish(resolvedChatMetaId!);
     }
 
     this.openaiRequestService.destroy(requestId);
-    res.write('data: [DONE]\n\n');
-    res.end();
+    this.safeWrite(res, 'data: [DONE]\n\n');
+    try {
+      if (!res.writableEnded) res.end();
+    } catch (error: any) {
+      this.logger.warn(`Failed to end SSE response: ${error.message}`);
+    }
+  }
+
+  /**
+   * Lets a client reconnect to an in-flight generation for `internalChatId` —
+   * used when the page is refreshed (or a shared-chat viewer opens the chat)
+   * while a response is still streaming. Replays everything already sent for
+   * this generation, then forwards live chunks until it finishes. If nothing
+   * is currently generating for this chat, the response just ends immediately
+   * so the caller falls back to its normal "load history" path.
+   */
+  async resumeStream(
+    userId: Types.ObjectId,
+    internalChatId: string,
+    res: Response,
+  ): Promise<void> {
+    // Authorizes owner-or-shared access; throws ForbiddenException otherwise.
+    await this.chatMetadataService.findOne(userId, internalChatId);
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    const end = () => {
+      this.safeWrite(res, 'data: [DONE]\n\n');
+      if (!res.writableEnded) res.end();
+    };
+
+    const unsubscribe = this.activeGenerationService.subscribe(
+      internalChatId,
+      (chunk) => this.safeWrite(res, chunk),
+      end,
+    );
+
+    if (!unsubscribe) {
+      // Nothing in-flight (already finished, or never started) — nothing to resume.
+      end();
+      return;
+    }
+
+    res.on('close', unsubscribe);
   }
 
   async chatCompletions(
@@ -784,8 +864,29 @@ The final response must be a direct answer to the decrypted message, not a repet
     res: Response,
     type: string,
     payload: Record<string, unknown>,
+    chatId?: string,
   ): void {
-    res.write(`event: ${type}\ndata: ${JSON.stringify(payload)}\n\n`);
+    this.safeWrite(res, `event: ${type}\ndata: ${JSON.stringify(payload)}\n\n`, chatId);
+  }
+
+  /**
+   * Writes to the SSE response if it's still open, swallowing any error
+   * otherwise. The client's socket can close mid-generation (page refresh,
+   * tab close) without stopping the tool-call/completion loop — this keeps
+   * that loop from being aborted by a write to a dead connection, so the
+   * exchange still finishes and gets persisted in the background.
+   *
+   * When `chatId` is given, the chunk is also broadcast to any client
+   * currently resuming this generation's stream (see ActiveGenerationService).
+   */
+  private safeWrite(res: Response, data: string, chatId?: string): void {
+    if (chatId) this.activeGenerationService.push(chatId, data);
+    if (res.writableEnded || res.destroyed) return;
+    try {
+      res.write(data);
+    } catch (error: any) {
+      this.logger.warn(`SSE write failed (client likely disconnected): ${error.message}`);
+    }
   }
 
   private handleError(method: string, err: unknown): never {

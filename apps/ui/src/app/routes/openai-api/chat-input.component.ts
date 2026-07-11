@@ -219,7 +219,16 @@ export type { AppendedFile };
           </button>
         </div>
 
-        @if (locked()) {
+        @if (generating()) {
+          <div
+            class="flex items-center gap-1.5 px-3 py-1.5 mb-2 text-xs rounded-xl border border-accent/40 text-accent bg-accent/10"
+          >
+            <span
+              class="w-3 h-3 shrink-0 rounded-full border-2 border-accent border-t-transparent animate-spin"
+            ></span>
+            <span>{{ 'chatInput.generating' | translate }}</span>
+          </div>
+        } @else if (locked()) {
           <div
             class="flex items-center gap-1.5 px-3 py-1.5 mb-2 text-xs rounded-xl border border-warn text-warn bg-warn/10"
           >
@@ -353,6 +362,7 @@ export class OpenAiChatInputComponent implements AfterViewInit, AfterViewChecked
   readonly form = input.required<FormGroup>();
   readonly streaming = input.required<boolean>();
   readonly locked = input<boolean>(false);
+  readonly generating = input<boolean>(false);
   readonly reasoning = input.required<ReasoningEffort | undefined>();
   readonly modelReasoningCap = input.required<ModelReasoningCapability | null>();
   readonly newChatIdProvider = input.required<() => Observable<string>>();

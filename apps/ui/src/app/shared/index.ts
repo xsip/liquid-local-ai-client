@@ -11,6 +11,7 @@ export { ModalComponent }         from './components/ui/modal.component';
 // ── Shared Components ──────────────────────────────────────────────────────
 export { SpinnerComponent }       from './components/spinner.component';
 export { AudioPlayerComponent }   from './components/audio-player.component';
+export { WaveAnimationComponent } from './components/wave-animation.component';
 export { SendButtonComponent }    from './components/send-button.component';
 export { ResetButtonComponent }   from './components/reset-button.component';
 export {

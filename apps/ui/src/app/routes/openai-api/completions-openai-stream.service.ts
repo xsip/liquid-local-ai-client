@@ -20,6 +20,11 @@ export interface CreatedChatEvent {
   result: string;
 }
 
+export interface UserMessageEchoEvent {
+  type: 'user_message_echo';
+  messages: any[];
+}
+
 export interface ApiInfoEvent {
   type: 'api.info';
   message: string;
@@ -29,6 +34,7 @@ export type OpenAiEvent =
   | ChatCompletionChunkDto
   | McpCallProgressEvent
   | CreatedChatEvent
+  | UserMessageEchoEvent
   | ApiInfoEvent
   | OpenAiStreamErrorEvent;
 
@@ -43,6 +49,7 @@ export class OpenAiStreamService {
   private _reasoningDelta$ = new ReplaySubject<string>(Infinity);
   private _chatEnd$ = new ReplaySubject<OpenAiChatEnd>(1);
   private _chatCreated$ = new ReplaySubject<string>(1);
+  private _userMessageEcho$ = new ReplaySubject<any[]>(1);
 
   get events$(): Observable<OpenAiEvent> {
     return this._events$.asObservable();
@@ -58,6 +65,9 @@ export class OpenAiStreamService {
   }
   get newChatCreated$(): Observable<string> {
     return this._chatCreated$.asObservable();
+  }
+  get userMessageEcho$(): Observable<any[]> {
+    return this._userMessageEcho$.asObservable();
   }
 
   router = inject(Router);
@@ -125,6 +135,48 @@ export class OpenAiStreamService {
           });
           this._events$.complete();
         }
+        return;
+      }
+
+      await this.consumeStream(response.body);
+
+      this._events$.complete();
+      this._messageDelta$.complete();
+      this._reasoningDelta$.complete();
+    } catch (err) {
+      this._events$.error(err);
+    }
+  }
+
+  /**
+   * Reconnects to a generation already in-flight for `chatId` (e.g. after a
+   * page refresh, or when a shared-chat viewer notices the chat just became
+   * locked). Replays everything already streamed, then keeps receiving live
+   * chunks through the same dispatch pipeline as `chat()`. Resolves once the
+   * generation finishes — including immediately, with no data, if nothing
+   * was actually in-flight for this chat.
+   */
+  async resume(chatId: string): Promise<void> {
+    try {
+      const token = localStorage.getItem('jwt_token');
+      const url = `api/openai/completions-stream/resume?internalChatId=${encodeURIComponent(chatId)}`;
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          Accept: 'text/event-stream',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+
+      if (!response.ok || !response.body) {
+        if (response.status === 401) {
+          localStorage.removeItem('jwt_token');
+          this.router.navigate(['/login']);
+        }
+        this._events$.complete();
+        this._messageDelta$.complete();
+        this._reasoningDelta$.complete();
         return;
       }
 
@@ -206,6 +258,11 @@ export class OpenAiStreamService {
         this._chatCreated$.complete();
         break;
 
+      case 'user_message_echo':
+        this._userMessageEcho$.next((event as UserMessageEchoEvent).messages);
+        this._userMessageEcho$.complete();
+        break;
+
       case 'error':
         console.error(
           '[OpenAiStreamService] Stream error:',
@@ -254,10 +311,12 @@ export class OpenAiStreamService {
     this._chatCreated$.complete();
     this._messageDelta$.complete();
     this._reasoningDelta$.complete();
+    this._userMessageEcho$.complete();
     this._events$ = new ReplaySubject<OpenAiEvent>(Infinity);
     this._messageDelta$ = new ReplaySubject<string>(Infinity);
     this._reasoningDelta$ = new ReplaySubject<string>(Infinity);
     this._chatEnd$ = new ReplaySubject<OpenAiChatEnd>(1);
     this._chatCreated$ = new ReplaySubject<string>(1);
+    this._userMessageEcho$ = new ReplaySubject<any[]>(1);
   }
 }

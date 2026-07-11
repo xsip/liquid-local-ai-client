@@ -23,7 +23,7 @@ import {
   heroUserPlus,
   heroXMark
 } from '@ng-icons/heroicons/outline';
-import { BadgeComponent, IconButtonComponent, TooltipDirective } from '../../shared';
+import { BadgeComponent, IconButtonComponent, TooltipDirective, WaveAnimationComponent } from '../../shared';
 import { AuthImageMountDirective, CodeBlockMountDirective, FileCardMountDirective } from './markdown.pipe';
 import { ChatAttachmentsSidebarComponent } from '../../shared/components/chat-attachments-sidebar.component';
 import ClientEnum = CreateChatMetadataDto.ClientEnum;
@@ -74,6 +74,7 @@ import InvokeAiModelToUseEnum = UpdateChatMetadataDto.InvokeAiModelToUseEnum;
     BadgeComponent,
     IconButtonComponent,
     ChatAttachmentsSidebarComponent,
+    WaveAnimationComponent,
     AuthImageMountDirective,
     CodeBlockMountDirective,
     FileCardMountDirective,
@@ -215,11 +216,25 @@ import InvokeAiModelToUseEnum = UpdateChatMetadataDto.InvokeAiModelToUseEnum;
                     class="absolute left-0 top-1/4 -translate-y-1/4 w-0.5 h-3/4 rounded-r-full bg-accent"
                   ></div>
                 }
+                <!-- Generating indicator -->
+                @if (isGenerating(chat)) {
+                  <app-wave-animation
+                    class="fixed bottom-0 left-0 w-full overflow-hidden"
+                  />
+                }
                 <div class="flex items-center gap-1.5 pl-1">
                   @if (chat.useCrypto) {
                     <ng-icon name="heroLockClosed" class="w-2.5 h-2.5 shrink-0 text-amber-400/80" />
                   }
                   <div class="truncate font-medium leading-tight">{{ chat.name ?? 'Chat' }}</div>
+                  @if (isGenerating(chat)) {
+                    <span class="relative flex h-1.5 w-1.5 shrink-0 ml-auto">
+                      <span
+                        class="absolute inline-flex h-full w-full rounded-full bg-accent opacity-75 animate-ping"
+                      ></span>
+                      <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-accent"></span>
+                    </span>
+                  }
                 </div>
                 @if (chat.usedModel) {
                   <div
@@ -421,7 +436,11 @@ import InvokeAiModelToUseEnum = UpdateChatMetadataDto.InvokeAiModelToUseEnum;
           class="px-4 py-3 text-xs text-text-muted uppercase tracking-widest border-b border-border-subtle truncate font-semibold flex items-center justify-between"
         >
           <span>{{ 'sidebar.shareChat' | translate }} — {{ modal.chatName }}</span>
-          <button type="button" (click)="closeShare()" class="text-text-muted hover:text-text-primary">
+          <button
+            type="button"
+            (click)="closeShare()"
+            class="text-text-muted hover:text-text-primary"
+          >
             <ng-icon name="heroXMark" class="w-4 h-4" />
           </button>
         </div>
@@ -472,7 +491,9 @@ import InvokeAiModelToUseEnum = UpdateChatMetadataDto.InvokeAiModelToUseEnum;
               }
             </div>
           } @else {
-            <span class="text-[10px] text-text-muted">{{ 'sidebar.notSharedYet' | translate }}</span>
+            <span class="text-[10px] text-text-muted">{{
+              'sidebar.notSharedYet' | translate
+            }}</span>
           }
         </div>
       </div>
@@ -485,6 +506,13 @@ export class ChatSidebarComponent {
   readonly chatsLoading = input.required<boolean>();
   readonly currentChatId = input.required<string | null>();
   readonly customMcps = input<CustomMcpDto[]>([]);
+  /** True while the currently open chat is actively generating — the list's own
+   * `locked` field can lag until the next refresh, so this covers that gap. */
+  readonly currentChatGenerating = input<boolean>(false);
+
+  isGenerating(chat: ChatMetadataDto): boolean {
+    return !!chat.locked || (this.currentChatId() === chat._id && this.currentChatGenerating());
+  }
 
   readonly chatOpened = output<string>();
   readonly commitRename = output<{ chatId: string; name: string }>();

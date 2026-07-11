@@ -7,6 +7,7 @@ import { McpClientModule } from '../mcp-client/mcp-client.module';
 import { OpenaiController } from './openai.controller';
 import { OpenAiService } from './openai.service';
 import { OpenAiResponseService } from './open-ai-response.service';
+import { ActiveGenerationService } from './active-generation.service';
 
 @Module({
   imports: [
@@ -17,7 +18,7 @@ import { OpenAiResponseService } from './open-ai-response.service';
     McpClientModule,
   ],
   controllers: [OpenaiController],
-  providers: [OpenAiService, OpenAiResponseService],
-  exports: [OpenAiResponseService],
+  providers: [OpenAiService, OpenAiResponseService, ActiveGenerationService],
+  exports: [OpenAiResponseService, ActiveGenerationService],
 })
 export class OpenaiModule {}
