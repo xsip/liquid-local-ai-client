@@ -57,6 +57,10 @@ export class ChatCompletionsService {
   private readonly lastUserInput = signal<string>('');
   private sub?: Subscription;
   private lockPollSub?: Subscription;
+  /** All subscriptions wired per-generation (submit/resume) — torn down and
+   * recreated on every call so they never accumulate duplicates across
+   * multiple submits/resumes within the same component lifetime. */
+  private streamSubs: Subscription[] = [];
 
   readonly showResend = computed(() => {
     const msgs = this.chatMessages();
@@ -199,19 +203,30 @@ export class ChatCompletionsService {
 
     // Only relevant for resume — a fresh submit() already pushed its own user
     // bubble locally, so wiring this into the shared subscriptions would
-    // double it up.
-    this.streamService.userMessageEcho$.subscribe((messages) => {
+    // double it up. The echo is buffered/sent first server-side, but if it
+    // ever lands after the first reasoning/content delta anyway (e.g. a slow
+    // metadata lookup on the resume request), insert it right before that
+    // delta's bubble rather than at the array's end — otherwise the AI's
+    // response would render above the user message that prompted it.
+    this.streamSubs.push(this.streamService.userMessageEcho$.subscribe((messages) => {
       const userMessages = (messages ?? []).filter((m: any) => m.role === 'user');
-      for (const m of userMessages) {
-        this.chatMessages.update((msgs) => [...msgs, ...this.buildUserMessagesFromContent(m.content)]);
-      }
-    });
+      const newBubbles = userMessages.flatMap((m: any) => this.buildUserMessagesFromContent(m.content));
+      if (!newBubbles.length) return;
+
+      this.chatMessages.update((msgs) => {
+        const insertAt = msgs.findIndex((m) => m.streaming);
+        if (insertAt === -1) return [...msgs, ...newBubbles];
+        return [...msgs.slice(0, insertAt), ...newBubbles, ...msgs.slice(insertAt)];
+      });
+    }));
 
     this.streamService.resume(chatId);
   }
 
   private wireStreamSubscriptions(modelName: string, onChatListRefresh: () => void): void {
     this.sub?.unsubscribe();
+    this.streamSubs.forEach((s) => s.unsubscribe());
+    this.streamSubs = [];
 
     this.sub = this.streamService.events$.subscribe({
       next: (event) => {
@@ -295,8 +310,11 @@ export class ChatCompletionsService {
       },
     });
 
-    // Reasoning deltas — lazily create the bubble on first delta.
-    this.streamService.reasoningDelta$.subscribe((chunk) => {
+    // Reasoning deltas — lazily create the bubble on first delta. Reasoning
+    // always precedes the response it belongs to, so if an AI bubble is
+    // already streaming (can happen when resuming mid-response), the new
+    // reasoning bubble goes in front of it rather than at the array's end.
+    this.streamSubs.push(this.streamService.reasoningDelta$.subscribe((chunk) => {
       this.chatMessages.update((msgs) => {
         const idx = this.lastIndexWhere(msgs, (m) => m.role === 'reasoning' && !!m.streaming);
         if (idx !== -1) {
@@ -304,15 +322,21 @@ export class ChatCompletionsService {
           copy[idx] = { ...copy[idx], text: copy[idx].text + chunk };
           return copy;
         }
-        return [
-          ...msgs,
-          { role: 'reasoning', text: chunk, streaming: true, collapsed: false, date: new Date() },
-        ];
+        const newBubble: ChatMessage = {
+          role: 'reasoning',
+          text: chunk,
+          streaming: true,
+          collapsed: false,
+          date: new Date(),
+        };
+        const aiIdx = msgs.findIndex((m) => m.role === 'ai' && m.streaming);
+        if (aiIdx === -1) return [...msgs, newBubble];
+        return [...msgs.slice(0, aiIdx), newBubble, ...msgs.slice(aiIdx)];
       });
-    });
+    }));
 
     // Text deltas — lazily create the ai bubble on first delta.
-    this.streamService.messageDelta$.subscribe((chunk) => {
+    this.streamSubs.push(this.streamService.messageDelta$.subscribe((chunk) => {
       this.chatMessages.update((msgs) => {
         const idx = this.lastIndexWhere(msgs, (m) => m.role === 'ai' && !!m.streaming);
         if (idx !== -1) {
@@ -325,9 +349,9 @@ export class ChatCompletionsService {
           { role: 'ai', text: chunk, streaming: true, date: new Date(), username: modelName },
         ];
       });
-    });
+    }));
 
-    this.streamService.chatEnd$.subscribe(() => {
+    this.streamSubs.push(this.streamService.chatEnd$.subscribe(() => {
       this.chatMessages.update((msgs) =>
         msgs.map((m) => {
           if (m.role === 'ai' && m.streaming) return { ...m, streaming: false };
@@ -341,14 +365,14 @@ export class ChatCompletionsService {
         }),
       );
       onChatListRefresh();
-    });
+    }));
 
-    this.streamService.newChatCreated$.subscribe((result) => {
+    this.streamSubs.push(this.streamService.newChatCreated$.subscribe((result) => {
       if (this.currentChatId() !== result) {
         this.currentChatId.set(result);
         this.location.replaceState(`/chat-openai/${result}`);
       }
-    });
+    }));
   }
 
   /** Converts appended files into Chat Completions content parts. Images go through
@@ -416,6 +440,8 @@ export class ChatCompletionsService {
 
   reset(): void {
     this.sub?.unsubscribe();
+    this.streamSubs.forEach((s) => s.unsubscribe());
+    this.streamSubs = [];
     this.streamService.reset();
     this.streaming.set(false);
     this.locked.set(false);
@@ -425,6 +451,7 @@ export class ChatCompletionsService {
 
   destroy(): void {
     this.sub?.unsubscribe();
+    this.streamSubs.forEach((s) => s.unsubscribe());
     this.stopLockPolling();
   }
 
