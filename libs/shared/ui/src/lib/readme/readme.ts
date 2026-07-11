@@ -15,7 +15,7 @@ import {
   heroExclamationTriangle,
   heroPhoto,
 } from '@ng-icons/heroicons/outline';
-import { DarkModeToggleComponent } from '../shared';
+import { DarkModeToggleComponent } from '../dark-mode-toggle/dark-mode-toggle.component';
 
 @Component({
   selector: 'app-readme',

@@ -1,6 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { readStoredTheme, applyTheme } from '../../utils/theme.utils';
+import { readStoredTheme, applyTheme } from '../utils/theme.utils';
 import { NgIconComponent, provideIcons } from '@ng-icons/core';
 import { heroSun, heroMoon } from '@ng-icons/heroicons/outline';
 

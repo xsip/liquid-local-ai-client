@@ -5,7 +5,7 @@ export { BadgeComponent }         from './components/ui/badge.component';
 export { LabelComponent }         from './components/ui/label.component';
 export { TextInputComponent }     from './components/ui/text-input.component';
 export { ToggleComponent }        from './components/ui/toggle.component';
-export { DarkModeToggleComponent } from './components/ui/dark-mode-toggle.component';
+export { DarkModeToggleComponent } from '@app/shared-ui';
 export { ModalComponent }         from './components/ui/modal.component';
 
 // ── Shared Components ──────────────────────────────────────────────────────
@@ -42,7 +42,7 @@ export {
 }                                 from './utils/file.utils';
 export type { AppendedFile }      from './utils/file.utils';
 
-export { readStoredTheme, applyTheme } from './utils/theme.utils';
+export { readStoredTheme, applyTheme } from '@app/shared-ui';
 
 export { AudioRecorder } from './utils/audio-recorder.utils';
 export type { AudioRecording } from './utils/audio-recorder.utils';

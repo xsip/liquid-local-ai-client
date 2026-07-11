@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
 import { OpenAiApi } from './routes/openai-api';
 import { Login } from './routes/login';
-import { ReadmeComponent } from './routes/readme';
+import { ReadmeComponent } from '@app/shared-ui';
 import { AdminCms } from './routes/admin';
 import { authGuard } from './auth.guard';
 import { adminGuard } from './admin.guard';

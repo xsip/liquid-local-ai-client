@@ -6,14 +6,16 @@
   "scripts": {
     "api": "nx serve api",
     "ui": "nx serve ui",
+    "landing": "nx serve landing",
     "build:api": "nx build api",
     "build:ui": "nx build ui",
+    "build:landing": "nx build landing",
     "build": "nx run-many --target=build --all",
     "test": "nx run-many --target=test --all",
     "lint": "nx run-many --target=lint --all",
     "gen:client": "npx @openapitools/openapi-generator-cli generate -i ./openapi.json -g typescript-angular -o ./apps/ui/src/app/client --additional-properties=ngVersion=21,providedIn=root,useStandalone=true",
     "gen:invoke": "npx @openapitools/openapi-generator-cli generate -i http://127.0.0.1:9090/openapi.json -g typescript-nestjs -o ./apps/api/src/modules/invoke --global-property models",
-    "start": "nx run-many --target=serve --projects=api,ui"
+    "start": "nx run-many --target=serve --projects=api,ui,landing"
   },
   "dependencies": {
     "@angular/animations": "^21.2.0",
@@ -59,6 +61,8 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@angular-devkit/core": "^21.2.7",
+    "@angular-devkit/schematics": "^21.2.7",
     "@angular/build": "^21.2.7",
     "@angular/cli": "^21.2.7",
     "@angular/compiler-cli": "^21.2.0",
@@ -68,9 +72,13 @@
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.1",
     "@nx/angular": "^22.6.5",
+    "@nx/eslint": "22.6.5",
+    "@nx/eslint-plugin": "22.6.5",
     "@nx/js": "22.6.5",
     "@nx/nest": "^22.6.5",
     "@nx/node": "^22.6.5",
+    "@nx/web": "22.6.5",
+    "@schematics/angular": "^21.2.7",
     "@swc-node/register": "1.11.1",
     "@swc/core": "1.15.8",
     "@swc/helpers": "0.5.18",
@@ -84,6 +92,8 @@
     "@types/node": "^24.0.0",
     "@types/prismjs": "^1.26.6",
     "@types/supertest": "^7.0.0",
+    "@typescript-eslint/utils": "^8.40.0",
+    "angular-eslint": "^21.2.0",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",
@@ -100,7 +110,7 @@
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "~5.9.2",
-    "typescript-eslint": "^8.20.0",
+    "typescript-eslint": "^8.40.0",
     "vitest": "^4.0.8"
   },
   "workspaces": [

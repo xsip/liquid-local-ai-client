@@ -5,7 +5,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AuthService, CustomMcpDto, MeDto, ModelOpenAiDto, OpenAIService } from '../../client';
 import { SpinnerComponent } from '../../shared/components/spinner.component';
-import { DarkModeToggleComponent } from '../../shared/components/ui/dark-mode-toggle.component';
+import { DarkModeToggleComponent } from '@app/shared-ui';
 import { BadgeComponent } from '../../shared/components/ui/badge.component';
 import { ButtonComponent } from '../../shared/components/ui/button.component';
 import { McpConfigDialogComponent } from './mcp-config-dialog.component';
