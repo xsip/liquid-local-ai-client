@@ -15,11 +15,12 @@ import {
   heroExclamationTriangle,
   heroPhoto,
 } from '@ng-icons/heroicons/outline';
+import { DarkModeToggleComponent } from '../shared';
 
 @Component({
   selector: 'app-readme',
   standalone: true,
-  imports: [CommonModule, RouterLink, TranslateModule, NgIconComponent],
+  imports: [CommonModule, RouterLink, TranslateModule, NgIconComponent, DarkModeToggleComponent],
   viewProviders: [
     provideIcons({
       heroCommandLine,
@@ -132,16 +133,7 @@ import {
 
           <div class="flex items-center gap-2 flex-shrink-0">
             <!-- Theme toggle: reads .dark from <html> set by the app -->
-            <button
-              (click)="toggleTheme()"
-              class="w-8 h-8 rounded-lg flex items-center justify-center border border-border-default bg-surface-raised hover:bg-surface-overlay text-text-secondary hover:text-text-primary transition-colors"
-              [title]="'darkMode.toggle' | translate"
-            >
-              <!-- Sun shown in dark mode -->
-              <ng-icon name="heroSun" class="w-4 h-4 hidden dark:block" />
-              <!-- Moon shown in light mode -->
-              <ng-icon name="heroMoon" class="w-4 h-4 block dark:hidden" />
-            </button>
+            <ui-dark-mode-toggle />
 
             <a
               routerLink="/chat-openai"

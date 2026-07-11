@@ -25,7 +25,7 @@ import {
   IconButtonComponent,
   BadgeComponent,
   ModalComponent,
-  LabelComponent,
+  LabelComponent, DarkModeToggleComponent,
 } from '../shared';
 import { TextInputComponent } from '../shared/components/ui/text-input.component';
 import { ToggleComponent } from '../shared/components/ui/toggle.component';
@@ -87,6 +87,7 @@ function optionalMinLength(min: number) {
     LabelComponent,
     TextInputComponent,
     ToggleComponent,
+    DarkModeToggleComponent,
   ],
   viewProviders: [
     provideIcons({
@@ -111,14 +112,7 @@ function optionalMinLength(min: number) {
         <span class="text-sm font-semibold">Admin CMS</span>
 
         <div class="ml-auto flex items-center gap-2">
-          <button
-            (click)="toggleTheme()"
-            class="w-8 h-8 rounded-lg flex items-center justify-center border border-border-default bg-surface-raised hover:bg-surface-overlay text-text-secondary hover:text-text-primary transition-colors"
-            title="Toggle theme"
-          >
-            <ng-icon name="heroSun" class="w-4 h-4 hidden dark:block" />
-            <ng-icon name="heroMoon" class="w-4 h-4 block dark:hidden" />
-          </button>
+          <ui-dark-mode-toggle />
           <a
             routerLink="/chat-openai"
             class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-default text-text-secondary hover:border-border-strong hover:text-text-primary text-xs font-medium transition-colors"
@@ -132,11 +126,7 @@ function optionalMinLength(min: number) {
       <div class="max-w-5xl mx-auto px-4 sm:px-8 py-8">
         <!-- Tabs -->
         <div class="flex gap-2 mb-6">
-          <ui-button
-            variant="secondary"
-            [active]="tab() === 'users'"
-            (clicked)="tab.set('users')"
-          >
+          <ui-button variant="secondary" [active]="tab() === 'users'" (clicked)="tab.set('users')">
             <ng-icon name="heroUserGroup" class="w-3.5 h-3.5" />
             Users
           </ui-button>
@@ -164,8 +154,17 @@ function optionalMinLength(min: number) {
             <div class="flex items-center justify-between mb-4">
               <h2 class="text-lg font-semibold">Users</h2>
               <div class="flex items-center gap-2">
-                <ui-button variant="secondary" size="sm" [disabled]="usersLoading()" (clicked)="loadUsers()">
-                  <ng-icon name="heroArrowPath" class="w-3.5 h-3.5" [class.animate-spin]="usersLoading()" />
+                <ui-button
+                  variant="secondary"
+                  size="sm"
+                  [disabled]="usersLoading()"
+                  (clicked)="loadUsers()"
+                >
+                  <ng-icon
+                    name="heroArrowPath"
+                    class="w-3.5 h-3.5"
+                    [class.animate-spin]="usersLoading()"
+                  />
                   Refresh
                 </ui-button>
                 <ui-button variant="primary" size="sm" (clicked)="openCreateUser()">
@@ -190,9 +189,13 @@ function optionalMinLength(min: number) {
                 <tbody>
                   @for (u of users(); track u._id; let odd = $odd) {
                     <tr [class]="odd ? 'bg-surface-raised' : 'bg-surface-base'">
-                      <td class="px-4 py-2.5 font-mono text-xs text-text-primary">{{ u.username }}</td>
+                      <td class="px-4 py-2.5 font-mono text-xs text-text-primary">
+                        {{ u.username }}
+                      </td>
                       <td class="px-4 py-2.5">
-                        <ui-badge [variant]="u.role === 'admin' ? 'warn' : 'default'">{{ u.role }}</ui-badge>
+                        <ui-badge [variant]="u.role === 'admin' ? 'warn' : 'default'">{{
+                          u.role
+                        }}</ui-badge>
                       </td>
                       <td class="px-4 py-2.5">
                         <ui-badge variant="accent">{{ u.subscription }}</ui-badge>
@@ -202,10 +205,16 @@ function optionalMinLength(min: number) {
                           u.isActivated ? 'active' : 'inactive'
                         }}</ui-badge>
                       </td>
-                      <td class="px-4 py-2.5 text-xs text-text-muted font-mono">{{ u.usedTokens | number }}</td>
+                      <td class="px-4 py-2.5 text-xs text-text-muted font-mono">
+                        {{ u.usedTokens | number }}
+                      </td>
                       <td class="px-4 py-2.5">
                         <div class="flex items-center justify-end gap-1">
-                          <ui-icon-button size="sm" title="Reset token usage" (clicked)="resetTokens(u)">
+                          <ui-icon-button
+                            size="sm"
+                            title="Reset token usage"
+                            (clicked)="resetTokens(u)"
+                          >
                             <ng-icon name="heroArrowPath" class="w-3.5 h-3.5" />
                           </ui-icon-button>
                           <ui-icon-button size="sm" title="Edit" (clicked)="openEditUser(u)">
@@ -220,7 +229,11 @@ function optionalMinLength(min: number) {
                   } @empty {
                     <tr>
                       <td colspan="6" class="px-4 py-8 text-center text-text-muted text-xs">
-                        @if (usersLoading()) { Loading users… } @else { No users yet. }
+                        @if (usersLoading()) {
+                          Loading users…
+                        } @else {
+                          No users yet.
+                        }
                       </td>
                     </tr>
                   }
@@ -236,8 +249,17 @@ function optionalMinLength(min: number) {
             <div class="flex items-center justify-between mb-4">
               <h2 class="text-lg font-semibold">Token Limit Configs</h2>
               <div class="flex items-center gap-2">
-                <ui-button variant="secondary" size="sm" [disabled]="configsLoading()" (clicked)="loadConfigs()">
-                  <ng-icon name="heroArrowPath" class="w-3.5 h-3.5" [class.animate-spin]="configsLoading()" />
+                <ui-button
+                  variant="secondary"
+                  size="sm"
+                  [disabled]="configsLoading()"
+                  (clicked)="loadConfigs()"
+                >
+                  <ng-icon
+                    name="heroArrowPath"
+                    class="w-3.5 h-3.5"
+                    [class.animate-spin]="configsLoading()"
+                  />
                   Refresh
                 </ui-button>
                 <ui-button variant="primary" size="sm" (clicked)="openCreateConfig()">
@@ -263,14 +285,22 @@ function optionalMinLength(min: number) {
                       <td class="px-4 py-2.5">
                         <ui-badge variant="accent">{{ c.subscription }}</ui-badge>
                       </td>
-                      <td class="px-4 py-2.5 font-mono text-xs">{{ c.tokensPerInterval | number }}</td>
-                      <td class="px-4 py-2.5 font-mono text-xs">{{ c.minutesTillReset | number }}</td>
+                      <td class="px-4 py-2.5 font-mono text-xs">
+                        {{ c.tokensPerInterval | number }}
+                      </td>
+                      <td class="px-4 py-2.5 font-mono text-xs">
+                        {{ c.minutesTillReset | number }}
+                      </td>
                       <td class="px-4 py-2.5">
                         <div class="flex items-center justify-end gap-1">
                           <ui-icon-button size="sm" title="Edit" (clicked)="openEditConfig(c)">
                             <ng-icon name="heroPencilSquare" class="w-3.5 h-3.5" />
                           </ui-icon-button>
-                          <ui-icon-button size="sm" title="Delete" (clicked)="confirmDeleteConfig(c)">
+                          <ui-icon-button
+                            size="sm"
+                            title="Delete"
+                            (clicked)="confirmDeleteConfig(c)"
+                          >
                             <ng-icon name="heroTrash" class="w-3.5 h-3.5 text-error-text" />
                           </ui-icon-button>
                         </div>
@@ -279,7 +309,11 @@ function optionalMinLength(min: number) {
                   } @empty {
                     <tr>
                       <td colspan="4" class="px-4 py-8 text-center text-text-muted text-xs">
-                        @if (configsLoading()) { Loading configs… } @else { No token limit configs yet. }
+                        @if (configsLoading()) {
+                          Loading configs…
+                        } @else {
+                          No token limit configs yet.
+                        }
                       </td>
                     </tr>
                   }
@@ -305,7 +339,9 @@ function optionalMinLength(min: number) {
           </div>
 
           <div>
-            <ui-label class="mb-1.5">{{ editingUser() ? 'New Password (optional)' : 'Password' }}</ui-label>
+            <ui-label class="mb-1.5">{{
+              editingUser() ? 'New Password (optional)' : 'Password'
+            }}</ui-label>
             <ui-text-input
               type="password"
               [showToggle]="true"
@@ -346,8 +382,14 @@ function optionalMinLength(min: number) {
           </div>
 
           <div class="flex gap-2 justify-end mt-2">
-            <ui-button variant="secondary" type="button" (clicked)="closeUserModal()">Cancel</ui-button>
-            <ui-button variant="primary" type="submit" [disabled]="userForm.invalid || savingUser()">
+            <ui-button variant="secondary" type="button" (clicked)="closeUserModal()"
+              >Cancel</ui-button
+            >
+            <ui-button
+              variant="primary"
+              type="submit"
+              [disabled]="userForm.invalid || savingUser()"
+            >
               {{ editingUser() ? 'Save' : 'Create' }}
             </ui-button>
           </div>
@@ -358,8 +400,14 @@ function optionalMinLength(min: number) {
     <!-- ── TOKEN LIMIT CONFIG CREATE/EDIT MODAL ── -->
     @if (showConfigModal()) {
       <ui-modal (closed)="closeConfigModal()">
-        <span slot="header">{{ editingConfig() ? 'Edit Token Limit Config' : 'New Token Limit Config' }}</span>
-        <form [formGroup]="configForm" (ngSubmit)="submitConfig()" class="flex flex-col gap-4 w-full">
+        <span slot="header">{{
+          editingConfig() ? 'Edit Token Limit Config' : 'New Token Limit Config'
+        }}</span>
+        <form
+          [formGroup]="configForm"
+          (ngSubmit)="submitConfig()"
+          class="flex flex-col gap-4 w-full"
+        >
           <div>
             <ui-label class="mb-1.5">
               {{ editingConfig() ? 'Subscription' : 'Subscription (new or existing tier name)' }}
@@ -368,7 +416,9 @@ function optionalMinLength(min: number) {
               formControlName="subscription"
               [placeholder]="editingConfig() ? '' : 'e.g. pro'"
             />
-            @if (configForm.get('subscription')?.invalid && configForm.get('subscription')?.touched) {
+            @if (
+              configForm.get('subscription')?.invalid && configForm.get('subscription')?.touched
+            ) {
               <p class="text-[10px] text-error-text mt-1">
                 2-32 characters: lowercase letters, digits, underscore, or dash.
               </p>
@@ -378,7 +428,10 @@ function optionalMinLength(min: number) {
           <div>
             <ui-label class="mb-1.5">Tokens per Interval</ui-label>
             <ui-text-input formControlName="tokensPerInterval" placeholder="9000" />
-            @if (configForm.get('tokensPerInterval')?.invalid && configForm.get('tokensPerInterval')?.touched) {
+            @if (
+              configForm.get('tokensPerInterval')?.invalid &&
+              configForm.get('tokensPerInterval')?.touched
+            ) {
               <p class="text-[10px] text-error-text mt-1">Must be a positive whole number.</p>
             }
           </div>
@@ -386,14 +439,23 @@ function optionalMinLength(min: number) {
           <div>
             <ui-label class="mb-1.5">Minutes Till Reset</ui-label>
             <ui-text-input formControlName="minutesTillReset" placeholder="60" />
-            @if (configForm.get('minutesTillReset')?.invalid && configForm.get('minutesTillReset')?.touched) {
+            @if (
+              configForm.get('minutesTillReset')?.invalid &&
+              configForm.get('minutesTillReset')?.touched
+            ) {
               <p class="text-[10px] text-error-text mt-1">Must be a positive whole number.</p>
             }
           </div>
 
           <div class="flex gap-2 justify-end mt-2">
-            <ui-button variant="secondary" type="button" (clicked)="closeConfigModal()">Cancel</ui-button>
-            <ui-button variant="primary" type="submit" [disabled]="configForm.invalid || savingConfig()">
+            <ui-button variant="secondary" type="button" (clicked)="closeConfigModal()"
+              >Cancel</ui-button
+            >
+            <ui-button
+              variant="primary"
+              type="submit"
+              [disabled]="configForm.invalid || savingConfig()"
+            >
               {{ editingConfig() ? 'Save' : 'Create' }}
             </ui-button>
           </div>
@@ -562,9 +624,10 @@ export class AdminCms implements OnInit {
         subscription: raw.subscription!,
         isActivated: raw.isActivated!,
       };
-      this.adminService
-        .adminCreateUser(payload)
-        .subscribe({ next: onDone, error: (err) => onError(err?.error?.message ?? 'Failed to create user.') });
+      this.adminService.adminCreateUser(payload).subscribe({
+        next: onDone,
+        error: (err) => onError(err?.error?.message ?? 'Failed to create user.'),
+      });
     }
   }
 
@@ -662,15 +725,14 @@ export class AdminCms implements OnInit {
         tokensPerInterval: Number(raw.tokensPerInterval),
         minutesTillReset: Number(raw.minutesTillReset),
       };
-      this.tokenLimitConfigService
-        .createTokenLimitConfig(payload)
-        .subscribe({
-          next: () => {
-            onDone();
-            this.loadSubscriptionTypes();
-          },
-          error: (err) => onError(err?.error?.message ?? 'Failed to create config (one config per tier).'),
-        });
+      this.tokenLimitConfigService.createTokenLimitConfig(payload).subscribe({
+        next: () => {
+          onDone();
+          this.loadSubscriptionTypes();
+        },
+        error: (err) =>
+          onError(err?.error?.message ?? 'Failed to create config (one config per tier).'),
+      });
     }
   }
 
