@@ -12,10 +12,47 @@ const serverDistFolder = dirname(fileURLToPath(import.meta.url));
 const browserDistFolder = resolve(serverDistFolder, '../browser');
 
 const app = express();
+
+
+
 const angularApp = new AngularNodeAppEngine({
   allowedHosts: ['localhost', '127.0.0.1'],
 });
+const basicAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  // Get credentials from environment variables
+  const BASIC_AUTH_USER = process.env['LANDING_BASIC_AUTH_USER']!;
+  const BASIC_AUTH_PASS = process.env['LANDING_BASIC_AUTH_PASSWORD']!;
 
+  // Skip auth for certain paths if needed (e.g., health checks)
+  const skipAuthPaths = ['/health', '/api'];
+  if (skipAuthPaths.some((path) => req.path.startsWith(path))) {
+    return next();
+  }
+
+  // Get authorization header
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith('Basic ')) {
+    res.setHeader('WWW-Authenticate', 'Basic realm="Protected Area"');
+    res.status(401).send('Authentication required');
+    return;
+  }
+
+  // Decode credentials
+  const base64Credentials = authHeader.split(' ')[1];
+  const credentials = Buffer.from(base64Credentials, 'base64').toString('utf-8');
+  const [username, password] = credentials.split(':');
+
+  // Verify credentials
+  if (username === BASIC_AUTH_USER && password === BASIC_AUTH_PASS) {
+    next();
+  } else {
+    res.setHeader('WWW-Authenticate', 'Basic realm="Protected Area"');
+    res.status(401).send('Invalid credentials');
+  }
+};
+
+app.use(basicAuth);
 /**
  * Example Express Rest API endpoints can be defined here.
  * Uncomment and define endpoints as necessary.
