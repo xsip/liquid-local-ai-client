@@ -76,7 +76,12 @@
     "locked": "Gesperrt — jemand anderes generiert gerade eine Antwort",
     "generating": "KI generiert eine Antwort…",
     "record": "Aufnehmen",
-    "stopRecording": "Aufnahme stoppen"
+    "stopRecording": "Aufnahme stoppen",
+    "voiceMode": "Zu Spracheingabe wechseln",
+    "textMode": "Zu Texteingabe wechseln",
+    "tapToRecord": "Zum Aufnehmen tippen",
+    "reRecord": "Erneut aufnehmen",
+    "removeRecording": "Aufnahme entfernen"
   },
   "sendButton": {
     "send": "Senden",

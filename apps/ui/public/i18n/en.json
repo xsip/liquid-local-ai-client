@@ -76,7 +76,12 @@
     "locked": "Locked — someone else is generating a response",
     "generating": "AI is generating a response…",
     "record": "Record",
-    "stopRecording": "Stop recording"
+    "stopRecording": "Stop recording",
+    "voiceMode": "Switch to voice input",
+    "textMode": "Switch to text input",
+    "tapToRecord": "Tap to record",
+    "reRecord": "Record again",
+    "removeRecording": "Remove recording"
   },
   "sendButton": {
     "send": "Send",

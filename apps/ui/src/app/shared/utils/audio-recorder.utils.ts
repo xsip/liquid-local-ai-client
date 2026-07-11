@@ -13,6 +13,7 @@ export class AudioRecorder {
   private audioContext?: AudioContext;
   private sourceNode?: MediaStreamAudioSourceNode;
   private processorNode?: ScriptProcessorNode;
+  private analyserNode?: AnalyserNode;
   private stream?: MediaStream;
   private chunks: Float32Array[] = [];
   private sampleRate = 44100;
@@ -25,17 +26,36 @@ export class AudioRecorder {
     this.processorNode = this.audioContext.createScriptProcessor(4096, 1, 1);
     this.chunks = [];
 
+    // Analyser is purely for the live visualiser — it taps the same source
+    // in parallel with the recording processor, no effect on captured audio.
+    this.analyserNode = this.audioContext.createAnalyser();
+    this.analyserNode.fftSize = 64;
+    this.analyserNode.smoothingTimeConstant = 0.7;
+
     this.processorNode.onaudioprocess = (event) => {
       this.chunks.push(new Float32Array(event.inputBuffer.getChannelData(0)));
     };
 
+    this.sourceNode.connect(this.analyserNode);
     this.sourceNode.connect(this.processorNode);
     this.processorNode.connect(this.audioContext.destination);
+  }
+
+  /** Number of bars `getFrequencyData` will fill. 0 while not recording. */
+  get frequencyBinCount(): number {
+    return this.analyserNode?.frequencyBinCount ?? 0;
+  }
+
+  /** Fills `out` with the current frequency-magnitude snapshot (0-255 per bin), for a live bar visualiser. No-op if not recording. */
+  getFrequencyData(out: Uint8Array<ArrayBuffer>): void {
+    this.analyserNode?.getByteFrequencyData(out);
   }
 
   async stop(): Promise<AudioRecording> {
     this.processorNode?.disconnect();
     this.sourceNode?.disconnect();
+    this.analyserNode?.disconnect();
+    this.analyserNode = undefined;
     this.stream?.getTracks().forEach((t) => t.stop());
     await this.audioContext?.close();
 

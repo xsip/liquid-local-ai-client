@@ -2,6 +2,7 @@ import {
   AfterViewChecked,
   AfterViewInit,
   Component,
+  computed,
   effect,
   ElementRef,
   inject,
@@ -11,6 +12,7 @@ import {
   signal,
   ViewChild,
 } from '@angular/core';
+import { animate, style, transition, trigger } from '@angular/animations';
 import Prism from 'prismjs';
 import { CommonModule } from '@angular/common';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
@@ -32,6 +34,7 @@ import { TranslateModule } from '@ngx-translate/core';
 import { MarkdownPipe } from '../../shared/components/markdown.pipe';
 import { NgIconComponent, provideIcons } from '@ng-icons/core';
 import {
+  heroArrowPath,
   heroDocument,
   heroEye,
   heroLink,
@@ -39,10 +42,12 @@ import {
   heroMicrophone,
   heroPencilSquare,
   heroStop,
+  heroTrash,
   heroXMark,
 } from '@ng-icons/heroicons/outline';
 import { ChatCompletionsService } from './chat-completions.service';
 import { Observable, of, Subscription, switchMap, take } from 'rxjs';
+import { AudioPlayerComponent } from '../../shared/components/audio-player.component';
 
 // Re-export AppendedFile so existing consumers importing from this file keep working.
 export type { AppendedFile };
@@ -58,6 +63,7 @@ export type { AppendedFile };
     ReasoningDropdownComponent,
     MarkdownPipe,
     NgIconComponent,
+    AudioPlayerComponent,
   ],
   viewProviders: [
     provideIcons({
@@ -69,7 +75,20 @@ export type { AppendedFile };
       heroLockClosed,
       heroMicrophone,
       heroStop,
+      heroArrowPath,
+      heroTrash,
     }),
+  ],
+  animations: [
+    trigger('modeSwitch', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'scale(0.97)' }),
+        animate('160ms cubic-bezier(0.16, 1, 0.3, 1)', style({ opacity: 1, transform: 'scale(1)' })),
+      ]),
+      transition(':leave', [
+        animate('120ms ease-in', style({ opacity: 0, transform: 'scale(0.97)' })),
+      ]),
+    ]),
   ],
   styles: [
     `
@@ -150,6 +169,10 @@ export type { AppendedFile };
       .mic-recording {
         animation: mic-pulse 1.4s ease-in-out infinite;
       }
+
+      .mic-panel {
+        min-height: 132px;
+      }
     `,
   ],
   template: `
@@ -158,66 +181,131 @@ export type { AppendedFile };
       style="background: var(--color-surface-raised); border-top: 1px solid var(--color-border-subtle); box-shadow: 0 -4px 20px rgba(0,0,0,0.06);"
     >
       <form [formGroup]="form()" (ngSubmit)="submitted.emit()" class="flex flex-col gap-2">
-        <!-- Editor wrapper -->
-        <div
-          class="md-editor-wrap relative group rounded-2xl overflow-hidden"
-          style="background: var(--color-surface-base); border: 1px solid var(--color-border-default); box-shadow: var(--shadow-inset);"
-        >
-          <!-- Glow ring on focus -->
+        <!-- Hidden textarea keeps FormGroup in sync regardless of mode -->
+        <textarea
+          #rawInput
+          formControlName="input"
+          class="md-raw-input"
+          tabindex="-1"
+          aria-hidden="true"
+        ></textarea>
+
+        @if (inputMode() === 'text') {
+          <!-- Editor wrapper -->
           <div
-            class="absolute inset-0 rounded-2xl pointer-events-none transition-all duration-300"
-            [style.opacity]="focused() ? 1 : 0"
-            style="box-shadow: 0 0 0 2px var(--color-accent-glow);"
-          ></div>
-
-          <!-- Hidden textarea keeps FormGroup in sync -->
-          <textarea
-            #rawInput
-            formControlName="input"
-            class="md-raw-input"
-            tabindex="-1"
-            aria-hidden="true"
-          ></textarea>
-
-          <!-- EDIT mode: always in DOM so content survives toggle -->
-          <div
-            #editableDiv
-            class="md-editable"
-            contenteditable="true"
-            [attr.data-placeholder]="'chatInput.placeholder' | translate"
-            [hidden]="previewMode()"
-            (input)="onEditableInput()"
-            (keydown)="onKeydown($event)"
-            (focus)="focused.set(true)"
-            (blur)="focused.set(false)"
-          ></div>
-
-          <!-- PREVIEW mode: always in DOM, Prism re-highlights on each show -->
-          <div
-            #previewDiv
-            class="md-preview markdown-body"
-            [hidden]="!previewMode()"
-            (click)="switchToEdit()"
-            [innerHTML]="rawText() | markdown"
-          ></div>
-
-          <!-- Toggle pill -->
-          <button
-            type="button"
-            class="md-toggle absolute top-2 right-2"
-            [class]="previewMode() ? 'md-toggle--preview' : 'md-toggle--edit'"
-            (click)="togglePreview()"
-            [title]="previewMode() ? 'Back to editing' : 'Preview markdown'"
+            @modeSwitch
+            class="md-editor-wrap relative group rounded-2xl overflow-hidden"
+            style="background: var(--color-surface-base); border: 1px solid var(--color-border-default); box-shadow: var(--shadow-inset);"
           >
-            @if (previewMode()) {
-              <ng-icon name="heroPencilSquare" class="w-2.5 h-2.5" />
-              Edit
+            <!-- Glow ring on focus -->
+            <div
+              class="absolute inset-0 rounded-2xl pointer-events-none transition-all duration-300"
+              [style.opacity]="focused() ? 1 : 0"
+              style="box-shadow: 0 0 0 2px var(--color-accent-glow);"
+            ></div>
+
+            <!-- EDIT mode: always in DOM so content survives toggle -->
+            <div
+              #editableDiv
+              class="md-editable"
+              contenteditable="true"
+              [attr.data-placeholder]="'chatInput.placeholder' | translate"
+              [hidden]="previewMode()"
+              (input)="onEditableInput()"
+              (keydown)="onKeydown($event)"
+              (focus)="focused.set(true)"
+              (blur)="focused.set(false)"
+            ></div>
+
+            <!-- PREVIEW mode: always in DOM, Prism re-highlights on each show -->
+            <div
+              #previewDiv
+              class="md-preview markdown-body"
+              [hidden]="!previewMode()"
+              (click)="switchToEdit()"
+              [innerHTML]="rawText() | markdown"
+            ></div>
+
+            <!-- Toggle pill -->
+            <button
+              type="button"
+              class="md-toggle absolute top-2 right-2"
+              [class]="previewMode() ? 'md-toggle--preview' : 'md-toggle--edit'"
+              (click)="togglePreview()"
+              [title]="previewMode() ? 'Back to editing' : 'Preview markdown'"
+            >
+              @if (previewMode()) {
+                <ng-icon name="heroPencilSquare" class="w-2.5 h-2.5" />
+                Edit
+              } @else {
+                <ng-icon name="heroEye" class="w-2.5 h-2.5" />
+                Preview
+              }
+            </button>
+          </div>
+        } @else {
+          <!-- Voice input panel -->
+          <div
+            @modeSwitch
+            class="mic-panel relative rounded-2xl overflow-hidden flex flex-col items-center justify-center gap-3 px-4 py-5"
+            style="background: var(--color-surface-base); border: 1px solid var(--color-border-default); box-shadow: var(--shadow-inset);"
+          >
+            @if (micFile(); as file) {
+              <!-- Recorded: playback + re-record/remove -->
+              <div class="w-full flex items-center gap-2">
+                <app-audio-player [src]="file.audio_url!" class="flex-1" />
+                <button
+                  type="button"
+                  (click)="reRecord()"
+                  class="w-8 h-8 shrink-0 rounded-full flex items-center justify-center border border-border-default text-text-secondary hover:border-border-strong hover:text-text-primary active:scale-90 transition-all"
+                  [title]="'chatInput.reRecord' | translate"
+                >
+                  <ng-icon name="heroArrowPath" class="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  (click)="removeMicFile()"
+                  class="w-8 h-8 shrink-0 rounded-full flex items-center justify-center border border-border-default text-text-secondary hover:border-error-border hover:text-error-text active:scale-90 transition-all"
+                  [title]="'chatInput.removeRecording' | translate"
+                >
+                  <ng-icon name="heroTrash" class="w-3.5 h-3.5" />
+                </button>
+              </div>
+            } @else if (recording()) {
+              <!-- Recording: live visualiser -->
+              <canvas
+                #micCanvas
+                class="w-full h-14 rounded-lg"
+                style="background: var(--color-surface-sunken);"
+              ></canvas>
+              <div class="flex items-center gap-3">
+                <span class="font-mono tabular-nums text-sm text-text-primary">{{
+                  recordingElapsedLabel()
+                }}</span>
+                <button
+                  type="button"
+                  (click)="toggleMic()"
+                  class="mic-recording w-10 h-10 shrink-0 rounded-full flex items-center justify-center bg-error-bg border border-error-border text-error-text active:scale-90 transition-transform"
+                  [title]="'chatInput.stopRecording' | translate"
+                >
+                  <ng-icon name="heroStop" class="w-4 h-4" />
+                </button>
+              </div>
             } @else {
-              <ng-icon name="heroEye" class="w-2.5 h-2.5" />
-              Preview
+              <!-- Idle: tap to start -->
+              <button
+                type="button"
+                (click)="toggleMic()"
+                class="w-14 h-14 rounded-full flex items-center justify-center bg-accent text-white active:scale-90 transition-transform"
+                style="box-shadow: 0 4px 16px var(--color-accent-glow);"
+                [title]="'chatInput.tapToRecord' | translate"
+              >
+                <ng-icon name="heroMicrophone" class="w-6 h-6" />
+              </button>
+              <span class="text-xs text-text-muted">{{ 'chatInput.tapToRecord' | translate }}</span>
             }
-          </button>
-        </div>
+          </div>
+        }
 
         @if (generating()) {
           <div
@@ -282,22 +370,20 @@ export type { AppendedFile };
 
           <button
             type="button"
-            (click)="toggleMic()"
-            [disabled]="(streaming() || locked()) && !recording()"
+            (click)="toggleInputMode()"
+            [disabled]="(streaming() || locked() || recording()) && inputMode() === 'text'"
             class="flex items-center gap-1.5 px-3 py-1.5 text-xs border rounded-xl select-none disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-all duration-150"
             [class]="
-              recording()
-                ? 'mic-recording border-error-border text-error-text bg-error-bg'
+              inputMode() === 'mic'
+                ? 'border-accent text-accent bg-accent/10 hover:bg-accent/20'
                 : 'border-border-default text-text-secondary hover:border-border-strong hover:text-text-primary'
             "
-            [title]="(recording() ? 'chatInput.stopRecording' : 'chatInput.record') | translate"
+            [title]="(inputMode() === 'mic' ? 'chatInput.textMode' : 'chatInput.voiceMode') | translate"
           >
-            @if (recording()) {
-              <ng-icon name="heroStop" class="w-3.5 h-3.5 shrink-0" />
-              <span class="font-mono tabular-nums">{{ recordingElapsedLabel() }}</span>
+            @if (inputMode() === 'mic') {
+              <ng-icon name="heroPencilSquare" class="w-3.5 h-3.5 shrink-0" />
             } @else {
               <ng-icon name="heroMicrophone" class="w-3.5 h-3.5 shrink-0" />
-              <span>{{ 'chatInput.record' | translate }}</span>
             }
           </button>
 
@@ -314,29 +400,24 @@ export type { AppendedFile };
           }}</span>
         </div>
 
-        <!-- Attached files list -->
-        @if (appendedFiles().length > 0) {
+        <!-- Attached files list (voice recordings are shown in the mic panel above instead) -->
+        @if (nonAudioFiles().length > 0) {
           <div class="flex flex-col gap-1 pt-1">
             <div class="text-[10px] text-text-muted uppercase tracking-widest mb-0.5">
               {{ 'chatInput.attachedFiles' | translate }}
             </div>
-            @for (file of appendedFiles(); track file.filename; let i = $index) {
+            @for (file of nonAudioFiles(); track file.filename; let i = $index) {
               <div
                 class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-surface-base border border-border-default text-xs group hover:-translate-y-0.5 hover:shadow-depth-sm animate-slide-up transition-all duration-200"
               >
-                <ng-icon
-                  [name]="file.type === 'input_audio' ? 'heroMicrophone' : 'heroDocument'"
-                  class="w-3.5 h-3.5 shrink-0 text-text-muted"
-                />
+                <ng-icon name="heroDocument" class="w-3.5 h-3.5 shrink-0 text-text-muted" />
                 <span class="truncate text-text-primary flex-1 max-w-xs">{{ file.filename }}</span>
                 <span class="text-text-muted shrink-0 text-[10px]">{{
-                  file.image_url || file.audio_url
-                    ? fileSizeLabel((file.image_url ?? file.audio_url)!)
-                    : file.sizeKb
+                  file.image_url ? fileSizeLabel(file.image_url) : file.sizeKb
                 }}</span>
                 <button
                   type="button"
-                  (click)="removeFile(i)"
+                  (click)="removeFile(appendedFiles().indexOf(file))"
                   class="ml-1 shrink-0 flex items-center justify-center w-4 h-4 rounded text-text-muted hover:text-error-text hover:bg-error-bg active:scale-90 opacity-0 group-hover:opacity-100 transition-all duration-150"
                   [title]="'common.remove' | translate"
                 >
@@ -355,6 +436,7 @@ export class OpenAiChatInputComponent implements AfterViewInit, AfterViewChecked
   @ViewChild('editableDiv') private editableDivRef?: ElementRef<HTMLDivElement>;
   @ViewChild('previewDiv') private previewDivRef?: ElementRef<HTMLDivElement>;
   @ViewChild('rawInput') private rawInputRef!: ElementRef<HTMLTextAreaElement>;
+  @ViewChild('micCanvas') private micCanvasRef?: ElementRef<HTMLCanvasElement>;
 
   /** Set to true when we need to re-run Prism after the next view check. */
   private _needsPrismHighlight = false;
@@ -387,11 +469,22 @@ export class OpenAiChatInputComponent implements AfterViewInit, AfterViewChecked
   /** Focus state for the glow ring. */
   readonly focused = signal<boolean>(false);
 
+  /** 'text' shows the markdown editor; 'mic' shows the voice-recording panel. */
+  readonly inputMode = signal<'text' | 'mic'>('text');
+
+  /** The recorded voice attachment, if any — mic panel owns its display/removal. */
+  readonly micFile = computed(() => this.appendedFiles().find((f) => f.type === 'input_audio'));
+  /** Everything except the voice recording, for the generic attached-files list. */
+  readonly nonAudioFiles = computed(() =>
+    this.appendedFiles().filter((f) => f.type !== 'input_audio'),
+  );
+
   /** Whether a voice recording is currently in progress. */
   readonly recording = signal<boolean>(false);
   private readonly recordingElapsedSec = signal<number>(0);
   private recorder?: AudioRecorder;
   private recordingTimer?: ReturnType<typeof setInterval>;
+  private visualizerFrame?: number;
 
   private _viewReady = false;
   private _formSub?: Subscription;
@@ -414,6 +507,7 @@ export class OpenAiChatInputComponent implements AfterViewInit, AfterViewChecked
   ngOnDestroy(): void {
     this._formSub?.unsubscribe();
     if (this.recordingTimer) clearInterval(this.recordingTimer);
+    this._stopVisualizer();
     this.recorder?.stop();
   }
 
@@ -538,6 +632,25 @@ export class OpenAiChatInputComponent implements AfterViewInit, AfterViewChecked
 
   // ── Voice recording ─────────────────────────────────────────────────────────
 
+  /** Switches between the markdown editor and the voice-recording panel. */
+  toggleInputMode(): void {
+    this.inputMode.update((m) => (m === 'text' ? 'mic' : 'text'));
+  }
+
+  /** Discards the current recording and starts over. */
+  async reRecord(): Promise<void> {
+    this.removeMicFile();
+    await this.toggleMic();
+  }
+
+  removeMicFile(): void {
+    this.appendedFiles.update((files) => {
+      const updated = files.filter((f) => f.type !== 'input_audio');
+      this.appendedFilesChanged.emit(updated);
+      return updated;
+    });
+  }
+
   recordingElapsedLabel(): string {
     const s = this.recordingElapsedSec();
     const m = Math.floor(s / 60);
@@ -559,6 +672,9 @@ export class OpenAiChatInputComponent implements AfterViewInit, AfterViewChecked
       this.recordingTimer = setInterval(() => {
         this.recordingElapsedSec.update((s) => s + 1);
       }, 1000);
+      // Canvas is only rendered once `recording()` is true, so wait a tick
+      // for it to appear in the DOM before drawing to it.
+      setTimeout(() => this._startVisualizer(), 0);
     } catch (error) {
       console.error('Microphone access failed:', error);
       this.recorder = undefined;
@@ -570,6 +686,7 @@ export class OpenAiChatInputComponent implements AfterViewInit, AfterViewChecked
     if (this.recordingTimer) clearInterval(this.recordingTimer);
     this.recordingTimer = undefined;
     this.recording.set(false);
+    this._stopVisualizer();
 
     const recorder = this.recorder;
     this.recorder = undefined;
@@ -592,6 +709,57 @@ export class OpenAiChatInputComponent implements AfterViewInit, AfterViewChecked
       this.appendedFilesChanged.emit(merged);
       return merged;
     });
+  }
+
+  /** Draws a live bar visualiser onto the mic-panel canvas from the recorder's
+   * analyser data — pure Web Audio API, no charting library involved. */
+  private _startVisualizer(): void {
+    const canvas = this.micCanvasRef?.nativeElement;
+    const recorder = this.recorder;
+    if (!canvas || !recorder) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const barCount = recorder.frequencyBinCount || 32;
+    const data = new Uint8Array(barCount);
+    const accent = getComputedStyle(document.documentElement).getPropertyValue('--color-accent').trim() || '#8b5cf6';
+
+    const draw = () => {
+      if (!this.recording()) return;
+      // Canvas backing size can change with layout — keep it in sync with CSS size.
+      const { clientWidth: width, clientHeight: height } = canvas;
+      if (canvas.width !== width) canvas.width = width;
+      if (canvas.height !== height) canvas.height = height;
+
+      recorder.getFrequencyData(data);
+      ctx.clearRect(0, 0, width, height);
+
+      const gap = 3;
+      const barWidth = Math.max(1, width / data.length - gap);
+      ctx.fillStyle = accent;
+      for (let i = 0; i < data.length; i++) {
+        const barHeight = Math.max(2, (data[i] / 255) * height);
+        const x = i * (barWidth + gap);
+        const y = (height - barHeight) / 2;
+        ctx.beginPath();
+        if ((ctx as any).roundRect) {
+          (ctx as any).roundRect(x, y, barWidth, barHeight, 2);
+          ctx.fill();
+        } else {
+          ctx.fillRect(x, y, barWidth, barHeight);
+        }
+      }
+
+      this.visualizerFrame = requestAnimationFrame(draw);
+    };
+    this.visualizerFrame = requestAnimationFrame(draw);
+  }
+
+  private _stopVisualizer(): void {
+    if (this.visualizerFrame !== undefined) {
+      cancelAnimationFrame(this.visualizerFrame);
+      this.visualizerFrame = undefined;
+    }
   }
 
   removeFile(index: number): void {
