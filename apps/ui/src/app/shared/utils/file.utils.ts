@@ -25,6 +25,10 @@ export interface AppendedFile {
   audio_url?: string; // data:audio/wav;base64,<data> — playable data URL
   audio_data?: string; // bare base64, no data-url prefix — what's sent to the model
   audio_format?: string; // e.g. 'wav'
+  /** True for audio captured via the mic recorder (as opposed to an uploaded
+   * audio file) — only these get server-side transcribed when the chat has
+   * transcription enabled. */
+  userRecorded?: boolean;
 }
 
 /**

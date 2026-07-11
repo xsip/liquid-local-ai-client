@@ -401,6 +401,7 @@ export class ChatCompletionsService {
         return {
           type: 'input_audio',
           input_audio: { data: file.audio_data, format: file.audio_format ?? 'wav' },
+          userRecorded: !!file.userRecorded,
         };
       }
       return { type: 'text', text: `[Attached file: ${file.filename}] (${file.assetUrl ?? ''})` };

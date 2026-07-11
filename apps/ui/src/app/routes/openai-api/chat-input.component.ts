@@ -586,6 +586,7 @@ export class OpenAiChatInputComponent implements AfterViewInit, AfterViewChecked
           audio_url: dataUrl,
           audio_data: base64,
           audio_format: 'wav',
+          userRecorded: true,
         },
       ]);
       this.appendedFilesChanged.emit(merged);
