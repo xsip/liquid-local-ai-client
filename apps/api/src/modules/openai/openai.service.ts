@@ -104,23 +104,34 @@ export class OpenAiService {
     }
   }
 
+  /**
+   * Generates a chat title from the user's first message. `userContent` is
+   * passed through as-is (string or the raw Chat Completions content-parts
+   * array) so audio-only or image-only turns — which have no `text` part to
+   * extract — still get a real title: the model sees the same audio/image
+   * content it would for the actual reply, just with a title instruction
+   * appended instead of a normal system prompt.
+   */
   async getChatTitleDependingOnContextCompletions(
-    userMessage: string | undefined,
+    userContent: string | any[] | undefined,
     model: string | undefined,
   ): Promise<string | undefined> {
-    if (!userMessage) return undefined;
     if (!model) return undefined;
+    const isEmpty = Array.isArray(userContent)
+      ? userContent.length === 0
+      : !userContent;
+    if (isEmpty) return undefined;
+
+    const instruction =
+      'Dont answer to that, only give me ONE chat title name matching the context above with a max char length of 70';
+    const content = Array.isArray(userContent)
+      ? [...userContent, { type: 'text', text: instruction }]
+      : `The user says: "${userContent}".\n${instruction}`;
 
     try {
       const completion = await this.openAi.chat.completions.create({
         model,
-        messages: [
-          {
-            role: 'user',
-            content: `The user says: "${userMessage}".
-      Dont answer to that, only give me ONE chat title name matching the context above with a max char length of 70`,
-          },
-        ],
+        messages: [{ role: 'user', content } as any],
         stream: false,
       });
       return completion.choices?.[0]?.message?.content?.trim() || undefined;
@@ -166,20 +177,9 @@ export class OpenAiService {
       const firstUserMessage = (dto.messages ?? []).find(
         (m: any) => m.role === 'user',
       ) as any;
-      const userText =
-        typeof firstUserMessage?.content === 'string'
-          ? firstUserMessage.content
-          : Array.isArray(firstUserMessage?.content)
-            ? firstUserMessage.content
-                .map((part: any) =>
-                  typeof part === 'string' ? part : (part?.text ?? ''),
-                )
-                .filter(Boolean)
-                .join('\n')
-            : undefined;
 
       newChatConfig.chatName = await this.getChatTitleDependingOnContextCompletions(
-        userText,
+        firstUserMessage?.content,
         dto.model,
       );
     }
