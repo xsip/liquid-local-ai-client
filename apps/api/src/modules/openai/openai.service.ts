@@ -11,8 +11,6 @@ import { ChatsService } from '../chats/chats.service';
 import { ChatMetadataService } from '../chat-metadata/chat-metadata.service';
 import { TokenLimitService } from '../token-limit/token-limit.service';
 import * as crypto from 'crypto';
-import * as fs from 'fs';
-import * as path from 'path';
 import * as CryptoJS from 'crypto-js';
 import OpenAI from 'openai';
 import { ModelOpenAiDto } from './dto/model-dtos';
@@ -168,23 +166,6 @@ export class OpenAiService {
       .createHash('md5')
       .update(crypto.randomBytes(32))
       .digest('hex');
-    const requestStart = Date.now();
-
-    const debugLogDir = path.join(process.cwd(), 'debug-logs');
-    const debugLogFile = path.join(debugLogDir, `stream-${requestId}.jsonl`);
-    try {
-      fs.mkdirSync(debugLogDir, { recursive: true });
-    } catch (error: any) {
-      this.logger.warn(`Failed to create debug-logs dir: ${error.message}`);
-    }
-    this.debugLogStream(debugLogFile, 'request_start', {
-      requestId,
-      internalChatId,
-      model: dto.model,
-      reasoningEffortRequested: (dto as any).reasoning_effort,
-      messageCount: (dto.messages ?? []).length,
-    });
-
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
@@ -263,6 +244,7 @@ export class OpenAiService {
 
     const allowedTools = [
       'get-token-usage-tool',
+      'greeting-tool',
       'get-content-from-file-ids',
       'generate-file-from-content-tool',
       'generate-zip-from-file-ids',
@@ -405,19 +387,6 @@ export class OpenAiService {
         : incomingMessages),
     );
 
-    this.debugLogStream(debugLogFile, 'messages_assembled', {
-      hasAudio,
-      totalMessages: messages.length,
-      // rough size proxy — full audio payloads are huge, so log lengths not content
-      messageContentLengths: messages.map((m) =>
-        typeof m.content === 'string'
-          ? m.content.length
-          : Array.isArray(m.content)
-            ? m.content.map((p: any) => (typeof p?.text === 'string' ? p.text.length : p?.type))
-            : null,
-      ),
-    });
-
     const MAX_TOOL_ITERATIONS = 8;
     let totalTokensUsed = 0;
     const reasoningEffort =
@@ -462,13 +431,6 @@ export class OpenAiService {
 
     try {
       for (let iteration = 0; iteration < MAX_TOOL_ITERATIONS; iteration++) {
-        const iterationStart = Date.now();
-        this.debugLogStream(debugLogFile, 'iteration_start', {
-          iteration,
-          reasoningEffort,
-          toolsCount: tools.length,
-        });
-
         const stream = (await this.openAi.chat.completions.create({
           model: dto.model,
           messages,
@@ -479,11 +441,6 @@ export class OpenAiService {
           reasoning_effort: reasoningEffort,
         } as any)) as any as Stream<OpenAI.ChatCompletionChunk>;
 
-        this.debugLogStream(debugLogFile, 'create_call_returned', {
-          iteration,
-          msSinceIterationStart: Date.now() - iterationStart,
-        });
-
         let assembledContent = '';
         let assembledReasoning = '';
         const toolCallsAcc: Record<
@@ -492,24 +449,7 @@ export class OpenAiService {
         > = {};
         let finishReason: string | null = null;
 
-        let chunkIndex = 0;
-        let lastChunkAt = Date.now();
         for await (const chunk of stream) {
-          const now = Date.now();
-          this.debugLogStream(debugLogFile, 'chunk', {
-            iteration,
-            chunkIndex,
-            msSincePrevChunk: now - lastChunkAt,
-            msSinceIterationStart: now - iterationStart,
-            contentLen: chunk.choices?.[0]?.delta?.content?.length ?? 0,
-            reasoningLen: (chunk.choices?.[0]?.delta as any)?.reasoning_content?.length ?? 0,
-            hasToolCallDelta: !!chunk.choices?.[0]?.delta?.tool_calls,
-            finishReason: chunk.choices?.[0]?.finish_reason ?? null,
-            usage: chunk.usage ?? null,
-          });
-          lastChunkAt = now;
-          chunkIndex++;
-
           this.safeWrite(res, `data: ${JSON.stringify(chunk)}\n\n`, resolvedChatMetaId);
 
           if (chunk.usage) {
@@ -541,16 +481,6 @@ export class OpenAiService {
         }
 
         const toolCallsArr = Object.values(toolCallsAcc);
-
-        this.debugLogStream(debugLogFile, 'iteration_end', {
-          iteration,
-          finishReason,
-          totalChunks: chunkIndex,
-          msTotal: Date.now() - iterationStart,
-          assembledContentLength: assembledContent.length,
-          assembledReasoningLength: assembledReasoning.length,
-          toolCallCount: toolCallsArr.length,
-        });
 
         if (finishReason === 'tool_calls' && toolCallsArr.length > 0) {
           messages.push({
@@ -675,15 +605,7 @@ export class OpenAiService {
         );
       }
       // ───────────────────────────────────────────────────────────────
-      this.debugLogStream(debugLogFile, 'request_end', {
-        msTotal: Date.now() - requestStart,
-        totalTokensUsed,
-      });
     } catch (error: any) {
-      this.debugLogStream(debugLogFile, 'request_error', {
-        msTotal: Date.now() - requestStart,
-        message: error.message,
-      });
       this.openaiRequestService.destroy(requestId);
       this.writeSseEvent(
         res,
@@ -769,23 +691,6 @@ export class OpenAiService {
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
-
-  /**
-   * Debug-only: appends one JSON line per call to `debug-logs/stream-<requestId>.jsonl`
-   * (repo root, gitignored) — used to diagnose slow/hanging llama.cpp streams
-   * (timestamps let you see gaps between chunks). Never throws; a logging
-   * failure must not break the actual generation.
-   */
-  private debugLogStream(filePath: string, event: string, data: Record<string, unknown>): void {
-    try {
-      fs.appendFileSync(
-        filePath,
-        JSON.stringify({ t: Date.now(), event, ...data }) + '\n',
-      );
-    } catch (error: any) {
-      this.logger.warn(`debugLogStream failed: ${error.message}`);
-    }
-  }
 
   private generateChatId(): string {
     return crypto.randomBytes(16).toString('hex');
