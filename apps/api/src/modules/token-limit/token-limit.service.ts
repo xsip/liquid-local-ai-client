@@ -96,6 +96,14 @@ export class TokenLimitService {
     return user;
   }
 
+  async getRemainingTokens(
+    userId: Types.ObjectId,
+  ) {
+    const user = await this._requireUser(userId);
+    const sub = await this.getTokensPerIntervall(user.subscription);
+    return sub - user.usedTokens;
+  }
+
   /**
    * Reset `user.usedTokens` to 0 and push `tokenCountResetDate` forward by
    * the number of minutes defined in the TokenLimitConfig for the user's
@@ -152,7 +160,9 @@ export class TokenLimitService {
     return user;
   }
 
-  private async _resolveMinutesTillReset(subscription: string): Promise<number> {
+  private async _resolveMinutesTillReset(
+    subscription: string,
+  ): Promise<number> {
     try {
       const cfg = await this.findBySubscription(subscription);
       return cfg.minutesTillReset;

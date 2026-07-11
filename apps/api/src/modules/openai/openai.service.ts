@@ -348,6 +348,8 @@ export class OpenAiService {
     // mid-stream, rather than waiting for the generation loop to notice.
     res.on('close', unlock);
 
+    const remainingTokens = await this.tokenLimitService.getRemainingTokens(userId);
+
     try {
       for (let iteration = 0; iteration < MAX_TOOL_ITERATIONS; iteration++) {
         const stream = (await this.openAi.chat.completions.create({
@@ -355,6 +357,7 @@ export class OpenAiService {
           messages,
           tools: tools.length ? (tools as any) : undefined,
           stream: true,
+          max_tokens: remainingTokens <= 0 ? undefined : remainingTokens,
           stream_options: { include_usage: true },
           reasoning_effort: reasoningEffort,
         } as any)) as any as Stream<OpenAI.ChatCompletionChunk>;
