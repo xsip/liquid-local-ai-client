@@ -419,23 +419,24 @@ export class ChatCompletionsService {
       if (part?.type === 'image_url' && part.image_url?.url) {
         out.push({ role: 'user', text: '', image: part.image_url.url, date: new Date(), username: 'You' });
       } else if (part?.type === 'input_audio' && part.input_audio?.data) {
+        // Reaches here only when transcription is off (or the audio wasn't
+        // userRecorded) — a transcribed part has already been replaced with
+        // plain text server-side by the time this echo is sent.
         const format = part.input_audio.format ?? 'wav';
         out.push({
           role: 'user',
-          text: part.hidden && part.transcript ? part.transcript : '',
+          text: '',
           audio: `data:audio/${format};base64,${part.input_audio.data}`,
-          audioHidden: !!(part.hidden && part.transcript),
           date: new Date(),
           username: 'You',
         });
       }
     }
 
-    const text = (parts as any[])
-      .filter((p) => p?.type === 'text' && p.text)
-      .map((p) => p.text)
-      .join('\n');
-    if (text) out.push({ role: 'user', text, date: new Date(), username: 'You' });
+    const textParts = (parts as any[]).filter((p) => p?.type === 'text' && p.text);
+    const text = textParts.map((p) => p.text).join('\n');
+    const transcribed = textParts.some((p) => p?.transcribed);
+    if (text) out.push({ role: 'user', text, audioHidden: transcribed, date: new Date(), username: 'You' });
 
     return out;
   }

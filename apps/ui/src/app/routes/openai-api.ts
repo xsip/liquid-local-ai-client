@@ -862,13 +862,15 @@ export class OpenAiApi implements OnDestroy, OnInit {
               if (part?.type === 'image_url' && part.image_url?.url) {
                 messages.push({ role: 'user', text: '', image: part.image_url.url, date, username });
               }
+              // Reaches here only when transcription is off (or the audio wasn't
+              // userRecorded) — a transcribed part is stored as plain text
+              // (`transcribed: true`) instead, handled by extractCompletionsMessageText below.
               if (part?.type === 'input_audio' && part.input_audio?.data) {
                 const format = part.input_audio.format ?? 'wav';
                 messages.push({
                   role: 'user',
-                  text: part.hidden && part.transcript ? part.transcript : '',
+                  text: '',
                   audio: `data:audio/${format};base64,${part.input_audio.data}`,
-                  audioHidden: !!(part.hidden && part.transcript),
                   date,
                   username,
                 });
@@ -876,7 +878,9 @@ export class OpenAiApi implements OnDestroy, OnInit {
             }
           }
           const text = this.extractCompletionsMessageText(m.content);
-          if (text) messages.push({ role: 'user', text, date, username });
+          const transcribed =
+            Array.isArray(m.content) && m.content.some((p: any) => p?.transcribed);
+          if (text) messages.push({ role: 'user', text, audioHidden: transcribed, date, username });
         } else if (m.role === 'assistant') {
           if (m.reasoning_content) {
             messages.push({

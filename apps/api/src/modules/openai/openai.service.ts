@@ -372,7 +372,10 @@ export class OpenAiService {
               part.input_audio,
               dto.model,
             );
-            m.content[i] = { type: 'text', text: transcript };
+            // `transcribed: true` survives persistence (Chat Completions message
+            // arrays are stored as-is) so a page reload can still tell this text
+            // came from a voice recording and label it accordingly in the UI.
+            m.content[i] = { type: 'text', text: transcript, transcribed: true };
             this.writeSseEvent(
               res,
               'audio_transcript',
