@@ -23,6 +23,7 @@ import { ChatCompletionNamedToolChoiceCustomDto } from './ChatCompletionNamedToo
 import { ChatCompletionFunctionToolDto } from './ChatCompletionFunctionToolDto';
 import { ChatCompletionCustomToolDto } from './ChatCompletionCustomToolDto';
 import { WebSearchOptionsDto } from './WebSearchOptionsDto';
+import { ReasoningEffort } from '../custom/reasoning_effort';
 
 @ApiExtraModels(
   ChatCompletionDeveloperMessageParamDto,
@@ -72,7 +73,14 @@ export class ChatCompletionCreateParamsBaseDto {
     ],
   })
   @IsArray()
-  messages!: (ChatCompletionDeveloperMessageParamDto | ChatCompletionSystemMessageParamDto | ChatCompletionUserMessageParamDto | ChatCompletionAssistantMessageParamDto | ChatCompletionToolMessageParamDto | ChatCompletionFunctionMessageParamDto)[];
+  messages!: (
+    | ChatCompletionDeveloperMessageParamDto
+    | ChatCompletionSystemMessageParamDto
+    | ChatCompletionUserMessageParamDto
+    | ChatCompletionAssistantMessageParamDto
+    | ChatCompletionToolMessageParamDto
+    | ChatCompletionFunctionMessageParamDto
+  )[];
 
   /**
    * Model ID used to generate the response, like `gpt-4o` or `o3`. OpenAI offers a
@@ -87,12 +95,88 @@ export class ChatCompletionCreateParamsBaseDto {
   and price points. Refer to the
   [model guide](https://platform.openai.com/docs/models) to browse and compare
   available models.`,
-    oneOf: [
-      { $ref: getSchemaPath(_Inline_0Dto) },
-      { type: 'string' },
-    ],
+    oneOf: [{ $ref: getSchemaPath(_Inline_0Dto) }, { type: 'string' }],
   })
-  model!: _Inline_0Dto | 'gpt-5.4' | 'gpt-5.4-mini' | 'gpt-5.4-nano' | 'gpt-5.4-mini-2026-03-17' | 'gpt-5.4-nano-2026-03-17' | 'gpt-5.3-chat-latest' | 'gpt-5.2' | 'gpt-5.2-2025-12-11' | 'gpt-5.2-chat-latest' | 'gpt-5.2-pro' | 'gpt-5.2-pro-2025-12-11' | 'gpt-5.1' | 'gpt-5.1-2025-11-13' | 'gpt-5.1-codex' | 'gpt-5.1-mini' | 'gpt-5.1-chat-latest' | 'gpt-5' | 'gpt-5-mini' | 'gpt-5-nano' | 'gpt-5-2025-08-07' | 'gpt-5-mini-2025-08-07' | 'gpt-5-nano-2025-08-07' | 'gpt-5-chat-latest' | 'gpt-4.1' | 'gpt-4.1-mini' | 'gpt-4.1-nano' | 'gpt-4.1-2025-04-14' | 'gpt-4.1-mini-2025-04-14' | 'gpt-4.1-nano-2025-04-14' | 'o4-mini' | 'o4-mini-2025-04-16' | 'o3' | 'o3-2025-04-16' | 'o3-mini' | 'o3-mini-2025-01-31' | 'o1' | 'o1-2024-12-17' | 'o1-preview' | 'o1-preview-2024-09-12' | 'o1-mini' | 'o1-mini-2024-09-12' | 'gpt-4o' | 'gpt-4o-2024-11-20' | 'gpt-4o-2024-08-06' | 'gpt-4o-2024-05-13' | 'gpt-4o-audio-preview' | 'gpt-4o-audio-preview-2024-10-01' | 'gpt-4o-audio-preview-2024-12-17' | 'gpt-4o-audio-preview-2025-06-03' | 'gpt-4o-mini-audio-preview' | 'gpt-4o-mini-audio-preview-2024-12-17' | 'gpt-4o-search-preview' | 'gpt-4o-mini-search-preview' | 'gpt-4o-search-preview-2025-03-11' | 'gpt-4o-mini-search-preview-2025-03-11' | 'chatgpt-4o-latest' | 'codex-mini-latest' | 'gpt-4o-mini' | 'gpt-4o-mini-2024-07-18' | 'gpt-4-turbo' | 'gpt-4-turbo-2024-04-09' | 'gpt-4-0125-preview' | 'gpt-4-turbo-preview' | 'gpt-4-1106-preview' | 'gpt-4-vision-preview' | 'gpt-4' | 'gpt-4-0314' | 'gpt-4-0613' | 'gpt-4-32k' | 'gpt-4-32k-0314' | 'gpt-4-32k-0613' | 'gpt-3.5-turbo' | 'gpt-3.5-turbo-16k' | 'gpt-3.5-turbo-0301' | 'gpt-3.5-turbo-0613' | 'gpt-3.5-turbo-1106' | 'gpt-3.5-turbo-0125' | 'gpt-3.5-turbo-16k-0613';
+  model!:
+    | _Inline_0Dto
+    | 'gpt-5.4'
+    | 'gpt-5.4-mini'
+    | 'gpt-5.4-nano'
+    | 'gpt-5.4-mini-2026-03-17'
+    | 'gpt-5.4-nano-2026-03-17'
+    | 'gpt-5.3-chat-latest'
+    | 'gpt-5.2'
+    | 'gpt-5.2-2025-12-11'
+    | 'gpt-5.2-chat-latest'
+    | 'gpt-5.2-pro'
+    | 'gpt-5.2-pro-2025-12-11'
+    | 'gpt-5.1'
+    | 'gpt-5.1-2025-11-13'
+    | 'gpt-5.1-codex'
+    | 'gpt-5.1-mini'
+    | 'gpt-5.1-chat-latest'
+    | 'gpt-5'
+    | 'gpt-5-mini'
+    | 'gpt-5-nano'
+    | 'gpt-5-2025-08-07'
+    | 'gpt-5-mini-2025-08-07'
+    | 'gpt-5-nano-2025-08-07'
+    | 'gpt-5-chat-latest'
+    | 'gpt-4.1'
+    | 'gpt-4.1-mini'
+    | 'gpt-4.1-nano'
+    | 'gpt-4.1-2025-04-14'
+    | 'gpt-4.1-mini-2025-04-14'
+    | 'gpt-4.1-nano-2025-04-14'
+    | 'o4-mini'
+    | 'o4-mini-2025-04-16'
+    | 'o3'
+    | 'o3-2025-04-16'
+    | 'o3-mini'
+    | 'o3-mini-2025-01-31'
+    | 'o1'
+    | 'o1-2024-12-17'
+    | 'o1-preview'
+    | 'o1-preview-2024-09-12'
+    | 'o1-mini'
+    | 'o1-mini-2024-09-12'
+    | 'gpt-4o'
+    | 'gpt-4o-2024-11-20'
+    | 'gpt-4o-2024-08-06'
+    | 'gpt-4o-2024-05-13'
+    | 'gpt-4o-audio-preview'
+    | 'gpt-4o-audio-preview-2024-10-01'
+    | 'gpt-4o-audio-preview-2024-12-17'
+    | 'gpt-4o-audio-preview-2025-06-03'
+    | 'gpt-4o-mini-audio-preview'
+    | 'gpt-4o-mini-audio-preview-2024-12-17'
+    | 'gpt-4o-search-preview'
+    | 'gpt-4o-mini-search-preview'
+    | 'gpt-4o-search-preview-2025-03-11'
+    | 'gpt-4o-mini-search-preview-2025-03-11'
+    | 'chatgpt-4o-latest'
+    | 'codex-mini-latest'
+    | 'gpt-4o-mini'
+    | 'gpt-4o-mini-2024-07-18'
+    | 'gpt-4-turbo'
+    | 'gpt-4-turbo-2024-04-09'
+    | 'gpt-4-0125-preview'
+    | 'gpt-4-turbo-preview'
+    | 'gpt-4-1106-preview'
+    | 'gpt-4-vision-preview'
+    | 'gpt-4'
+    | 'gpt-4-0314'
+    | 'gpt-4-0613'
+    | 'gpt-4-32k'
+    | 'gpt-4-32k-0314'
+    | 'gpt-4-32k-0613'
+    | 'gpt-3.5-turbo'
+    | 'gpt-3.5-turbo-16k'
+    | 'gpt-3.5-turbo-0301'
+    | 'gpt-3.5-turbo-0613'
+    | 'gpt-3.5-turbo-1106'
+    | 'gpt-3.5-turbo-0125'
+    | 'gpt-3.5-turbo-16k-0613';
 
   /**
    * Parameters for audio output. Required when audio output is requested with
@@ -147,7 +231,7 @@ export class ChatCompletionCreateParamsBaseDto {
 
   /**
    * Modify the likelihood of specified tokens appearing in the completion.
-   * 
+   *
    * Accepts a JSON object that maps tokens (specified by their token ID in the
    * tokenizer) to an associated bias value from -100 to 100. Mathematically, the
    * bias is added to the logits generated by the model prior to sampling. The exact
@@ -209,7 +293,7 @@ export class ChatCompletionCreateParamsBaseDto {
    * Set of 16 key-value pairs that can be attached to an object. This can be useful
    * for storing additional information about the object in a structured format, and
    * querying for objects via API or the dashboard.
-   * 
+   *
    * Keys are strings with a maximum length of 64 characters. Values are strings with
    * a maximum length of 512 characters.
    */
@@ -228,13 +312,13 @@ export class ChatCompletionCreateParamsBaseDto {
   /**
    * Output types that you would like the model to generate. Most models are capable
    * of generating text, which is the default:
-   * 
+   *
    * `["text"]`
-   * 
+   *
    * The `gpt-4o-audio-preview` model can also be used to
    * [generate audio](https://platform.openai.com/docs/guides/audio). To request that
    * this model generate both text and audio responses, you can use:
-   * 
+   *
    * `["text", "audio"]`
    */
   @ApiProperty({
@@ -352,7 +436,7 @@ export class ChatCompletionCreateParamsBaseDto {
    * supported values are `none`, `minimal`, `low`, `medium`, `high`, and `xhigh`.
    * Reducing reasoning effort can result in faster responses and fewer tokens used
    * on reasoning in a response.
-   * 
+   *
    * - `gpt-5.1` defaults to `none`, which does not perform reasoning. The supported
    *   reasoning values for `gpt-5.1` are `none`, `low`, `medium`, and `high`. Tool
    *   calls are supported for all reasoning values in gpt-5.1.
@@ -363,6 +447,8 @@ export class ChatCompletionCreateParamsBaseDto {
    */
   @ApiProperty({
     required: false,
+    enum: ReasoningEffort,
+    enumName: 'ReasoningEffort',
     description: `Constrains effort on reasoning for
   [reasoning models](https://platform.openai.com/docs/guides/reasoning). Currently
   supported values are \`none\`, \`minimal\`, \`low\`, \`medium\`, \`high\`, and \`xhigh\`.
@@ -376,20 +462,19 @@ export class ChatCompletionCreateParamsBaseDto {
     support \`none\`.
   - The \`gpt-5-pro\` model defaults to (and only supports) \`high\` reasoning effort.
   - \`xhigh\` is supported for all models after \`gpt-5.1-codex-max\`.`,
-    enum: ['low', 'high', 'none', 'minimal', 'medium', 'xhigh'],
   })
   @IsOptional()
   @IsIn(['low', 'high', 'none', 'minimal', 'medium', 'xhigh'])
-  reasoning_effort?: null | 'low' | 'high' | 'none' | 'minimal' | 'medium' | 'xhigh';
+  reasoning_effort?: ReasoningEffort;
 
   /**
    * An object specifying the format that the model must output.
-   * 
+   *
    * Setting to `{ "type": "json_schema", "json_schema": {...} }` enables Structured
    * Outputs which ensures the model will match your supplied JSON schema. Learn more
    * in the
    * [Structured Outputs guide](https://platform.openai.com/docs/guides/structured-outputs).
-   * 
+   *
    * Setting to `{ "type": "json_object" }` enables the older JSON mode, which
    * ensures the message the model generates is valid JSON. Using `json_schema` is
    * preferred for models that support it.
@@ -413,7 +498,10 @@ export class ChatCompletionCreateParamsBaseDto {
     ],
   })
   @IsOptional()
-  response_format?: ResponseFormatTextDto | ResponseFormatJSONSchemaDto | ResponseFormatJSONObjectDto;
+  response_format?:
+    | ResponseFormatTextDto
+    | ResponseFormatJSONSchemaDto
+    | ResponseFormatJSONObjectDto;
 
   /**
    * A stable identifier used to help detect users of your application that may be
@@ -446,7 +534,7 @@ export class ChatCompletionCreateParamsBaseDto {
 
   /**
    * Specifies the processing type used for serving the request.
-   * 
+   *
    * - If set to 'auto', then the request will be processed with the service tier
    *   configured in the Project settings. Unless otherwise configured, the Project
    *   will use 'default'.
@@ -456,7 +544,7 @@ export class ChatCompletionCreateParamsBaseDto {
    *   '[priority](https://openai.com/api-priority-processing/)', then the request
    *   will be processed with the corresponding service tier.
    * - When not set, the default behavior is 'auto'.
-   * 
+   *
    * When the `service_tier` parameter is set, the response body will include the
    * `service_tier` value based on the processing mode actually used to serve the
    * request. This response value may be different from the value set in the
@@ -488,7 +576,7 @@ export class ChatCompletionCreateParamsBaseDto {
 
   /**
    * Not supported with latest reasoning models `o3` and `o4-mini`.
-   * 
+   *
    * Up to 4 sequences where the API will stop generating further tokens. The
    * returned text will not contain the stop sequence.
    */
@@ -499,9 +587,7 @@ export class ChatCompletionCreateParamsBaseDto {
   Up to 4 sequences where the API will stop generating further tokens. The
   returned text will not contain the stop sequence.`,
     isArray: true,
-    oneOf: [
-      { type: 'string' },
-    ],
+    oneOf: [{ type: 'string' }],
   })
   @IsOptional()
   stop?: null | string | string[];
@@ -510,7 +596,7 @@ export class ChatCompletionCreateParamsBaseDto {
    * Whether or not to store the output of this chat completion request for use in
    * our [model distillation](https://platform.openai.com/docs/guides/distillation)
    * or [evals](https://platform.openai.com/docs/guides/evals) products.
-   * 
+   *
    * Supports text and image inputs. Note: image inputs over 8MB will be dropped.
    */
   @ApiProperty({
@@ -581,7 +667,7 @@ export class ChatCompletionCreateParamsBaseDto {
    * the model must call one or more tools. Specifying a particular tool via
    * `{"type": "function", "function": {"name": "my_function"}}` forces the model to
    * call that tool.
-   * 
+   *
    * `none` is the default when no tools are present. `auto` is the default if tools
    * are present.
    */
@@ -604,7 +690,13 @@ export class ChatCompletionCreateParamsBaseDto {
     ],
   })
   @IsOptional()
-  tool_choice?: 'auto' | 'none' | 'required' | ChatCompletionAllowedToolChoiceDto | ChatCompletionNamedToolChoiceDto | ChatCompletionNamedToolChoiceCustomDto;
+  tool_choice?:
+    | 'auto'
+    | 'none'
+    | 'required'
+    | ChatCompletionAllowedToolChoiceDto
+    | ChatCompletionNamedToolChoiceDto
+    | ChatCompletionNamedToolChoiceCustomDto;
 
   /**
    * A list of tools the model may call. You can provide either
@@ -645,7 +737,7 @@ export class ChatCompletionCreateParamsBaseDto {
    * An alternative to sampling with temperature, called nucleus sampling, where the
    * model considers the results of the tokens with top_p probability mass. So 0.1
    * means only the tokens comprising the top 10% probability mass are considered.
-   * 
+   *
    * We generally recommend altering this or `temperature` but not both.
    */
   @ApiProperty({

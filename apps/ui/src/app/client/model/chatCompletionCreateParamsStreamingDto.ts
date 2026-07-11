@@ -10,14 +10,15 @@
 import { ChatCompletionPredictionContentDto } from './chatCompletionPredictionContentDto';
 import { ChatCompletionAudioParamDto } from './chatCompletionAudioParamDto';
 import { ChatCompletionCreateParamsNonStreamingDtoFunctionCall } from './chatCompletionCreateParamsNonStreamingDtoFunctionCall';
-import { ResponseCreateParamsNonStreamingDtoModel } from './responseCreateParamsNonStreamingDtoModel';
-import { ChatCompletionCreateParamsNonStreamingDtoToolsInner } from './chatCompletionCreateParamsNonStreamingDtoToolsInner';
 import { ChatCompletionCreateParamsNonStreamingDtoToolChoice } from './chatCompletionCreateParamsNonStreamingDtoToolChoice';
-import { InlineU05lxdDto } from './inlineU05lxdDto';
 import { WebSearchOptionsDto } from './webSearchOptionsDto';
-import { ChatCompletionCreateParamsNonStreamingDtoMessagesInner } from './chatCompletionCreateParamsNonStreamingDtoMessagesInner';
 import { ChatCompletionCreateParamsNonStreamingDtoResponseFormat } from './chatCompletionCreateParamsNonStreamingDtoResponseFormat';
 import { ChatCompletionStreamOptionsDto } from './chatCompletionStreamOptionsDto';
+import { ChatCompletionCreateParamsNonStreamingDtoToolsInner } from './chatCompletionCreateParamsNonStreamingDtoToolsInner';
+import { InlineU05lxdDto } from './inlineU05lxdDto';
+import { ChatCompletionCreateParamsNonStreamingDtoModel } from './chatCompletionCreateParamsNonStreamingDtoModel';
+import { ReasoningEffort } from './reasoningEffort';
+import { ChatCompletionCreateParamsNonStreamingDtoMessagesInner } from './chatCompletionCreateParamsNonStreamingDtoMessagesInner';
 import { ChatCompletionCreateParamsNonStreamingDtoStopInner } from './chatCompletionCreateParamsNonStreamingDtoStopInner';
 
 
@@ -26,7 +27,7 @@ export interface ChatCompletionCreateParamsStreamingDto {
      * A list of messages comprising the conversation so far. Depending on the   [model](https://platform.openai.com/docs/models) you use, different message   types (modalities) are supported, like   [text](https://platform.openai.com/docs/guides/text-generation),   [images](https://platform.openai.com/docs/guides/vision), and   [audio](https://platform.openai.com/docs/guides/audio).
      */
     messages: Array<ChatCompletionCreateParamsNonStreamingDtoMessagesInner>;
-    model: ResponseCreateParamsNonStreamingDtoModel;
+    model: ChatCompletionCreateParamsNonStreamingDtoModel;
     /**
      * Parameters for audio output. Required when audio output is requested with   `modalities: [\"audio\"]`.   [Learn more](https://platform.openai.com/docs/guides/audio).
      */
@@ -85,7 +86,7 @@ export interface ChatCompletionCreateParamsStreamingDto {
     /**
      * Constrains effort on reasoning for   [reasoning models](https://platform.openai.com/docs/guides/reasoning). Currently   supported values are `none`, `minimal`, `low`, `medium`, `high`, and `xhigh`.   Reducing reasoning effort can result in faster responses and fewer tokens used   on reasoning in a response.      - `gpt-5.1` defaults to `none`, which does not perform reasoning. The supported     reasoning values for `gpt-5.1` are `none`, `low`, `medium`, and `high`. Tool     calls are supported for all reasoning values in gpt-5.1.   - All models before `gpt-5.1` default to `medium` reasoning effort, and do not     support `none`.   - The `gpt-5-pro` model defaults to (and only supports) `high` reasoning effort.   - `xhigh` is supported for all models after `gpt-5.1-codex-max`.
      */
-    reasoning_effort?: ChatCompletionCreateParamsStreamingDto.ReasoningEffortEnum;
+    reasoning_effort?: ReasoningEffort;
     response_format?: ChatCompletionCreateParamsNonStreamingDtoResponseFormat;
     /**
      * A stable identifier used to help detect users of your application that may be   violating OpenAI\'s usage policies. The IDs should be a string that uniquely   identifies each user, with a maximum length of 64 characters. We recommend   hashing their username or email address, in order to avoid sending us any   identifying information.   [Learn more](https://platform.openai.com/docs/guides/safety-best-practices#safety-identifiers).
@@ -150,15 +151,6 @@ export namespace ChatCompletionCreateParamsStreamingDto {
         _24h: '24h'
     } as const;
     export type PromptCacheRetentionEnum = typeof PromptCacheRetentionEnum[keyof typeof PromptCacheRetentionEnum];
-    export const ReasoningEffortEnum = {
-        Low: 'low',
-        High: 'high',
-        None: 'none',
-        Minimal: 'minimal',
-        Medium: 'medium',
-        Xhigh: 'xhigh'
-    } as const;
-    export type ReasoningEffortEnum = typeof ReasoningEffortEnum[keyof typeof ReasoningEffortEnum];
     export const ServiceTierEnum = {
         Auto: 'auto',
         Default: 'default',

@@ -34,6 +34,7 @@ import { User } from '../auth/user.schema';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { AssetRole } from '../assets/asset-blob.schema';
+import { ShareChatDto } from './dto/share-chat.dto';
 
 @ApiTags('Chat Metadata')
 @ApiBearerAuth()
@@ -139,13 +140,14 @@ export class ChatMetadataController {
     operationId: 'shareChatMetadata',
   })
   @ApiParam({ name: 'id', description: 'ChatMetadata ObjectId' })
+  @ApiBody({ type: ShareChatDto })
   @ApiOkResponse({ type: ChatMetadataDto })
   @ApiNotFoundResponse({ description: 'Not found, or target user not found' })
   @ApiForbiddenResponse({ description: 'Only the owner can share a chat' })
   shareChat(
     @CurrentUser() user: User,
     @Param('id') id: string,
-    @Body() body: { username: string },
+    @Body() body: ShareChatDto,
   ) {
     const userId = (user as any)._id as Types.ObjectId;
     return this.chatMetadataService.shareChat(userId, id, body.username);
@@ -155,7 +157,7 @@ export class ChatMetadataController {
 
   @Delete(':id/share/:userId')
   @ApiOperation({
-    summary: 'Revoke a shared user\'s access to this chat',
+    summary: "Revoke a shared user's access to this chat",
     operationId: 'unshareChatMetadata',
   })
   @ApiParam({ name: 'id', description: 'ChatMetadata ObjectId' })

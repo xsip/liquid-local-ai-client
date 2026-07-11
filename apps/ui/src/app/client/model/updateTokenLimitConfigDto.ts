@@ -11,15 +11,10 @@
 
 export interface UpdateTokenLimitConfigDto { 
     minutesTillReset?: number;
-    tokensPerIntervall?: number;
-    subscription?: UpdateTokenLimitConfigDto.SubscriptionEnum;
+    tokensPerInterval?: number;
+    /**
+     * Free-form subscription tier name. Creating a config with a new name defines a new subscription type.
+     */
+    subscription?: string;
 }
-export namespace UpdateTokenLimitConfigDto {
-    export const SubscriptionEnum = {
-        Free: 'free',
-        Basic: 'basic'
-    } as const;
-    export type SubscriptionEnum = typeof SubscriptionEnum[keyof typeof SubscriptionEnum];
-}
-
 

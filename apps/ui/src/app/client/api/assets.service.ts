@@ -110,23 +110,19 @@ export class AssetsService extends BaseService {
      * @endpoint get /assets/filequery/{filename}
      * @param filename Filename returned by the upload endpoint
      * @param chatId ChatId the file belongs to
-     * @param userId User the file belongs to
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
      * @param options additional options
      */
-    public getImageQuery(filename: string, chatId: string, userId: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<any>;
-    public getImageQuery(filename: string, chatId: string, userId: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<any>>;
-    public getImageQuery(filename: string, chatId: string, userId: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<any>>;
-    public getImageQuery(filename: string, chatId: string, userId: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<any> {
+    public getImageQuery(filename: string, chatId: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<any>;
+    public getImageQuery(filename: string, chatId: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<any>>;
+    public getImageQuery(filename: string, chatId: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<any>>;
+    public getImageQuery(filename: string, chatId: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<any> {
         if (filename === null || filename === undefined) {
             throw new Error('Required parameter filename was null or undefined when calling getImageQuery.');
         }
         if (chatId === null || chatId === undefined) {
             throw new Error('Required parameter chatId was null or undefined when calling getImageQuery.');
-        }
-        if (userId === null || userId === undefined) {
-            throw new Error('Required parameter userId was null or undefined when calling getImageQuery.');
         }
 
         let localVarQueryParameters = new OpenApiHttpParams(this.encoder);
@@ -135,15 +131,6 @@ export class AssetsService extends BaseService {
             localVarQueryParameters,
             'chatId',
             <any>chatId,
-            QueryParamStyle.Form,
-            true,
-        );
-
-
-        localVarQueryParameters = this.addToHttpParams(
-            localVarQueryParameters,
-            'userId',
-            <any>userId,
             QueryParamStyle.Form,
             true,
         );

@@ -36,6 +36,7 @@ import { ChatCompletionCreateParamsNonStreamingDto } from './dto/completions-dto
 import { OpenAiEndpointPreference } from '../chat-metadata/chat-metadata.schema';
 import { ChatCompletionDto } from './dto/completions-dtos/ChatCompletionDto';
 import { InvokeAiModel } from '../invoke/invoke.service';
+import { ChatCompletionChunkDto } from './dto/completions-dtos/ChatCompletionChunkDto';
 
 @ApiTags('OpenAI')
 @ApiBearerAuth()
@@ -59,6 +60,7 @@ export class OpenaiController {
   @ApiExtraModels(
     ChatCompletionCreateParamsNonStreamingDto,
     ChatCompletionCreateParamsStreamingDto,
+    ChatCompletionChunkDto,
   )
   @Post('completions-stream')
   @HttpCode(HttpStatus.OK)

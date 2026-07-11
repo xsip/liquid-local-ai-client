@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { ModelOpenAiDto, OpenAIService, ReasoningDto } from '../client';
+import { ModelOpenAiDto, OpenAIService, ReasoningEffort } from '../client';
 import { ModelReasoningCapability } from '../shared';
 import { AbstractModel, AbstractModelService, ReasoningValue } from './abstract-model.service';
 
@@ -33,7 +33,7 @@ export class OpenAiModelService extends AbstractModelService<OpenAiModel> {
    * model instance.
    */
   protected override getReasoningCap(_model: OpenAiModel | null): ModelReasoningCapability {
-    const options = Object.values(ReasoningDto.EffortEnum);
+    const options = Object.values(ReasoningEffort);
     return {
       allowed_options: options,
       default: options[0],
@@ -67,12 +67,12 @@ export class OpenAiModelService extends AbstractModelService<OpenAiModel> {
    * Components that know they are working with OpenAI can use this overload
    * instead of the base `setReasoning(string | undefined)`.
    */
-  setEffort(value: ReasoningDto.EffortEnum | undefined): void {
+  setEffort(value: ReasoningEffort | undefined): void {
     this.setReasoning(value as ReasoningValue);
   }
 
   /** Typed accessor for the current reasoning effort level. */
-  get effort(): ReasoningDto.EffortEnum | undefined {
-    return this.reasoning() as ReasoningDto.EffortEnum | undefined;
+  get effort(): ReasoningEffort | undefined {
+    return this.reasoning() as ReasoningEffort  | undefined;
   }
 }

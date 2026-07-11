@@ -167,6 +167,9 @@ export class GeneratedAssetDto {
 
   @ApiPropertyOptional()
   mimeType?: string;
+
+  @ApiProperty()
+  isVisible: boolean;
 }
 
 export class ChatMetadataDto {

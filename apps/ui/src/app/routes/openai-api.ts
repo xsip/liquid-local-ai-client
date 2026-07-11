@@ -8,14 +8,13 @@ import {
   ChatMcpOverrideDto,
   ChatMetadataDto,
   ChatMetadataService,
-  ChatRequestDto,
   ChatsService,
   CreateChatMetadataDto,
   CustomMcpDto,
   MeDto,
-  ReasoningDto,
+  ReasoningEffort,
 } from '../client';
-import { ChatMessage, ChatCompletionsService } from './openai-api/chat-completions.service';
+import { ChatCompletionsService, ChatMessage } from './openai-api/chat-completions.service';
 import { OpenAiModelSelectorComponent } from './openai-api/model-selector.component';
 
 import { ChatSidebarComponent } from '../shared/components/chat-sidebar.component';
@@ -36,13 +35,13 @@ import {
   heroPlus,
   heroSparkles,
   heroUser,
-  heroXMark,
+  heroXMark
 } from '@ng-icons/heroicons/outline';
 import { BlobBackgroundDirective } from '../shared/directives/blob-background.directive';
 import { map } from 'rxjs/operators';
 import { OpenAiModelService } from './openai-model.service';
 import InvokeAiModelToUseEnum = ChatMetadataDto.InvokeAiModelToUseEnum;
-import EffortEnum = ReasoningDto.EffortEnum;
+
 
 /** How the chat name is determined when creating a new chat. */
 type ChatNameMode = 'ai' | 'custom' | 'none';
@@ -723,7 +722,7 @@ export class OpenAiApi implements OnDestroy, OnInit {
           () => this.loadCompletionsChatHistory(chatId),
         );
 
-        const reasoningValue = meta.reasoningMode as ReasoningDto.EffortEnum | undefined;
+        const reasoningValue = meta.reasoningMode as ReasoningEffort | undefined;
         const match = this.modelService.models()?.find((m) => m.id === meta.usedModel);
         if (match) this.modelService.selectModel(match);
         if (reasoningValue) {
@@ -959,7 +958,7 @@ export class OpenAiApi implements OnDestroy, OnInit {
     if (this.chatId) {
       this.chatCompletionsService.submit(
         this.modelService.selectedModel()?.id ?? '',
-        this.modelService.reasoning() as EffortEnum,
+        this.modelService.reasoning() as ReasoningEffort,
         this.appendedFiles(),
         undefined,
         () => this.loadChatList(),
@@ -971,7 +970,7 @@ export class OpenAiApi implements OnDestroy, OnInit {
 
     this.chatCompletionsService.submit(
       this.modelService.selectedModel()?.id ?? '',
-      this.modelService.reasoning() as EffortEnum,
+      this.modelService.reasoning() as ReasoningEffort,
       this.appendedFiles(),
       undefined,
       () => this.loadChatList(),
@@ -993,8 +992,8 @@ export class OpenAiApi implements OnDestroy, OnInit {
     this.submit();
   }
 
-  selectReasoning(value: ChatRequestDto.ReasoningEnum | ReasoningDto.EffortEnum): void {
-    this.modelService.setEffort(value as ReasoningDto.EffortEnum);
+  selectReasoning(value: ReasoningEffort): void {
+    this.modelService.setEffort(value as ReasoningEffort);
     const chatId = this.activeChat.currentChatId();
     if (chatId) {
       this.chatMetaService.updateChatMetadata(chatId, { reasoningMode: value }).subscribe();
@@ -1078,7 +1077,7 @@ export class OpenAiApi implements OnDestroy, OnInit {
   }
 
   onShareChat({ chatId, username }: { chatId: string; username: string }): void {
-    this.chatMetaService.shareChatMetadata(chatId, username).subscribe({
+    this.chatMetaService.shareChatMetadata(chatId, { username }).subscribe({
       next: (updated) => {
         this.chatList.update((list) =>
           list.map((c) => (c._id === chatId ? { ...c, ...updated } : c)),
@@ -1089,9 +1088,7 @@ export class OpenAiApi implements OnDestroy, OnInit {
         );
       },
       error: (err) => {
-        this.chatSidebarRef?.setShareError(
-          err?.error?.message ?? `User "${username}" not found`,
-        );
+        this.chatSidebarRef?.setShareError(err?.error?.message ?? `User "${username}" not found`);
       },
     });
   }

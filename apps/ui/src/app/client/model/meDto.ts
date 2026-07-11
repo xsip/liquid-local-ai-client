@@ -7,11 +7,10 @@
  * https://openapi-generator.tech
  * Do not edit the class manually.
  */
-
 import { CustomMcpDto } from './customMcpDto';
 
 
-export interface MeDto {
+export interface MeDto { 
     username: string;
     role: string;
     subscription: string;

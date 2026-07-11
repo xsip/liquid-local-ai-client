@@ -16,9 +16,10 @@ import { WebSearchOptionsDto } from './webSearchOptionsDto';
 import { ChatCompletionCreateParamsNonStreamingDto } from './chatCompletionCreateParamsNonStreamingDto';
 import { ChatCompletionCreateParamsNonStreamingDtoResponseFormat } from './chatCompletionCreateParamsNonStreamingDtoResponseFormat';
 import { ChatCompletionStreamOptionsDto } from './chatCompletionStreamOptionsDto';
-import { ResponseCreateParamsNonStreamingDtoModel } from './responseCreateParamsNonStreamingDtoModel';
 import { ChatCompletionCreateParamsNonStreamingDtoToolsInner } from './chatCompletionCreateParamsNonStreamingDtoToolsInner';
 import { InlineU05lxdDto } from './inlineU05lxdDto';
+import { ChatCompletionCreateParamsNonStreamingDtoModel } from './chatCompletionCreateParamsNonStreamingDtoModel';
+import { ReasoningEffort } from './reasoningEffort';
 import { ChatCompletionCreateParamsNonStreamingDtoMessagesInner } from './chatCompletionCreateParamsNonStreamingDtoMessagesInner';
 import { ChatCompletionCreateParamsNonStreamingDtoStopInner } from './chatCompletionCreateParamsNonStreamingDtoStopInner';
 

@@ -1,24 +1,26 @@
 import {
+  AfterViewChecked,
   AfterViewInit,
   Component,
+  effect,
   ElementRef,
+  inject,
   input,
   OnDestroy,
   output,
   signal,
   ViewChild,
-  AfterViewChecked,
-  inject,
-  effect,
 } from '@angular/core';
 import Prism from 'prismjs';
 import { CommonModule } from '@angular/common';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { ChatMetadataService, ChatRequestDto, ReasoningDto } from '../../client';
-import { ModelReasoningCapability } from '../../shared/components/reasoning-dropdown.component';
+import { ChatMetadataService, ReasoningEffort } from '../../client';
+import {
+  ModelReasoningCapability,
+  ReasoningDropdownComponent,
+} from '../../shared/components/reasoning-dropdown.component';
 import { SendButtonComponent } from '../../shared/components/send-button.component';
 import { ResetButtonComponent } from '../../shared/components/reset-button.component';
-import { ReasoningDropdownComponent } from '../../shared/components/reasoning-dropdown.component';
 import {
   AppendedFile,
   fileSizeLabel,
@@ -29,12 +31,12 @@ import { TranslateModule } from '@ngx-translate/core';
 import { MarkdownPipe } from '../../shared/components/markdown.pipe';
 import { NgIconComponent, provideIcons } from '@ng-icons/core';
 import {
-  heroPencilSquare,
+  heroDocument,
   heroEye,
   heroLink,
-  heroDocument,
-  heroXMark,
   heroLockClosed,
+  heroPencilSquare,
+  heroXMark,
 } from '@ng-icons/heroicons/outline';
 import { ChatCompletionsService } from './chat-completions.service';
 import { Observable, of, Subscription, switchMap, take } from 'rxjs';
@@ -305,9 +307,7 @@ export class OpenAiChatInputComponent implements AfterViewInit, AfterViewChecked
   readonly form = input.required<FormGroup>();
   readonly streaming = input.required<boolean>();
   readonly locked = input<boolean>(false);
-  readonly reasoning = input.required<
-    ChatRequestDto.ReasoningEnum | ReasoningDto.EffortEnum | undefined
-  >();
+  readonly reasoning = input.required<ReasoningEffort | undefined>();
   readonly modelReasoningCap = input.required<ModelReasoningCapability | null>();
   readonly newChatIdProvider = input.required<() => Observable<string>>();
 
@@ -316,7 +316,7 @@ export class OpenAiChatInputComponent implements AfterViewInit, AfterViewChecked
 
   readonly submitted = output<void>();
   readonly reset = output<void>();
-  readonly reasoningChanged = output<ChatRequestDto.ReasoningEnum>();
+  readonly reasoningChanged = output<ReasoningEffort>();
   /** Emits the current file list every time it changes (add / remove / clear). */
   readonly appendedFilesChanged = output<AppendedFile[]>();
 

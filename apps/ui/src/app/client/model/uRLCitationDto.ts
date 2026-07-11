@@ -23,19 +23,8 @@ export interface URLCitationDto {
      */
     title: string;
     /**
-     * The type of the URL citation. Always `url_citation`.
-     */
-    type: URLCitationDto.TypeEnum;
-    /**
      * The URL of the web resource.
      */
     url: string;
 }
-export namespace URLCitationDto {
-    export const TypeEnum = {
-        UrlCitation: 'url_citation'
-    } as const;
-    export type TypeEnum = typeof TypeEnum[keyof typeof TypeEnum];
-}
-
 

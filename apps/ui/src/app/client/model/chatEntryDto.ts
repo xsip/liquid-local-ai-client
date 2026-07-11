@@ -7,8 +7,6 @@
  * https://openapi-generator.tech
  * Do not edit the class manually.
  */
-import { ChatResponseDto } from './chatResponseDto';
-import { ChatRequestDto } from './chatRequestDto';
 
 
 export interface ChatEntryDto { 
@@ -22,17 +20,15 @@ export interface ChatEntryDto {
      */
     chatInternalId?: object | null;
     name?: object | null;
-    request: ChatRequestDto;
-    response: ChatResponseDto;
-    /**
-     * LM Studio response ID of the previous turn
-     */
-    previousResponseId?: object | null;
-    /**
-     * LM Studio response ID returned for this turn
-     */
-    responseId?: object | null;
     createdAt: string;
     updatedAt: string;
+    /**
+     * Username of the user who wrote this entry (shared chats)
+     */
+    username?: string;
+    /**
+     * Rolling Chat Completions message array, when applicable
+     */
+    messages?: object;
 }
 

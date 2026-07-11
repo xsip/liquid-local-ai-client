@@ -775,6 +775,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShareChatDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "",
@@ -1871,6 +1881,9 @@
           },
           "mimeType": {
             "type": "string"
+          },
+          "isVisible": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -1878,7 +1891,8 @@
           "filename",
           "refId",
           "type",
-          "url"
+          "url",
+          "isVisible"
         ]
       },
       "ChatMetadataDto": {
@@ -2051,6 +2065,17 @@
             }
           }
         }
+      },
+      "ShareChatDto": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "username"
+        ]
       },
       "CreateAndAddToUserAssetsResponseDto": {
         "type": "object",
@@ -2969,6 +2994,18 @@
           "name"
         ]
       },
+      "ReasoningEffort": {
+        "type": "string",
+        "enum": [
+          "low",
+          "high",
+          "none",
+          "minimal",
+          "medium",
+          "xhigh"
+        ],
+        "description": "Constrains effort on reasoning for\n  [reasoning models](https://platform.openai.com/docs/guides/reasoning). Currently\n  supported values are `none`, `minimal`, `low`, `medium`, `high`, and `xhigh`.\n  Reducing reasoning effort can result in faster responses and fewer tokens used\n  on reasoning in a response.\n  \n  - `gpt-5.1` defaults to `none`, which does not perform reasoning. The supported\n    reasoning values for `gpt-5.1` are `none`, `low`, `medium`, and `high`. Tool\n    calls are supported for all reasoning values in gpt-5.1.\n  - All models before `gpt-5.1` default to `medium` reasoning effort, and do not\n    support `none`.\n  - The `gpt-5-pro` model defaults to (and only supports) `high` reasoning effort.\n  - `xhigh` is supported for all models after `gpt-5.1-codex-max`."
+      },
       "ApproximateDto": {
         "type": "object",
         "properties": {
@@ -3167,15 +3204,11 @@
             ]
           },
           "reasoning_effort": {
-            "type": "string",
             "description": "Constrains effort on reasoning for\n  [reasoning models](https://platform.openai.com/docs/guides/reasoning). Currently\n  supported values are `none`, `minimal`, `low`, `medium`, `high`, and `xhigh`.\n  Reducing reasoning effort can result in faster responses and fewer tokens used\n  on reasoning in a response.\n  \n  - `gpt-5.1` defaults to `none`, which does not perform reasoning. The supported\n    reasoning values for `gpt-5.1` are `none`, `low`, `medium`, and `high`. Tool\n    calls are supported for all reasoning values in gpt-5.1.\n  - All models before `gpt-5.1` default to `medium` reasoning effort, and do not\n    support `none`.\n  - The `gpt-5-pro` model defaults to (and only supports) `high` reasoning effort.\n  - `xhigh` is supported for all models after `gpt-5.1-codex-max`.",
-            "enum": [
-              "low",
-              "high",
-              "none",
-              "minimal",
-              "medium",
-              "xhigh"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReasoningEffort"
+              }
             ]
           },
           "response_format": {
@@ -3437,15 +3470,11 @@
             ]
           },
           "reasoning_effort": {
-            "type": "string",
             "description": "Constrains effort on reasoning for\n  [reasoning models](https://platform.openai.com/docs/guides/reasoning). Currently\n  supported values are `none`, `minimal`, `low`, `medium`, `high`, and `xhigh`.\n  Reducing reasoning effort can result in faster responses and fewer tokens used\n  on reasoning in a response.\n  \n  - `gpt-5.1` defaults to `none`, which does not perform reasoning. The supported\n    reasoning values for `gpt-5.1` are `none`, `low`, `medium`, and `high`. Tool\n    calls are supported for all reasoning values in gpt-5.1.\n  - All models before `gpt-5.1` default to `medium` reasoning effort, and do not\n    support `none`.\n  - The `gpt-5-pro` model defaults to (and only supports) `high` reasoning effort.\n  - `xhigh` is supported for all models after `gpt-5.1-codex-max`.",
-            "enum": [
-              "low",
-              "high",
-              "none",
-              "minimal",
-              "medium",
-              "xhigh"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReasoningEffort"
+              }
             ]
           },
           "response_format": {
@@ -3575,6 +3604,78 @@
           "messages",
           "model",
           "stream"
+        ]
+      },
+      "CompletionTokensDetailsDto": {
+        "type": "object",
+        "properties": {
+          "accepted_prediction_tokens": {
+            "type": "number",
+            "description": "When using Predicted Outputs, the number of tokens in the prediction that\n  appeared in the completion."
+          },
+          "audio_tokens": {
+            "type": "number",
+            "description": "Audio input tokens generated by the model."
+          },
+          "reasoning_tokens": {
+            "type": "number",
+            "description": "Tokens generated by the model for reasoning."
+          },
+          "rejected_prediction_tokens": {
+            "type": "number",
+            "description": "When using Predicted Outputs, the number of tokens in the prediction that did\n  not appear in the completion. However, like reasoning tokens, these tokens are\n  still counted in the total completion tokens for purposes of billing, output,\n  and context window limits."
+          }
+        }
+      },
+      "PromptTokensDetailsDto": {
+        "type": "object",
+        "properties": {
+          "audio_tokens": {
+            "type": "number",
+            "description": "Audio input tokens present in the prompt."
+          },
+          "cached_tokens": {
+            "type": "number",
+            "description": "Cached tokens present in the prompt."
+          }
+        }
+      },
+      "CompletionUsageDto": {
+        "type": "object",
+        "properties": {
+          "completion_tokens": {
+            "type": "number",
+            "description": "Number of tokens in the generated completion."
+          },
+          "prompt_tokens": {
+            "type": "number",
+            "description": "Number of tokens in the prompt."
+          },
+          "total_tokens": {
+            "type": "number",
+            "description": "Total number of tokens used in the request (prompt + completion)."
+          },
+          "completion_tokens_details": {
+            "description": "Breakdown of tokens used in a completion.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CompletionTokensDetailsDto"
+              }
+            ]
+          },
+          "prompt_tokens_details": {
+            "description": "Breakdown of tokens used in the prompt.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PromptTokensDetailsDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "completion_tokens",
+          "prompt_tokens",
+          "total_tokens"
         ]
       },
       "TopLogprobDto": {
@@ -3835,76 +3936,64 @@
           "message"
         ]
       },
-      "CompletionTokensDetailsDto": {
+      "ChatCompletionChunkDto": {
         "type": "object",
         "properties": {
-          "accepted_prediction_tokens": {
-            "type": "number",
-            "description": "When using Predicted Outputs, the number of tokens in the prediction that\n  appeared in the completion."
+          "id": {
+            "type": "string",
+            "description": "A unique identifier for the chat completion. Each chunk has the same ID."
           },
-          "audio_tokens": {
-            "type": "number",
-            "description": "Audio input tokens generated by the model."
+          "choices": {
+            "description": "A list of chat completion choices. Can contain more than one elements if `n` is\n  greater than 1. Can also be empty for the last chunk if you set\n  `stream_options: {\"include_usage\": true}`.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChoiceDto"
+            }
           },
-          "reasoning_tokens": {
+          "created": {
             "type": "number",
-            "description": "Tokens generated by the model for reasoning."
+            "description": "The Unix timestamp (in seconds) of when the chat completion was created. Each\n  chunk has the same timestamp."
           },
-          "rejected_prediction_tokens": {
-            "type": "number",
-            "description": "When using Predicted Outputs, the number of tokens in the prediction that did\n  not appear in the completion. However, like reasoning tokens, these tokens are\n  still counted in the total completion tokens for purposes of billing, output,\n  and context window limits."
-          }
-        }
-      },
-      "PromptTokensDetailsDto": {
-        "type": "object",
-        "properties": {
-          "audio_tokens": {
-            "type": "number",
-            "description": "Audio input tokens present in the prompt."
+          "model": {
+            "type": "string",
+            "description": "The model to generate the completion."
           },
-          "cached_tokens": {
-            "type": "number",
-            "description": "Cached tokens present in the prompt."
-          }
-        }
-      },
-      "CompletionUsageDto": {
-        "type": "object",
-        "properties": {
-          "completion_tokens": {
-            "type": "number",
-            "description": "Number of tokens in the generated completion."
-          },
-          "prompt_tokens": {
-            "type": "number",
-            "description": "Number of tokens in the prompt."
-          },
-          "total_tokens": {
-            "type": "number",
-            "description": "Total number of tokens used in the request (prompt + completion)."
-          },
-          "completion_tokens_details": {
-            "description": "Breakdown of tokens used in a completion.",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/CompletionTokensDetailsDto"
-              }
+          "object": {
+            "type": "string",
+            "description": "The object type, which is always `chat.completion.chunk`.",
+            "enum": [
+              "chat.completion.chunk"
             ]
           },
-          "prompt_tokens_details": {
-            "description": "Breakdown of tokens used in the prompt.",
+          "service_tier": {
+            "type": "string",
+            "description": "Specifies the processing type used for serving the request.\n  \n  - If set to 'auto', then the request will be processed with the service tier\n    configured in the Project settings. Unless otherwise configured, the Project\n    will use 'default'.\n  - If set to 'default', then the request will be processed with the standard\n    pricing and performance for the selected model.\n  - If set to '[flex](https://platform.openai.com/docs/guides/flex-processing)' or\n    '[priority](https://openai.com/api-priority-processing/)', then the request\n    will be processed with the corresponding service tier.\n  - When not set, the default behavior is 'auto'.\n  \n  When the `service_tier` parameter is set, the response body will include the\n  `service_tier` value based on the processing mode actually used to serve the\n  request. This response value may be different from the value set in the\n  parameter.",
+            "enum": [
+              "auto",
+              "default",
+              "flex",
+              "scale",
+              "priority"
+            ]
+          },
+          "system_fingerprint": {
+            "type": "string"
+          },
+          "usage": {
+            "description": "An optional field that will only be present when you set\n  `stream_options: {\"include_usage\": true}` in your request. When present, it\n  contains a null value **except for the last chunk** which contains the token\n  usage statistics for the entire request.\n  \n  **NOTE:** If the stream is interrupted or cancelled, you may not receive the\n  final usage chunk which contains the total token usage for the request.",
             "allOf": [
               {
-                "$ref": "#/components/schemas/PromptTokensDetailsDto"
+                "$ref": "#/components/schemas/CompletionUsageDto"
               }
             ]
           }
         },
         "required": [
-          "completion_tokens",
-          "prompt_tokens",
-          "total_tokens"
+          "id",
+          "choices",
+          "created",
+          "model",
+          "object"
         ]
       },
       "ChatCompletionDto": {

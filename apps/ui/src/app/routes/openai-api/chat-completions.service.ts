@@ -3,20 +3,11 @@ import { Location } from '@angular/common';
 import { FormBuilder, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { interval, Subscription, switchMap } from 'rxjs';
-import {
-  OpenAiStreamService,
-  McpCallProgressEvent,
-} from './completions-openai-stream.service';
-import { OpenAiStreamErrorEvent, OpenAiStreamApiInfoEvent } from './openai-stream-events.model';
-import {
-  ChatMetadataService,
-  ChatMetadataDto,
-  CreateChatMetadataDto,
-  ReasoningDto,
-} from '../../client';
-import InvokeAiModelToUseEnum = ChatMetadataDto.InvokeAiModelToUseEnum;
+import { McpCallProgressEvent, OpenAiStreamService } from './completions-openai-stream.service';
+import { OpenAiStreamApiInfoEvent, OpenAiStreamErrorEvent } from './openai-stream-events.model';
+import { ChatMetadataDto, ChatMetadataService, CreateChatMetadataDto, ReasoningEffort } from '../../client';
 import { AppendedFile } from './chat-input.component';
-import * as CryptoJS from 'crypto-js';
+import InvokeAiModelToUseEnum = ChatMetadataDto.InvokeAiModelToUseEnum;
 
 export interface ChatMessage {
   role: 'user' | 'ai' | 'error' | 'info' | 'tool_call' | 'reasoning' | 'mcp_list_tools';
@@ -104,7 +95,7 @@ export class ChatCompletionsService {
 
   submit(
     selectedModelId: string,
-    reasoning: ReasoningDto.EffortEnum | undefined,
+    reasoning: ReasoningEffort | undefined,
     appendedFiles: AppendedFile[] | undefined,
     encryptionKey: string | undefined,
     onChatListRefresh: () => void,
@@ -319,7 +310,7 @@ export class ChatCompletionsService {
 
   resend(
     selectedModelId: string,
-    reasoning: ReasoningDto.EffortEnum | undefined,
+    reasoning: ReasoningEffort | undefined,
     appendedFiles: AppendedFile[] | undefined,
     encryptionKey: string | undefined,
     onChatListRefresh: () => void,

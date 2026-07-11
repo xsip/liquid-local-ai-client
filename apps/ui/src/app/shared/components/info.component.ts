@@ -1,9 +1,9 @@
-import { animate, style, transition, trigger, query, stagger } from '@angular/animations';
+import { animate, style, transition, trigger } from '@angular/animations';
 import { Component, inject, OnInit, output, signal } from '@angular/core';
 import { TranslateModule } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { AuthService, CustomMcpDto, MeDto, ModelDto, OpenAIService } from '../../client';
+import { AuthService, CustomMcpDto, MeDto, ModelOpenAiDto, OpenAIService } from '../../client';
 import { SpinnerComponent } from '../../shared/components/spinner.component';
 import { DarkModeToggleComponent } from '../../shared/components/ui/dark-mode-toggle.component';
 import { BadgeComponent } from '../../shared/components/ui/badge.component';
@@ -12,11 +12,11 @@ import { McpConfigDialogComponent } from './mcp-config-dialog.component';
 import { NgIconComponent, provideIcons } from '@ng-icons/core';
 import {
   heroArrowPath,
-  heroUser,
   heroChartBar,
-  heroComputerDesktop,
   heroCog6Tooth,
+  heroComputerDesktop,
   heroServerStack,
+  heroUser,
 } from '@ng-icons/heroicons/outline';
 
 @Component({
@@ -241,21 +241,19 @@ import {
           </p>
         } @else {
           <div class="divide-y divide-border-subtle">
-            @for (model of models(); track model.key) {
+            @for (model of models(); track model.id) {
               <div class="px-3 py-2.5 flex items-center gap-2">
                 <div class="flex flex-col gap-0.5 flex-1 min-w-0">
                   <span
                     class="font-medium text-text-primary truncate font-mono"
                     style="font-size:11px"
-                    >{{ model.key }}</span
+                    >{{ model.id }}</span
                   >
-                  @if (model.publisher) {
-                    <span class="text-text-muted" style="font-size:10px">{{
-                      model.publisher
-                    }}</span>
+                  @if (model.owned_by) {
+                    <span class="text-text-muted" style="font-size:10px">{{ model.owned_by }}</span>
                   }
                 </div>
-                <ui-badge>{{ model.type }}</ui-badge>
+                <ui-badge>{{ model.object }}</ui-badge>
               </div>
             }
           </div>
@@ -274,9 +272,10 @@ import {
           {{ 'info.mcpServers' | translate }}
         </span>
         @if (user()?.customMcps?.length) {
-          <span class="px-1.5 py-0.5 rounded-full bg-surface-sunken text-text-muted text-[10px] font-mono">{{
-            user()!.customMcps.length
-          }}</span>
+          <span
+            class="px-1.5 py-0.5 rounded-full bg-surface-sunken text-text-muted text-[10px] font-mono"
+            >{{ user()!.customMcps.length }}</span
+          >
         }
       </button>
     </div>
@@ -297,7 +296,7 @@ export class InfoComponent implements OnInit {
   readonly user = signal<MeDto | null>(null);
   readonly userLoading = signal(false);
   readonly userError = signal(false);
-  readonly models = signal<ModelDto[]>([]);
+  readonly models = signal<ModelOpenAiDto[]>([]);
   readonly modelsLoading = signal(false);
   readonly modelsError = signal(false);
 
@@ -354,7 +353,8 @@ export class InfoComponent implements OnInit {
     this.openaiService.getModelsOpenAi().subscribe({
       next: (res) => {
         this.models.set(
-          (res ?? []).map((m) => ({ key: m.id, publisher: m.owned_by, type: 'llm' }) as ModelDto),
+          res ??
+            [] /*.map((m) => ({ key: m.id, publisher: m.owned_by, type: 'llm' }) as ModelDto)*/,
         );
         this.modelsLoading.set(false);
       },

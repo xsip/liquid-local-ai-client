@@ -17,7 +17,7 @@ export interface ChatCompletionAllowedToolsDto {
     /**
      * A list of tool definitions that the model should be allowed to call.      For the Chat Completions API, the list of tool definitions might look like:      ```json   [     { \"type\": \"function\", \"function\": { \"name\": \"get_weather\" } },     { \"type\": \"function\", \"function\": { \"name\": \"get_time\" } }   ]   ```
      */
-    tools: Array<Array<string>>;
+    tools: Array<object>;
 }
 export namespace ChatCompletionAllowedToolsDto {
     export const ModeEnum = {
