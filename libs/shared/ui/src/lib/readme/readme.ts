@@ -6,7 +6,7 @@ import {
   PLATFORM_ID,
   signal,
 } from '@angular/core';
-import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { isPlatformBrowser } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Meta, Title } from '@angular/platform-browser';
 import { TranslateModule } from '@ngx-translate/core';
@@ -22,14 +22,18 @@ import {
   heroInformationCircle,
   heroExclamationTriangle,
   heroPhoto,
+  heroBars3,
+  heroXMark,
+  heroArrowUp,
 } from '@ng-icons/heroicons/outline';
 import { DarkModeToggleComponent } from '../dark-mode-toggle/dark-mode-toggle.component';
+import { ParallaxDirective } from '../directives/parallax.directive';
 import { SHOW_CHAT_LINK } from '../tokens';
 
 @Component({
   selector: 'app-readme',
   standalone: true,
-  imports: [CommonModule, RouterLink, TranslateModule, NgIconComponent, DarkModeToggleComponent],
+  imports: [RouterLink, TranslateModule, NgIconComponent, DarkModeToggleComponent, ParallaxDirective],
   viewProviders: [
     provideIcons({
       heroCommandLine,
@@ -42,6 +46,9 @@ import { SHOW_CHAT_LINK } from '../tokens';
       heroInformationCircle,
       heroExclamationTriangle,
       heroPhoto,
+      heroBars3,
+      heroXMark,
+      heroArrowUp,
     }),
   ],
   styles: [
@@ -141,6 +148,16 @@ import { SHOW_CHAT_LINK } from '../tokens';
           </div>
 
           <div class="flex items-center gap-2 flex-shrink-0">
+            <!-- Mobile "on this page" nav toggle -->
+            <button
+              type="button"
+              (click)="mobileNavOpen.set(true)"
+              class="lg:hidden inline-flex items-center justify-center w-8 h-8 rounded-xl border border-border-default text-text-secondary hover:border-accent/50 hover:text-accent hover:bg-accent-subtle active:scale-90"
+              aria-label="Open page navigation"
+            >
+              <ng-icon name="heroBars3" class="w-4 h-4" />
+            </button>
+
             <!-- Theme toggle: reads .dark from <html> set by the app -->
             <ui-dark-mode-toggle />
 
@@ -159,7 +176,10 @@ import { SHOW_CHAT_LINK } from '../tokens';
       </header>
 
       <!-- ── HERO ───────────────────────────────────────────────────────────── -->
-      <section class="hero-grid relative overflow-hidden border-b border-border-default">
+      <section
+        id="hero"
+        class="hero-grid relative overflow-hidden border-b border-border-default"
+      >
         <div
           class="absolute inset-0 bg-gradient-to-br from-accent/10 via-transparent to-reasoning-bg pointer-events-none"
         ></div>
@@ -234,19 +254,76 @@ import { SHOW_CHAT_LINK } from '../tokens';
               On this page
             </p>
             <nav class="flex flex-col gap-0.5">
-              <a
-                *ngFor="let item of navSections"
-                [href]="'#' + item.id"
-                class="px-2 py-1.5 rounded-lg text-xs transition-colors border-l-2"
-                [class]="
-                  activeSection() === item.id
-                    ? 'border-accent text-accent bg-accent/10 font-medium'
-                    : 'border-transparent text-text-muted hover:text-text-primary hover:bg-surface-overlay'
-                "
-                >{{ item.label }}</a
-              >
+              @for (item of navSections; track item.id) {
+                <a
+                  [href]="'#' + item.id"
+                  class="px-2 py-1.5 rounded-lg text-xs transition-colors border-l-2"
+                  [class]="
+                    activeSection() === item.id
+                      ? 'border-accent text-accent bg-accent/10 font-medium'
+                      : 'border-transparent text-text-muted hover:text-text-primary hover:bg-surface-overlay'
+                  "
+                  >{{ item.label }}</a
+                >
+              }
             </nav>
+            <button
+              type="button"
+              (click)="scrollToTop()"
+              class="mt-3 w-full flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs text-text-muted hover:text-accent hover:bg-accent-subtle transition-colors border-t border-border-subtle pt-3"
+            >
+              <ng-icon name="heroArrowUp" class="w-3.5 h-3.5" />
+              To the top
+            </button>
           </aside>
+
+          <!-- ── MOBILE SIDENAV DRAWER ────────────────────────────────────────── -->
+          @if (mobileNavOpen()) {
+            <div
+              class="lg:hidden fixed inset-0 z-[60] bg-black/50 animate-fade-in"
+              (click)="mobileNavOpen.set(false)"
+            ></div>
+            <aside
+              class="lg:hidden fixed inset-y-0 left-0 z-[70] w-64 max-w-[80vw] bg-surface-base border-r border-border-default overflow-y-auto p-4 animate-slide-in-left"
+            >
+              <div class="flex items-center justify-between mb-4">
+                <p class="text-[10px] text-text-muted uppercase tracking-widest font-semibold">
+                  On this page
+                </p>
+                <button
+                  type="button"
+                  (click)="mobileNavOpen.set(false)"
+                  class="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-border-default text-text-secondary hover:border-accent/50 hover:text-accent"
+                  aria-label="Close page navigation"
+                >
+                  <ng-icon name="heroXMark" class="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <nav class="flex flex-col gap-0.5">
+                @for (item of navSections; track item.id) {
+                  <a
+                    [href]="'#' + item.id"
+                    (click)="mobileNavOpen.set(false)"
+                    class="px-2 py-1.5 rounded-lg text-xs transition-colors border-l-2"
+                    [class]="
+                      activeSection() === item.id
+                        ? 'border-accent text-accent bg-accent/10 font-medium'
+                        : 'border-transparent text-text-muted hover:text-text-primary hover:bg-surface-overlay'
+                    "
+                    >{{ item.label }}</a
+                  >
+                }
+              </nav>
+              <button
+                type="button"
+                (click)="scrollToTop(); mobileNavOpen.set(false)"
+                class="mt-3 w-full flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs text-text-muted hover:text-accent hover:bg-accent-subtle transition-colors border-t border-border-subtle pt-3"
+              >
+                <ng-icon name="heroArrowUp" class="w-3.5 h-3.5" />
+                To the top
+              </button>
+            </aside>
+          }
 
           <!-- ── SECTIONS ─────────────────────────────────────────────────────── -->
           <div class="flex-1 min-w-0 space-y-20">
@@ -278,16 +355,18 @@ import { SHOW_CHAT_LINK } from '../tokens';
             <!-- OVERVIEW IMAGE -->
             @if (isBrowser) {
               <section>
-                <img
-                  class="dark:hidden block"
-                  src="chat-preview-light.png"
-                  alt="chat overview light"
-                />
-                <img
-                  class="dark:block hidden"
-                  src="chat-preview-dark.png"
-                  alt="chat overview dark"
-                />
+                <div
+                  class="dark:hidden block bg-contain bg-center bg-no-repeat bg-surface-overlay h-56 sm:h-72 lg:h-96"
+                  [uiParallax]="'chat-preview-light.png'"
+                  role="img"
+                  aria-label="chat overview light"
+                ></div>
+                <div
+                  class="dark:block hidden bg-contain bg-center bg-no-repeat bg-surface-overlay h-56 sm:h-72 lg:h-96"
+                  [uiParallax]="'chat-preview-dark.png'"
+                  role="img"
+                  aria-label="chat overview dark"
+                ></div>
               </section>
             }
 
@@ -427,7 +506,7 @@ import { SHOW_CHAT_LINK } from '../tokens';
                 and the frontend reattaches to it automatically.
               </p>
               <div class="space-y-3 mb-4">
-                <ng-container *ngFor="let step of resilientGenerationSteps">
+                @for (step of resilientGenerationSteps; track step.n) {
                   <div
                     class="bg-surface-raised border border-border-default rounded-xl p-4 flex gap-3 items-start"
                   >
@@ -440,7 +519,7 @@ import { SHOW_CHAT_LINK } from '../tokens';
                       {{ step.detail }}
                     </p>
                   </div>
-                </ng-container>
+                }
               </div>
               <div class="bg-surface-overlay border border-border-subtle rounded-xl p-4">
                 <p class="text-xs text-text-secondary">
@@ -522,7 +601,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
             <section id="tech-stack">
               <h2 class="text-2xl font-bold text-text-primary mb-6">Tech Stack</h2>
               <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                <ng-container *ngFor="let item of techStack">
+                @for (item of techStack; track item.tech) {
                   <div
                     class="card-hover bg-surface-raised border border-border-default rounded-xl p-4 flex flex-col gap-2"
                   >
@@ -532,7 +611,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                     <p class="text-sm font-semibold text-text-primary">{{ item.tech }}</p>
                     <p class="text-xs text-text-muted">{{ item.version }}</p>
                   </div>
-                </ng-container>
+                }
               </div>
             </section>
 
@@ -540,7 +619,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
             <section id="features">
               <h2 class="text-2xl font-bold text-text-primary mb-6">Features</h2>
               <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <ng-container *ngFor="let feat of features">
+                @for (feat of features; track feat.title) {
                   <div
                     class="card-hover bg-surface-raised border border-border-default rounded-xl p-5 flex gap-4"
                   >
@@ -570,7 +649,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                       <p class="text-xs text-text-secondary leading-relaxed">{{ feat.desc }}</p>
                     </div>
                   </div>
-                </ng-container>
+                }
               </div>
             </section>
 
@@ -579,8 +658,8 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
               <h2 class="text-2xl font-bold text-text-primary mb-2">Getting Started</h2>
               <p class="text-text-secondary mb-8">Up and running in a few steps.</p>
               <div class="space-y-4">
-                <ng-container *ngFor="let step of steps; let last = last">
-                  <div class="relative flex gap-4 sm:gap-5" [class.step-line]="!last">
+                @for (step of steps; track step.n) {
+                  <div class="relative flex gap-4 sm:gap-5" [class.step-line]="!$last">
                     <div
                       class="flex-shrink-0 w-10 h-10 rounded-full bg-accent/15 border border-accent/30 flex items-center justify-center text-accent font-bold text-sm z-10"
                     >
@@ -602,7 +681,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                       }
                     </div>
                   </div>
-                </ng-container>
+                }
               </div>
             </section>
 
@@ -695,20 +774,22 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                 the user's context.
               </p>
               @if (isBrowser) {
-                <img
-                  class="dark:hidden block mb-2"
-                  src="mcp-preview-light.png"
-                  alt="chat overview light"
-                />
-                <img
-                  class="dark:block hidden mb-2"
-                  src="mcp-preview-dark.png"
-                  alt="chat overview dark"
-                />
+                <div
+                  class="dark:hidden block mb-2 bg-contain bg-center bg-no-repeat bg-surface-overlay h-56 sm:h-72 lg:h-96"
+                  [uiParallax]="'mcp-preview-light.png'"
+                  role="img"
+                  aria-label="chat overview light"
+                ></div>
+                <div
+                  class="dark:block hidden mb-2 bg-contain bg-center bg-no-repeat bg-surface-overlay h-56 sm:h-72 lg:h-96"
+                  [uiParallax]="'mcp-preview-dark.png'"
+                  role="img"
+                  aria-label="chat overview dark"
+                ></div>
               }
 
               <div class="space-y-3 mb-4">
-                <ng-container *ngFor="let tool of mcpTools">
+                @for (tool of mcpTools; track tool.name) {
                   <div
                     class="bg-surface-raised border border-border-default rounded-xl p-5 flex flex-col sm:flex-row gap-3 items-start"
                   >
@@ -718,7 +799,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                     >
                     <p class="text-sm text-text-secondary leading-relaxed">{{ tool.desc }}</p>
                   </div>
-                </ng-container>
+                }
               </div>
               <div class="bg-surface-overlay border border-border-subtle rounded-xl p-4">
                 <p class="text-xs text-text-secondary">
@@ -746,19 +827,21 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                 them show up in the others immediately.
               </p>
               @if (isBrowser) {
-                <img
-                  class="dark:hidden block mb-2"
-                  src="mcp-management-dialog-light.png"
-                  alt="chat overview light"
-                />
-                <img
-                  class="dark:block hidden mb-2"
-                  src="mcp-management-dialog-dark.png"
-                  alt="chat overview dark"
-                />
+                <div
+                  class="dark:hidden block mb-2 bg-contain bg-center bg-no-repeat bg-surface-overlay h-56 sm:h-72 lg:h-96"
+                  [uiParallax]="'mcp-management-dialog-light.png'"
+                  role="img"
+                  aria-label="chat overview light"
+                ></div>
+                <div
+                  class="dark:block hidden mb-2 bg-contain bg-center bg-no-repeat bg-surface-overlay h-56 sm:h-72 lg:h-96"
+                  [uiParallax]="'mcp-management-dialog-dark.png'"
+                  role="img"
+                  aria-label="chat overview dark"
+                ></div>
               }
               <div class="space-y-3 mb-4">
-                <ng-container *ngFor="let step of customMcpSteps">
+                @for (step of customMcpSteps; track step.n) {
                   <div
                     class="bg-surface-raised border border-border-default rounded-xl p-4 flex gap-3 items-start"
                   >
@@ -771,7 +854,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                       {{ step.detail }}
                     </p>
                   </div>
-                </ng-container>
+                }
               </div>
               <div class="bg-surface-overlay border border-border-subtle rounded-xl p-4">
                 <p class="text-xs text-text-secondary">
@@ -805,20 +888,22 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
               </p>
 
               @if (isBrowser) {
-                <img
-                  class="dark:hidden block mb-2"
-                  src="mcp-progress-light.gif"
-                  alt="chat overview light"
-                />
-                <img
-                  class="dark:block hidden mb-2"
-                  src="mcp-progress-dark.gif"
-                  alt="chat overview dark"
-                />
+                <div
+                  class="dark:hidden block mb-2 bg-contain bg-center bg-no-repeat bg-surface-overlay h-56 sm:h-72 lg:h-96"
+                  [uiParallax]="'mcp-progress-light.gif'"
+                  role="img"
+                  aria-label="chat overview light"
+                ></div>
+                <div
+                  class="dark:block hidden mb-2 bg-contain bg-center bg-no-repeat bg-surface-overlay h-56 sm:h-72 lg:h-96"
+                  [uiParallax]="'mcp-progress-dark.gif'"
+                  role="img"
+                  aria-label="chat overview dark"
+                ></div>
               }
 
               <div class="space-y-3 mb-4">
-                <ng-container *ngFor="let step of mcpProgressSteps">
+                @for (step of mcpProgressSteps; track step.n) {
                   <div
                     class="bg-surface-raised border border-border-default rounded-xl p-4 flex gap-3 items-start"
                   >
@@ -831,7 +916,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                       {{ step.detail }}
                     </p>
                   </div>
-                </ng-container>
+                }
               </div>
               <div
                 class="flex gap-2 items-start bg-info-bg border border-info-border rounded-lg px-4 py-3"
@@ -866,19 +951,21 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
               </p>
 
               @if (isBrowser) {
-                <img
-                  class="dark:hidden block mb-2"
-                  src="chat-image-generator-light.png"
-                  alt="chat overview light"
-                />
-                <img
-                  class="dark:block hidden mb-2"
-                  src="chat-image-generator-dark.png"
-                  alt="chat overview dark"
-                />
+                <div
+                  class="dark:hidden block mb-2 bg-contain bg-center bg-no-repeat bg-surface-overlay h-56 sm:h-72 lg:h-96"
+                  [uiParallax]="'chat-image-generator-light.png'"
+                  role="img"
+                  aria-label="chat overview light"
+                ></div>
+                <div
+                  class="dark:block hidden mb-2 bg-contain bg-center bg-no-repeat bg-surface-overlay h-56 sm:h-72 lg:h-96"
+                  [uiParallax]="'chat-image-generator-dark.png'"
+                  role="img"
+                  aria-label="chat overview dark"
+                ></div>
               }
               <div class="space-y-3">
-                <ng-container *ngFor="let step of invokeSteps">
+                @for (step of invokeSteps; track step.n) {
                   <div
                     class="bg-surface-raised border border-border-default rounded-xl p-4 flex gap-3 items-start"
                   >
@@ -891,7 +978,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                       {{ step.detail }}
                     </p>
                   </div>
-                </ng-container>
+                }
               </div>
             </section>
 
@@ -924,11 +1011,11 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                     <p class="font-semibold text-sm text-text-primary">Supported formats</p>
                   </div>
                   <div class="flex flex-wrap gap-2">
-                    <span
-                      *ngFor="let fmt of imageFormats"
-                      class="badge-pill bg-tool-bg text-tool-text border border-tool-border"
-                      >{{ fmt }}</span
-                    >
+                    @for (fmt of imageFormats; track fmt) {
+                      <span class="badge-pill bg-tool-bg text-tool-text border border-tool-border"
+                        >{{ fmt }}</span
+                      >
+                    }
                   </div>
                 </div>
                 <div class="bg-surface-raised border border-border-default rounded-xl p-5">
@@ -958,19 +1045,21 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                 below.
               </p>
               @if (isBrowser) {
-                <img
-                  class="dark:hidden block mb-2"
-                  src="chat-voice-preview-light.png"
-                  alt="chat overview light"
-                />
-                <img
-                  class="dark:block hidden mb-2"
-                  src="chat-voice-preview-dark.png"
-                  alt="chat overview dark"
-                />
+                <div
+                  class="dark:hidden block mb-2 bg-contain bg-center bg-no-repeat bg-surface-overlay h-56 sm:h-72 lg:h-96"
+                  [uiParallax]="'chat-voice-preview-light.png'"
+                  role="img"
+                  aria-label="chat overview light"
+                ></div>
+                <div
+                  class="dark:block hidden mb-2 bg-contain bg-center bg-no-repeat bg-surface-overlay h-56 sm:h-72 lg:h-96"
+                  [uiParallax]="'chat-voice-preview-dark.png'"
+                  role="img"
+                  aria-label="chat overview dark"
+                ></div>
               }
               <div class="space-y-3">
-                <ng-container *ngFor="let step of voiceInputSteps">
+                @for (step of voiceInputSteps; track step.n) {
                   <div
                     class="bg-surface-raised border border-border-default rounded-xl p-4 flex gap-3 items-start"
                   >
@@ -983,7 +1072,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                       {{ step.detail }}
                     </p>
                   </div>
-                </ng-container>
+                }
               </div>
               <div
                 class="mt-4 flex gap-2 items-start bg-info-bg border border-info-border rounded-lg px-4 py-3"
@@ -1014,19 +1103,21 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                 <code class="text-accent">input_audio</code> but doesn't handle it as well as text.
               </p>
               @if (isBrowser) {
-                <img
-                  class="dark:hidden block mb-2"
-                  src="audio-transcribe-light.gif"
-                  alt="chat overview light"
-                />
-                <img
-                  class="dark:block hidden mb-2"
-                  src="audio-transcribe-dark.gif"
-                  alt="chat overview dark"
-                />
+                <div
+                  class="dark:hidden block mb-2 bg-contain bg-center bg-no-repeat bg-surface-overlay h-56 sm:h-72 lg:h-96"
+                  [uiParallax]="'audio-transcribe-light.gif'"
+                  role="img"
+                  aria-label="chat overview light"
+                ></div>
+                <div
+                  class="dark:block hidden mb-2 bg-contain bg-center bg-no-repeat bg-surface-overlay h-56 sm:h-72 lg:h-96"
+                  [uiParallax]="'audio-transcribe-dark.gif'"
+                  role="img"
+                  aria-label="chat overview dark"
+                ></div>
               }
               <div class="space-y-3 mb-4">
-                <ng-container *ngFor="let step of voiceTranscriptionSteps">
+                @for (step of voiceTranscriptionSteps; track step.n) {
                   <div
                     class="bg-surface-raised border border-border-default rounded-xl p-4 flex gap-3 items-start"
                   >
@@ -1039,7 +1130,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                       {{ step.detail }}
                     </p>
                   </div>
-                </ng-container>
+                }
               </div>
               <p class="text-text-secondary mb-4">
                 Any <code class="text-accent">input_audio</code> part that isn't
@@ -1075,7 +1166,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                 never leaves the NestJS trust boundary.
               </p>
               <div class="grid sm:grid-cols-5 gap-6 sm:gap-2 mb-8">
-                <ng-container *ngFor="let step of encryptionFlow">
+                @for (step of encryptionFlow; track step.n) {
                   <div class="encrypt-flow-step flex sm:flex-col items-center gap-3 sm:gap-2">
                     <div
                       [class]="
@@ -1092,7 +1183,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                       </p>
                     </div>
                   </div>
-                </ng-container>
+                }
               </div>
 
               <h3 class="text-base font-semibold text-text-primary mb-3">
@@ -1108,8 +1199,8 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                     </tr>
                   </thead>
                   <tbody>
-                    <ng-container *ngFor="let row of securityBoundaries; let odd = odd">
-                      <tr [class]="odd ? 'bg-surface-raised' : 'bg-surface-base'">
+                    @for (row of securityBoundaries; track row.what) {
+                      <tr [class]="$odd ? 'bg-surface-raised' : 'bg-surface-base'">
                         <td class="px-4 py-3 text-text-primary font-mono text-xs">
                           {{ row.what }}
                         </td>
@@ -1129,7 +1220,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                           }
                         </td>
                       </tr>
-                    </ng-container>
+                    }
                   </tbody>
                 </table>
               </div>
@@ -1155,7 +1246,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                 Authentication &amp; Authorization
               </h2>
               <div class="grid sm:grid-cols-2 gap-4">
-                <ng-container *ngFor="let item of authItems">
+                @for (item of authItems; track item.title) {
                   <div
                     class="bg-surface-raised border border-border-default rounded-xl p-5 flex gap-3"
                   >
@@ -1185,7 +1276,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                       <p class="text-xs text-text-secondary leading-relaxed">{{ item.desc }}</p>
                     </div>
                   </div>
-                </ng-container>
+                }
               </div>
             </section>
 
@@ -1203,7 +1294,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                 MongoDB collection.
               </p>
               <div class="grid sm:grid-cols-3 gap-4 mb-5">
-                <ng-container *ngFor="let tier of tokenTiers">
+                @for (tier of tokenTiers; track tier.label) {
                   <div [class]="'card-hover rounded-xl p-5 border ' + tier.cardClass">
                     <p
                       [class]="'text-xs font-bold uppercase tracking-wider mb-1 ' + tier.labelClass"
@@ -1213,7 +1304,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                     <p class="text-2xl font-bold text-text-primary mb-1">{{ tier.tokens }}</p>
                     <p class="text-xs text-text-muted">tokens / interval</p>
                   </div>
-                </ng-container>
+                }
               </div>
               <p class="text-xs text-text-muted">
                 After each completed inference,
@@ -1245,16 +1336,18 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
 
               <h3 class="text-base font-semibold text-text-primary mb-2">User Management</h3>
               @if (isBrowser) {
-                <img
-                  class="dark:hidden block mb-2 rounded-xl border border-border-default"
-                  src="admin-users-preview-light.png"
-                  alt="admin CMS user management light"
-                />
-                <img
-                  class="dark:block hidden mb-6 rounded-xl border border-border-default"
-                  src="admin-users-preview-dark.png"
-                  alt="admin CMS user management dark"
-                />
+                <div
+                  class="dark:hidden block mb-2 rounded-xl border border-border-default bg-contain bg-center bg-no-repeat bg-surface-overlay h-56 sm:h-72 lg:h-96"
+                  [uiParallax]="'admin-users-preview-light.png'"
+                  role="img"
+                  aria-label="admin CMS user management light"
+                ></div>
+                <div
+                  class="dark:block hidden mb-6 rounded-xl border border-border-default bg-contain bg-center bg-no-repeat bg-surface-overlay h-56 sm:h-72 lg:h-96"
+                  [uiParallax]="'admin-users-preview-dark.png'"
+                  role="img"
+                  aria-label="admin CMS user management dark"
+                ></div>
               }
               <p class="text-text-secondary mb-6">
                 List every user with role, subscription, activation status, and current token usage.
@@ -1268,16 +1361,18 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                 Token Limit Config Management
               </h3>
               @if (isBrowser) {
-                <img
-                  class="dark:hidden block mb-2 rounded-xl border border-border-default"
-                  src="admin-tokens-preview-light.png"
-                  alt="admin CMS token limit config management light"
-                />
-                <img
-                  class="dark:block hidden mb-6 rounded-xl border border-border-default"
-                  src="admin-tokens-preview-dark.png"
-                  alt="admin CMS token limit config management dark"
-                />
+                <div
+                  class="dark:hidden block mb-2 rounded-xl border border-border-default bg-contain bg-center bg-no-repeat bg-surface-overlay h-56 sm:h-72 lg:h-96"
+                  [uiParallax]="'admin-tokens-preview-light.png'"
+                  role="img"
+                  aria-label="admin CMS token limit config management light"
+                ></div>
+                <div
+                  class="dark:block hidden mb-6 rounded-xl border border-border-default bg-contain bg-center bg-no-repeat bg-surface-overlay h-56 sm:h-72 lg:h-96"
+                  [uiParallax]="'admin-tokens-preview-dark.png'"
+                  role="img"
+                  aria-label="admin CMS token limit config management dark"
+                ></div>
               }
               <p class="text-text-secondary mb-6">
                 List, create, edit, and delete
@@ -1310,8 +1405,8 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                     </tr>
                   </thead>
                   <tbody>
-                    <ng-container *ngFor="let route of adminApiRoutes; let odd = odd">
-                      <tr [class]="odd ? 'bg-surface-raised' : 'bg-surface-base'">
+                    @for (route of adminApiRoutes; track route.method + route.path) {
+                      <tr [class]="$odd ? 'bg-surface-raised' : 'bg-surface-base'">
                         <td class="px-4 py-2.5">
                           <span [class]="'badge-pill ' + route.methodClass">{{
                             route.method
@@ -1324,7 +1419,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                           {{ route.desc }}
                         </td>
                       </tr>
-                    </ng-container>
+                    }
                   </tbody>
                 </table>
               </div>
@@ -1349,8 +1444,8 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                     </tr>
                   </thead>
                   <tbody>
-                    <ng-container *ngFor="let route of apiRoutes; let odd = odd">
-                      <tr [class]="odd ? 'bg-surface-raised' : 'bg-surface-base'">
+                    @for (route of apiRoutes; track route.method + route.path) {
+                      <tr [class]="$odd ? 'bg-surface-raised' : 'bg-surface-base'">
                         <td class="px-4 py-2.5">
                           <span [class]="'badge-pill ' + route.methodClass">{{
                             route.method
@@ -1363,7 +1458,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                           {{ route.desc }}
                         </td>
                       </tr>
-                    </ng-container>
+                    }
                   </tbody>
                 </table>
               </div>
@@ -1438,6 +1533,10 @@ export class ReadmeComponent implements AfterViewInit, OnDestroy {
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
   }
 
+  scrollToTop(): void {
+    document.getElementById('hero')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
   readonly navSections = [
     { id: 'overview', label: 'Overview' },
     { id: 'why-completions', label: 'Chat Completions API' },
@@ -1462,6 +1561,7 @@ export class ReadmeComponent implements AfterViewInit, OnDestroy {
   ];
 
   readonly activeSection = signal<string>('overview');
+  readonly mobileNavOpen = signal(false);
   private sectionObserver?: IntersectionObserver;
 
   ngAfterViewInit(): void {
