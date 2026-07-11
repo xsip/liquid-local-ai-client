@@ -371,6 +371,9 @@ To add new tools, create an `@Injectable()` class in `apps/api/src/tools/`, deco
 
 ## Custom MCP Servers
 
+![Header](https://raw.githubusercontent.com/xsip/liquid-local-ai-client/refs/heads/main/apps/ui/public/mcp-management-dialog.png)
+
+
 Beyond the backend's built-in MCP server/client, each user can register their **own external MCP servers** on their account and control exactly which of their tools are available — account-wide or per chat.
 
 ### How It Works
@@ -401,6 +404,10 @@ Beyond the backend's built-in MCP server/client, each user can register their **
 ---
 
 ## Image Generation (InvokeAI)
+
+
+![Header](https://raw.githubusercontent.com/xsip/liquid-local-ai-client/refs/heads/main/apps/ui/public/chat-image-generator.png)
+
 
 The `generate-image-tool` MCP tool allows the language model to generate images on demand during a conversation. It requires a locally running [InvokeAI](https://invoke-ai.github.io/InvokeAI/) instance.
 
@@ -453,6 +460,8 @@ Maximum file size: **10 MB** per file.
 ---
 
 ## Voice Input
+
+![Header](https://raw.githubusercontent.com/xsip/liquid-local-ai-client/refs/heads/main/apps/ui/public/chat-voice-preview.png)
 
 A microphone button next to the chat input lets you record a voice message and send it straight to the model as audio — no separate speech-to-text step in this codebase; the inference server itself (llama.cpp, etc.) handles transcription/understanding via its own audio input support.
 

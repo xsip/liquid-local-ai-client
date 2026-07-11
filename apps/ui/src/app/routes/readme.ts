@@ -121,10 +121,12 @@ import {
             >
               <ng-icon name="heroCommandLine" class="w-4 h-4 text-accent" />
             </span>
-            <span class="font-semibold text-sm text-text-primary truncate">Liquid Local AI Client</span>
+            <span class="font-semibold text-sm text-text-primary truncate"
+              >Liquid Local AI Client</span
+            >
             <span
               class="hidden sm:inline-flex badge-pill bg-accent/10 text-accent-text border border-accent/20 ml-1"
-            >docs</span
+              >docs</span
             >
           </div>
 
@@ -161,23 +163,23 @@ import {
         <div class="relative max-w-6xl mx-auto px-4 sm:px-8 py-16 sm:py-24">
           <div class="flex flex-wrap items-center gap-2 mb-6">
             <span class="badge-pill bg-accent/10 text-accent-text border border-accent/20"
-            >Angular 21</span
+              >Angular 21</span
             >
             <span
               class="badge-pill bg-reasoning-bg text-reasoning-text border border-reasoning-border"
-            >NestJS 11</span
+              >NestJS 11</span
             >
             <span class="badge-pill bg-tool-bg text-tool-text border border-tool-border"
-            >MongoDB</span
+              >MongoDB</span
             >
             <span class="badge-pill bg-success-bg text-success-text border border-success-border"
-            >MCP</span
+              >MCP</span
             >
             <span class="badge-pill bg-warn-bg text-warn-text border border-warn-border"
-            >AES Encryption</span
+              >AES Encryption</span
             >
             <span class="badge-pill bg-info-bg text-info-text border border-info-border"
-            >InvokeAI</span
+              >InvokeAI</span
             >
           </div>
 
@@ -187,7 +189,7 @@ import {
             Liquid Local<br />
             <span
               class="text-transparent bg-clip-text bg-gradient-to-r from-accent to-reasoning-text"
-            >AI Client</span
+              >AI Client</span
             >
           </h1>
           <p class="text-lg sm:text-xl text-text-secondary max-w-2xl mb-8 leading-relaxed">
@@ -220,8 +222,12 @@ import {
       <div class="max-w-7xl mx-auto px-4 sm:px-8 py-12">
         <div class="flex gap-10 items-start">
           <!-- ── SIDENAV ──────────────────────────────────────────────────────── -->
-          <aside class="hidden lg:block w-56 shrink-0 sticky top-20 self-start max-h-[calc(100vh-6rem)] overflow-y-auto pr-2">
-            <p class="text-[10px] text-text-muted uppercase tracking-widest font-semibold mb-3 px-2">
+          <aside
+            class="hidden lg:block w-56 shrink-0 sticky top-20 self-start max-h-[calc(100vh-6rem)] overflow-y-auto pr-2"
+          >
+            <p
+              class="text-[10px] text-text-muted uppercase tracking-widest font-semibold mb-3 px-2"
+            >
               On this page
             </p>
             <nav class="flex flex-col gap-0.5">
@@ -241,346 +247,381 @@ import {
 
           <!-- ── SECTIONS ─────────────────────────────────────────────────────── -->
           <div class="flex-1 min-w-0 space-y-20">
-        <!-- BREAKING CHANGE BANNER -->
-        <section>
-          <div
-            class="flex gap-3 items-start bg-warn-bg border border-warn-border rounded-xl px-5 py-4"
-          >
-            <ng-icon
-              name="heroExclamationTriangle"
-              class="w-5 h-5 text-warn-text flex-shrink-0 mt-0.5"
-            />
-            <div>
-              <p class="font-semibold text-sm text-warn-text mb-1">Breaking change</p>
-              <p class="text-xs text-warn-text leading-relaxed">
-                LM Studio's native <code class="bg-surface-overlay px-1 rounded">/api/v1/chat</code>
-                API and the OpenAI-compatible
-                <code class="bg-surface-overlay px-1 rounded">/v1/responses/create</code>
-                (Responses API) endpoint have been <strong>removed</strong> — the modules, routes,
-                and UI code that supported them no longer exist in this repo. See
-                <a href="#why-completions" class="underline">Chat Completions API</a> below for why
-                and what replaced them.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <!-- OVERVIEW IMAGE -->
-        <section>
-          <img class="dark:hidden block" src="chat-preview-light.png" alt="chat overview light" />
-          <img class="dark:block hidden" src="chat-preview-dark.png" alt="chat overview dark" />
-        </section>
-
-        <!-- OVERVIEW -->
-        <section id="overview">
-          <h2 class="text-2xl font-bold text-text-primary mb-2">Overview</h2>
-          <p class="text-text-secondary mb-6">
-            This Nx monorepo hosts two applications that act as a single product: an authenticated
-            proxy in front of your local inference server, and the Angular chat interface on top
-            of it. Every chat session is persisted in MongoDB, token usage is tracked per user, and
-            the backend runs its own <strong>MCP client</strong> that calls tools on-demand as the
-            model requests them — rather than relying on the inference server to orchestrate tool
-            calls itself.
-          </p>
-          <div class="grid sm:grid-cols-2 gap-4">
-            <div class="card-hover bg-surface-raised border border-border-default rounded-xl p-6">
-              <div class="flex items-center gap-3 mb-3">
-                <span
-                  class="w-9 h-9 rounded-lg bg-accent/15 flex items-center justify-center text-accent"
-                >
-                  <ng-icon name="heroComputerDesktop" class="w-5 h-5" />
-                </span>
-                <div>
-                  <p class="font-semibold text-text-primary">UI</p>
-                  <code class="text-xs text-accent">apps/ui</code>
-                </div>
-              </div>
-              <p class="text-sm text-text-secondary">
-                Angular 21 single-page application with real-time SSE streaming, image
-                upload/attachment, and a Markdown-rendering message view shared across chat routes.
-              </p>
-            </div>
-
-            <div class="card-hover bg-surface-raised border border-border-default rounded-xl p-6">
-              <div class="flex items-center gap-3 mb-3">
-                <span
-                  class="w-9 h-9 rounded-lg bg-reasoning-bg flex items-center justify-center text-reasoning-text"
-                >
-                  <ng-icon name="heroServer" class="w-5 h-5" />
-                </span>
-                <div>
-                  <p class="font-semibold text-text-primary">API</p>
-                  <code class="text-xs text-reasoning-text">apps/api</code>
-                </div>
-              </div>
-              <p class="text-sm text-text-secondary">
-                NestJS 11 backend acting as an authenticated inference-server proxy, MCP client
-                <em>and</em> server, InvokeAI image-gen integration, and MongoDB persistence layer
-                with JWT auth and token rate limiting.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <!-- WHY CHAT COMPLETIONS -->
-        <section id="why-completions">
-          <h2 class="text-2xl font-bold text-text-primary mb-2">
-            Chat Completions API <span class="text-text-muted text-base font-normal">(current default)</span>
-          </h2>
-          <p class="text-text-secondary mb-4">
-            LM Studio disabled connecting to localhost MCP servers, which broke this project's
-            original architecture: the Responses API worked by handing LM Studio a
-            <code class="text-xs bg-surface-overlay px-1.5 py-0.5 rounded text-tool-text"
-            >type: 'mcp'</code
-            >
-            tool pointing at this backend's MCP server, relying on LM Studio itself to connect,
-            list tools, call them, and feed results back to the model. With per-request localhost
-            MCP connections disabled, that flow no longer works — and it was never portable to
-            other backends anyway, since MCP tool passthrough is a Responses-API-only convenience.
-          </p>
-          <p class="text-text-secondary mb-6">
-            The fix: stop depending on the inference server for MCP orchestration entirely, and do
-            it ourselves. The backend now runs its own MCP client
-            (<code class="text-xs bg-surface-overlay px-1.5 py-0.5 rounded text-tool-text"
-            >apps/api/src/modules/mcp-client</code
-            >) that connects directly to the MCP tool server, lists available tools, and
-            translates them into plain OpenAI <strong>function-tool</strong> definitions. Chat
-            requests go out over the standard Chat Completions API
-            (<code class="text-xs bg-surface-overlay px-1.5 py-0.5 rounded text-tool-text"
-            >/v1/chat/completions</code
-            >) with those function tools attached. When the model returns
-            <code class="text-xs bg-surface-overlay px-1.5 py-0.5 rounded text-tool-text"
-            >tool_calls</code
-            >, the backend executes them itself via the MCP client and loops back into the model
-            until it produces a final answer.
-          </p>
-          <div class="grid sm:grid-cols-3 gap-3">
-            <div class="bg-error-bg border border-error-border rounded-lg p-4">
-              <p class="text-error-text text-xs uppercase tracking-wider font-semibold mb-1">
-                Removed
-              </p>
-              <p class="font-medium text-sm text-text-primary">/api/v1/chat</p>
-              <p class="text-text-muted text-xs mt-1">LM Studio native API</p>
-            </div>
-            <div class="bg-error-bg border border-error-border rounded-lg p-4">
-              <p class="text-error-text text-xs uppercase tracking-wider font-semibold mb-1">
-                Removed
-              </p>
-              <p class="font-medium text-sm text-text-primary">/v1/responses/create</p>
-              <p class="text-text-muted text-xs mt-1">OpenAI Responses API</p>
-            </div>
-            <div class="bg-success-bg border border-success-border rounded-lg p-4">
-              <p class="text-success-text text-xs uppercase tracking-wider font-semibold mb-1">
-                Only supported path
-              </p>
-              <p class="font-medium text-sm text-text-primary">/v1/chat/completions</p>
-              <p class="text-text-muted text-xs mt-1">Works with any OpenAI-compatible backend</p>
-            </div>
-          </div>
-          <p class="text-xs text-text-muted mt-4">
-            Known limitation: file attachments are text-only-friendly (images are inlined as
-            vision content; other file types are referenced by ID and fetched on demand via
-            <code class="text-accent">get-content-from-file-ids</code>). Reasoning-effort and
-            AI-decided chat naming are still supported, matching the old Responses-API experience.
-          </p>
-        </section>
-
-        <!-- RESILIENT BACKGROUND GENERATION -->
-        <section id="resilient-generation">
-          <h2 class="text-2xl font-bold text-text-primary mb-2">Resilient Background Generation</h2>
-          <p class="text-text-secondary mb-6">
-            A chat generation isn't tied to the HTTP connection that started it. Refreshing the
-            page, closing the tab, or switching to another chat while the AI is still responding
-            doesn't lose or corrupt anything — the backend keeps generating in the background, and
-            the frontend reattaches to it automatically.
-          </p>
-          <div class="space-y-3 mb-4">
-            <ng-container *ngFor="let step of resilientGenerationSteps">
+            <!-- BREAKING CHANGE BANNER -->
+            <section>
               <div
-                class="bg-surface-raised border border-border-default rounded-xl p-4 flex gap-3 items-start"
+                class="flex gap-3 items-start bg-warn-bg border border-warn-border rounded-xl px-5 py-4"
               >
-                <span
-                  class="flex-shrink-0 w-7 h-7 rounded-full bg-accent/15 border border-accent/30 flex items-center justify-center text-accent font-bold text-xs"
-                >{{ step.n }}</span
+                <ng-icon
+                  name="heroExclamationTriangle"
+                  class="w-5 h-5 text-warn-text flex-shrink-0 mt-0.5"
+                />
+                <div>
+                  <p class="font-semibold text-sm text-warn-text mb-1">Breaking change</p>
+                  <p class="text-xs text-warn-text leading-relaxed">
+                    LM Studio's native
+                    <code class="bg-surface-overlay px-1 rounded">/api/v1/chat</code>
+                    API and the OpenAI-compatible
+                    <code class="bg-surface-overlay px-1 rounded">/v1/responses/create</code>
+                    (Responses API) endpoint have been <strong>removed</strong> — the modules,
+                    routes, and UI code that supported them no longer exist in this repo. See
+                    <a href="#why-completions" class="underline">Chat Completions API</a> below for
+                    why and what replaced them.
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <!-- OVERVIEW IMAGE -->
+            <section>
+              <img
+                class="dark:hidden block"
+                src="chat-preview-light.png"
+                alt="chat overview light"
+              />
+              <img class="dark:block hidden" src="chat-preview-dark.png" alt="chat overview dark" />
+            </section>
+
+            <!-- OVERVIEW -->
+            <section id="overview">
+              <h2 class="text-2xl font-bold text-text-primary mb-2">Overview</h2>
+              <p class="text-text-secondary mb-6">
+                This Nx monorepo hosts two applications that act as a single product: an
+                authenticated proxy in front of your local inference server, and the Angular chat
+                interface on top of it. Every chat session is persisted in MongoDB, token usage is
+                tracked per user, and the backend runs its own <strong>MCP client</strong> that
+                calls tools on-demand as the model requests them — rather than relying on the
+                inference server to orchestrate tool calls itself.
+              </p>
+              <div class="grid sm:grid-cols-2 gap-4">
+                <div
+                  class="card-hover bg-surface-raised border border-border-default rounded-xl p-6"
                 >
-                <p class="text-sm text-text-secondary leading-relaxed">
-                  <strong class="text-text-primary">{{ step.title }}</strong> — {{ step.detail }}
+                  <div class="flex items-center gap-3 mb-3">
+                    <span
+                      class="w-9 h-9 rounded-lg bg-accent/15 flex items-center justify-center text-accent"
+                    >
+                      <ng-icon name="heroComputerDesktop" class="w-5 h-5" />
+                    </span>
+                    <div>
+                      <p class="font-semibold text-text-primary">UI</p>
+                      <code class="text-xs text-accent">apps/ui</code>
+                    </div>
+                  </div>
+                  <p class="text-sm text-text-secondary">
+                    Angular 21 single-page application with real-time SSE streaming, image
+                    upload/attachment, and a Markdown-rendering message view shared across chat
+                    routes.
+                  </p>
+                </div>
+
+                <div
+                  class="card-hover bg-surface-raised border border-border-default rounded-xl p-6"
+                >
+                  <div class="flex items-center gap-3 mb-3">
+                    <span
+                      class="w-9 h-9 rounded-lg bg-reasoning-bg flex items-center justify-center text-reasoning-text"
+                    >
+                      <ng-icon name="heroServer" class="w-5 h-5" />
+                    </span>
+                    <div>
+                      <p class="font-semibold text-text-primary">API</p>
+                      <code class="text-xs text-reasoning-text">apps/api</code>
+                    </div>
+                  </div>
+                  <p class="text-sm text-text-secondary">
+                    NestJS 11 backend acting as an authenticated inference-server proxy, MCP client
+                    <em>and</em> server, InvokeAI image-gen integration, and MongoDB persistence
+                    layer with JWT auth and token rate limiting.
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <!-- WHY CHAT COMPLETIONS -->
+            <section id="why-completions">
+              <h2 class="text-2xl font-bold text-text-primary mb-2">
+                Chat Completions API
+                <span class="text-text-muted text-base font-normal">(current default)</span>
+              </h2>
+              <p class="text-text-secondary mb-4">
+                LM Studio disabled connecting to localhost MCP servers, which broke this project's
+                original architecture: the Responses API worked by handing LM Studio a
+                <code class="text-xs bg-surface-overlay px-1.5 py-0.5 rounded text-tool-text"
+                  >type: 'mcp'</code
+                >
+                tool pointing at this backend's MCP server, relying on LM Studio itself to connect,
+                list tools, call them, and feed results back to the model. With per-request
+                localhost MCP connections disabled, that flow no longer works — and it was never
+                portable to other backends anyway, since MCP tool passthrough is a
+                Responses-API-only convenience.
+              </p>
+              <p class="text-text-secondary mb-6">
+                The fix: stop depending on the inference server for MCP orchestration entirely, and
+                do it ourselves. The backend now runs its own MCP client (<code
+                  class="text-xs bg-surface-overlay px-1.5 py-0.5 rounded text-tool-text"
+                  >apps/api/src/modules/mcp-client</code
+                >) that connects directly to the MCP tool server, lists available tools, and
+                translates them into plain OpenAI <strong>function-tool</strong> definitions. Chat
+                requests go out over the standard Chat Completions API (<code
+                  class="text-xs bg-surface-overlay px-1.5 py-0.5 rounded text-tool-text"
+                  >/v1/chat/completions</code
+                >) with those function tools attached. When the model returns
+                <code class="text-xs bg-surface-overlay px-1.5 py-0.5 rounded text-tool-text"
+                  >tool_calls</code
+                >, the backend executes them itself via the MCP client and loops back into the model
+                until it produces a final answer.
+              </p>
+              <div class="grid sm:grid-cols-3 gap-3">
+                <div class="bg-error-bg border border-error-border rounded-lg p-4">
+                  <p class="text-error-text text-xs uppercase tracking-wider font-semibold mb-1">
+                    Removed
+                  </p>
+                  <p class="font-medium text-sm text-text-primary">/api/v1/chat</p>
+                  <p class="text-text-muted text-xs mt-1">LM Studio native API</p>
+                </div>
+                <div class="bg-error-bg border border-error-border rounded-lg p-4">
+                  <p class="text-error-text text-xs uppercase tracking-wider font-semibold mb-1">
+                    Removed
+                  </p>
+                  <p class="font-medium text-sm text-text-primary">/v1/responses/create</p>
+                  <p class="text-text-muted text-xs mt-1">OpenAI Responses API</p>
+                </div>
+                <div class="bg-success-bg border border-success-border rounded-lg p-4">
+                  <p class="text-success-text text-xs uppercase tracking-wider font-semibold mb-1">
+                    Only supported path
+                  </p>
+                  <p class="font-medium text-sm text-text-primary">/v1/chat/completions</p>
+                  <p class="text-text-muted text-xs mt-1">
+                    Works with any OpenAI-compatible backend
+                  </p>
+                </div>
+              </div>
+              <p class="text-xs text-text-muted mt-4">
+                Known limitation: file attachments are text-only-friendly (images are inlined as
+                vision content; other file types are referenced by ID and fetched on demand via
+                <code class="text-accent">get-content-from-file-ids</code>). Reasoning-effort and
+                AI-decided chat naming are still supported, matching the old Responses-API
+                experience.
+              </p>
+            </section>
+
+            <!-- RESILIENT BACKGROUND GENERATION -->
+            <section id="resilient-generation">
+              <h2 class="text-2xl font-bold text-text-primary mb-2">
+                Resilient Background Generation
+              </h2>
+              <p class="text-text-secondary mb-6">
+                A chat generation isn't tied to the HTTP connection that started it. Refreshing the
+                page, closing the tab, or switching to another chat while the AI is still responding
+                doesn't lose or corrupt anything — the backend keeps generating in the background,
+                and the frontend reattaches to it automatically.
+              </p>
+              <div class="space-y-3 mb-4">
+                <ng-container *ngFor="let step of resilientGenerationSteps">
+                  <div
+                    class="bg-surface-raised border border-border-default rounded-xl p-4 flex gap-3 items-start"
+                  >
+                    <span
+                      class="flex-shrink-0 w-7 h-7 rounded-full bg-accent/15 border border-accent/30 flex items-center justify-center text-accent font-bold text-xs"
+                      >{{ step.n }}</span
+                    >
+                    <p class="text-sm text-text-secondary leading-relaxed">
+                      <strong class="text-text-primary">{{ step.title }}</strong> —
+                      {{ step.detail }}
+                    </p>
+                  </div>
+                </ng-container>
+              </div>
+              <div class="bg-surface-overlay border border-border-subtle rounded-xl p-4">
+                <p class="text-xs text-text-secondary">
+                  <code class="text-accent"
+                    >GET /openai/completions-stream/resume?internalChatId=</code
+                  >
+                  replays every chunk already sent for that chat's in-flight generation, then
+                  streams live ones — ending immediately with no data if nothing is actually
+                  in-flight.
                 </p>
               </div>
-            </ng-container>
-          </div>
-          <div class="bg-surface-overlay border border-border-subtle rounded-xl p-4">
-            <p class="text-xs text-text-secondary">
-              <code class="text-accent">GET /openai/completions-stream/resume?internalChatId=</code>
-              replays every chunk already sent for that chat's in-flight generation, then streams
-              live ones — ending immediately with no data if nothing is actually in-flight.
-            </p>
-          </div>
-        </section>
+            </section>
 
-        <!-- ARCHITECTURE -->
-        <section id="architecture">
-          <h2 class="text-2xl font-bold text-text-primary mb-2">Architecture</h2>
-          <p class="text-text-secondary mb-6">
-            Unlike the old Responses-API flow — where LM Studio itself connected to the MCP server
-            mid-inference — the NestJS backend now acts as the MCP client itself: it lists tools
-            from its own MCP server, attaches them to the Chat Completions request as plain
-            function tools, and executes any <code class="text-accent">tool_calls</code> the model
-            returns before looping back into the model. The inference server never talks to MCP
-            directly, so this works with any backend that supports standard OpenAI function
-            calling.
-          </p>
-          <div class="arch-box p-4 mb-6 text-xs font-mono leading-relaxed overflow-x-auto text-text-secondary">
-            <pre>Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completions──▶ Inference server
+            <!-- ARCHITECTURE -->
+            <section id="architecture">
+              <h2 class="text-2xl font-bold text-text-primary mb-2">Architecture</h2>
+              <p class="text-text-secondary mb-6">
+                Unlike the old Responses-API flow — where LM Studio itself connected to the MCP
+                server mid-inference — the NestJS backend now acts as the MCP client itself: it
+                lists tools from its own MCP server, attaches them to the Chat Completions request
+                as plain function tools, and executes any
+                <code class="text-accent">tool_calls</code> the model returns before looping back
+                into the model. The inference server never talks to MCP directly, so this works with
+                any backend that supports standard OpenAI function calling.
+              </p>
+              <div
+                class="arch-box p-4 mb-6 text-xs font-mono leading-relaxed overflow-x-auto text-text-secondary"
+              >
+                <pre>
+Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completions──▶ Inference server
                                     │        ▲
                           tool_calls loop    │ generate-image-tool
                                     ▼        │
                              MCP Client ──▶ MCP Server (@rekog/mcp-nest, self)
                                     │
                                     ▼
-                           InvokeAI (9090) — txt2img via REST + Socket.IO</pre>
-          </div>
-          <div class="grid sm:grid-cols-4 gap-3">
-            <div class="bg-surface-raised border border-border-default rounded-lg p-4 text-center">
-              <p class="text-text-muted text-xs uppercase tracking-wider font-semibold mb-1">
-                Frontend
-              </p>
-              <p class="font-medium text-text-primary">Angular 21</p>
-              <p class="text-text-muted text-xs mt-1">localhost:4200</p>
-            </div>
-            <div class="bg-accent-subtle border border-accent/25 rounded-lg p-4 text-center">
-              <p class="text-text-muted text-xs uppercase tracking-wider font-semibold mb-1">
-                Backend + MCP
-              </p>
-              <p class="font-medium text-text-primary">NestJS 11</p>
-              <p class="text-text-muted text-xs mt-1">localhost:8888</p>
-            </div>
-            <div class="bg-surface-raised border border-border-default rounded-lg p-4 text-center">
-              <p class="text-text-muted text-xs uppercase tracking-wider font-semibold mb-1">
-                Inference Server
-              </p>
-              <p class="font-medium text-text-primary">Any OpenAI-compatible</p>
-              <p class="text-text-muted text-xs mt-1">LM Studio, Ollama, llama.cpp, vLLM</p>
-            </div>
-            <div class="bg-surface-raised border border-border-default rounded-lg p-4 text-center">
-              <p class="text-text-muted text-xs uppercase tracking-wider font-semibold mb-1">
-                Image Gen
-              </p>
-              <p class="font-medium text-text-primary">InvokeAI</p>
-              <p class="text-text-muted text-xs mt-1">localhost:9090</p>
-            </div>
-          </div>
-        </section>
-
-        <!-- TECH STACK -->
-        <section id="tech-stack">
-          <h2 class="text-2xl font-bold text-text-primary mb-6">Tech Stack</h2>
-          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            <ng-container *ngFor="let item of techStack">
-              <div
-                class="card-hover bg-surface-raised border border-border-default rounded-xl p-4 flex flex-col gap-2"
-              >
-                <span [class]="'badge-pill self-start ' + item.badgeClass">{{ item.layer }}</span>
-                <p class="text-sm font-semibold text-text-primary">{{ item.tech }}</p>
-                <p class="text-xs text-text-muted">{{ item.version }}</p>
-              </div>
-            </ng-container>
-          </div>
-        </section>
-
-        <!-- FEATURES -->
-        <section id="features">
-          <h2 class="text-2xl font-bold text-text-primary mb-6">Features</h2>
-          <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <ng-container *ngFor="let feat of features">
-              <div
-                class="card-hover bg-surface-raised border border-border-default rounded-xl p-5 flex gap-4"
-              >
-                <span
-                  [class]="
-                    'mt-0.5 w-8 h-8 flex-shrink-0 rounded-lg flex items-center justify-center ' +
-                    feat.iconBg
-                  "
+                           InvokeAI (9090) — txt2img via REST + Socket.IO</pre
                 >
-                  <svg
-                    class="w-4 h-4"
-                    [class]="feat.iconColor"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+              </div>
+              <div class="grid sm:grid-cols-4 gap-3">
+                <div
+                  class="bg-surface-raised border border-border-default rounded-lg p-4 text-center"
+                >
+                  <p class="text-text-muted text-xs uppercase tracking-wider font-semibold mb-1">
+                    Frontend
+                  </p>
+                  <p class="font-medium text-text-primary">Angular 21</p>
+                  <p class="text-text-muted text-xs mt-1">localhost:4200</p>
+                </div>
+                <div class="bg-accent-subtle border border-accent/25 rounded-lg p-4 text-center">
+                  <p class="text-text-muted text-xs uppercase tracking-wider font-semibold mb-1">
+                    Backend + MCP
+                  </p>
+                  <p class="font-medium text-text-primary">NestJS 11</p>
+                  <p class="text-text-muted text-xs mt-1">localhost:8888</p>
+                </div>
+                <div
+                  class="bg-surface-raised border border-border-default rounded-lg p-4 text-center"
+                >
+                  <p class="text-text-muted text-xs uppercase tracking-wider font-semibold mb-1">
+                    Inference Server
+                  </p>
+                  <p class="font-medium text-text-primary">Any OpenAI-compatible</p>
+                  <p class="text-text-muted text-xs mt-1">LM Studio, Ollama, llama.cpp, vLLM</p>
+                </div>
+                <div
+                  class="bg-surface-raised border border-border-default rounded-lg p-4 text-center"
+                >
+                  <p class="text-text-muted text-xs uppercase tracking-wider font-semibold mb-1">
+                    Image Gen
+                  </p>
+                  <p class="font-medium text-text-primary">InvokeAI</p>
+                  <p class="text-text-muted text-xs mt-1">localhost:9090</p>
+                </div>
+              </div>
+            </section>
+
+            <!-- TECH STACK -->
+            <section id="tech-stack">
+              <h2 class="text-2xl font-bold text-text-primary mb-6">Tech Stack</h2>
+              <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                <ng-container *ngFor="let item of techStack">
+                  <div
+                    class="card-hover bg-surface-raised border border-border-default rounded-xl p-4 flex flex-col gap-2"
                   >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      [attr.d]="feat.icon"
-                    />
-                  </svg>
-                </span>
-                <div>
-                  <p class="font-semibold text-sm text-text-primary mb-1">{{ feat.title }}</p>
-                  <p class="text-xs text-text-secondary leading-relaxed">{{ feat.desc }}</p>
-                </div>
+                    <span [class]="'badge-pill self-start ' + item.badgeClass">{{
+                      item.layer
+                    }}</span>
+                    <p class="text-sm font-semibold text-text-primary">{{ item.tech }}</p>
+                    <p class="text-xs text-text-muted">{{ item.version }}</p>
+                  </div>
+                </ng-container>
               </div>
-            </ng-container>
-          </div>
-        </section>
+            </section>
 
-        <!-- GETTING STARTED -->
-        <section id="getting-started">
-          <h2 class="text-2xl font-bold text-text-primary mb-2">Getting Started</h2>
-          <p class="text-text-secondary mb-8">Up and running in a few steps.</p>
-          <div class="space-y-4">
-            <ng-container *ngFor="let step of steps; let last = last">
-              <div class="relative flex gap-4 sm:gap-5" [class.step-line]="!last">
-                <div
-                  class="flex-shrink-0 w-10 h-10 rounded-full bg-accent/15 border border-accent/30 flex items-center justify-center text-accent font-bold text-sm z-10"
-                >
-                  {{ step.n }}
-                </div>
-                <div
-                  class="flex-1 min-w-0 bg-surface-raised border border-border-default rounded-xl p-4 sm:p-5 mb-3"
-                >
-                  <p class="font-semibold text-text-primary mb-2">{{ step.title }}</p>
-                  @if (step.desc) {
-                    <p class="text-sm text-text-secondary mb-3">{{ step.desc }}</p>
-                  }
-                  @if (step.code) {
-                    <div class="rounded-lg overflow-hidden border border-border-subtle">
-                      <pre class="bg-surface-overlay px-4 py-3 text-xs text-accent">{{
-                          step.code
-                        }}</pre>
+            <!-- FEATURES -->
+            <section id="features">
+              <h2 class="text-2xl font-bold text-text-primary mb-6">Features</h2>
+              <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <ng-container *ngFor="let feat of features">
+                  <div
+                    class="card-hover bg-surface-raised border border-border-default rounded-xl p-5 flex gap-4"
+                  >
+                    <span
+                      [class]="
+                        'mt-0.5 w-8 h-8 flex-shrink-0 rounded-lg flex items-center justify-center ' +
+                        feat.iconBg
+                      "
+                    >
+                      <svg
+                        class="w-4 h-4"
+                        [class]="feat.iconColor"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          [attr.d]="feat.icon"
+                        />
+                      </svg>
+                    </span>
+                    <div>
+                      <p class="font-semibold text-sm text-text-primary mb-1">{{ feat.title }}</p>
+                      <p class="text-xs text-text-secondary leading-relaxed">{{ feat.desc }}</p>
                     </div>
-                  }
-                </div>
+                  </div>
+                </ng-container>
               </div>
-            </ng-container>
-          </div>
-        </section>
+            </section>
 
-        <!-- ENV VARS -->
-        <section id="environment-variables">
-          <h2 class="text-2xl font-bold text-text-primary mb-2">Environment Variables</h2>
-          <p class="text-text-secondary mb-6">
-            Create
-            <code class="text-xs bg-surface-overlay px-1.5 py-0.5 rounded text-success-text"
-            >apps/api/.env</code
-            >
-            with the following:
-          </p>
-          <div class="bg-surface-raised border border-border-default rounded-xl overflow-hidden">
-            <div
-              class="flex items-center gap-2 px-4 py-2.5 bg-surface-overlay border-b border-border-subtle"
-            >
-              <span class="w-3 h-3 rounded-full bg-error-muted/70"></span>
-              <span class="w-3 h-3 rounded-full bg-warn-muted/70"></span>
-              <span class="w-3 h-3 rounded-full bg-success-muted/70"></span>
-              <span class="ml-2 text-xs text-text-muted font-mono">apps/api/.env</span>
-            </div>
-            <div class="overflow-x-auto">
-              <pre
-                class="px-5 py-4 text-xs leading-relaxed text-text-secondary"
-              ><span class="text-text-muted"># MongoDB connection URI</span>
+            <!-- GETTING STARTED -->
+            <section id="getting-started">
+              <h2 class="text-2xl font-bold text-text-primary mb-2">Getting Started</h2>
+              <p class="text-text-secondary mb-8">Up and running in a few steps.</p>
+              <div class="space-y-4">
+                <ng-container *ngFor="let step of steps; let last = last">
+                  <div class="relative flex gap-4 sm:gap-5" [class.step-line]="!last">
+                    <div
+                      class="flex-shrink-0 w-10 h-10 rounded-full bg-accent/15 border border-accent/30 flex items-center justify-center text-accent font-bold text-sm z-10"
+                    >
+                      {{ step.n }}
+                    </div>
+                    <div
+                      class="flex-1 min-w-0 bg-surface-raised border border-border-default rounded-xl p-4 sm:p-5 mb-3"
+                    >
+                      <p class="font-semibold text-text-primary mb-2">{{ step.title }}</p>
+                      @if (step.desc) {
+                        <p class="text-sm text-text-secondary mb-3">{{ step.desc }}</p>
+                      }
+                      @if (step.code) {
+                        <div class="rounded-lg overflow-hidden border border-border-subtle">
+                          <pre class="bg-surface-overlay px-4 py-3 text-xs text-accent">{{
+                            step.code
+                          }}</pre>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                </ng-container>
+              </div>
+            </section>
+
+            <!-- ENV VARS -->
+            <section id="environment-variables">
+              <h2 class="text-2xl font-bold text-text-primary mb-2">Environment Variables</h2>
+              <p class="text-text-secondary mb-6">
+                Create
+                <code class="text-xs bg-surface-overlay px-1.5 py-0.5 rounded text-success-text"
+                  >apps/api/.env</code
+                >
+                with the following:
+              </p>
+              <div
+                class="bg-surface-raised border border-border-default rounded-xl overflow-hidden"
+              >
+                <div
+                  class="flex items-center gap-2 px-4 py-2.5 bg-surface-overlay border-b border-border-subtle"
+                >
+                  <span class="w-3 h-3 rounded-full bg-error-muted/70"></span>
+                  <span class="w-3 h-3 rounded-full bg-warn-muted/70"></span>
+                  <span class="w-3 h-3 rounded-full bg-success-muted/70"></span>
+                  <span class="ml-2 text-xs text-text-muted font-mono">apps/api/.env</span>
+                </div>
+                <div class="overflow-x-auto">
+                  <pre
+                    class="px-5 py-4 text-xs leading-relaxed text-text-secondary"
+                  ><span class="text-text-muted"># MongoDB connection URI</span>
 <span class="text-success-text">MONGODB_URI</span>=mongodb://localhost:27017/lmStudioWrapper
 
 <span class="text-text-muted"># OpenAI-compatible inference server (LM Studio, Ollama, llama.cpp, vLLM, ...)</span>
@@ -602,516 +643,586 @@ import {
 <span class="text-success-text">PORT</span>=8888
 <span class="text-success-text">USE_SWAGGER</span>=true       <span
                   class="text-text-muted"># enables /api Swagger UI</span></pre>
-            </div>
-          </div>
-          <div
-            class="mt-3 flex gap-2 items-start bg-info-bg border border-info-border rounded-lg px-4 py-3"
-          >
-            <ng-icon
-              name="heroInformationCircle"
-              class="w-4 h-4 text-info-text flex-shrink-0 mt-0.5"
-            />
-            <p class="text-xs text-info-text">
-              Since the backend's own <strong>McpClientService</strong> is now what calls MCP
-              tools, <strong>SELF_MCP_URL</strong> only needs to be reachable from the backend
-              process itself — it no longer needs to be reachable from LM Studio.
-              <strong>SELF_URL</strong> must be reachable from the browser, or generated asset
-              links (e.g. AI-generated images) will be broken. The InvokeAI base URL is currently
-              hard-coded to <code class="bg-info-bg px-1 rounded">http://127.0.0.1:9090</code> in
-              <code class="bg-info-bg px-1 rounded">app.module.ts</code>.
-            </p>
-          </div>
-        </section>
-
-        <!-- MCP TOOLS -->
-        <section id="mcp-tool-integration">
-          <h2 class="text-2xl font-bold text-text-primary mb-2">MCP Tool Integration</h2>
-          <p class="text-text-secondary mb-6">
-            The NestJS backend plays <strong>both</strong> MCP roles at once: an
-            <strong>MCP server</strong> (<code class="text-xs bg-surface-overlay px-1.5 py-0.5 rounded text-tool-text"
-            >apps/api/src/tools/api.tools.ts</code
-            >, via
-            <code class="text-xs bg-surface-overlay px-1.5 py-0.5 rounded text-tool-text"
-            >&#64;rekog/mcp-nest</code
-            >) exposing Streamable HTTP + SSE transports at
-            <code class="text-xs bg-surface-overlay px-1.5 py-0.5 rounded text-tool-text"
-            >/tools/mcp</code
-            >, and an <strong>MCP client</strong> that connects to that same server (and any
-            others configured via <code class="text-accent">MCP_SERVER_URLS</code>), lists its
-            tools, and calls them on the model's behalf — forwarding the authenticated user's JWT
-            and current <code class="text-accent">chatId</code> so tools have full access to the
-            user's context.
-          </p>
-          <img
-            class="dark:hidden block mb-2"
-            src="mcp-preview-light.png"
-            alt="chat overview light"
-          />
-          <img class="dark:block hidden mb-2" src="mcp-preview-dark.png" alt="chat overview dark" />
-
-          <div class="space-y-3 mb-4">
-            <ng-container *ngFor="let tool of mcpTools">
-              <div
-                class="bg-surface-raised border border-border-default rounded-xl p-5 flex flex-col sm:flex-row gap-3 items-start"
-              >
-                <code
-                  class="flex-shrink-0 text-xs bg-tool-bg border border-tool-border text-tool-text px-2.5 py-1 rounded-lg font-mono"
-                >{{ tool.name }}</code
-                >
-                <p class="text-sm text-text-secondary leading-relaxed">{{ tool.desc }}</p>
-              </div>
-            </ng-container>
-          </div>
-          <div class="bg-surface-overlay border border-border-subtle rounded-xl p-4">
-            <p class="text-xs text-text-secondary">
-              To add a new tool: create an <code class="text-accent">&#64;Injectable()</code> class
-              in <code class="text-accent">apps/api/src/tools/</code>, decorate methods with
-              <code class="text-accent">&#64;Tool(...)</code> from
-              <code class="text-accent">&#64;rekog/mcp-nest</code>, register it as a provider in
-              <code class="text-accent">AppModule</code>, and add its name to the
-              <code class="text-accent">allowedTools</code> list in
-              <code class="text-accent">OpenAiService.chatStreamCompletions</code> so it's
-              actually offered to the model.
-            </p>
-          </div>
-        </section>
-
-        <!-- CUSTOM MCP SERVERS -->
-        <section id="custom-mcp-servers">
-          <h2 class="text-2xl font-bold text-text-primary mb-2">Custom MCP Servers</h2>
-          <p class="text-text-secondary mb-6">
-            Beyond the built-in MCP server/client, each user can register their own external MCP
-            servers on their account and control exactly which tools are available —
-            account-wide or per chat. The account-level list, the New Chat dialog, and every
-            chat's settings dialog all read/write the same data, so changes made from any one of
-            them show up in the others immediately.
-          </p>
-          <div class="space-y-3 mb-4">
-            <ng-container *ngFor="let step of customMcpSteps">
-              <div
-                class="bg-surface-raised border border-border-default rounded-xl p-4 flex gap-3 items-start"
-              >
-                <span
-                  class="flex-shrink-0 w-7 h-7 rounded-full bg-success-bg border border-success-border flex items-center justify-center text-success-text font-bold text-xs"
-                >{{ step.n }}</span
-                >
-                <p class="text-sm text-text-secondary leading-relaxed">
-                  <strong class="text-text-primary">{{ step.title }}</strong> — {{ step.detail }}
-                </p>
-              </div>
-            </ng-container>
-          </div>
-          <div class="bg-surface-overlay border border-border-subtle rounded-xl p-4">
-            <p class="text-xs text-text-secondary">
-              Data model: <code class="text-accent">User.customMcps[]</code> holds
-              <code class="text-accent">{{ '{ id, name, endpoint, active, availableTools, allowedTools, headers? }' }}</code>
-              per registered server. <code class="text-accent">ChatMetadata.mcpOverrides[]</code>
-              holds <code class="text-accent">{{ '{ mcpId, active, allowedTools }' }}</code> —
-              only written when a specific chat deviates from the account default.
-            </p>
-          </div>
-        </section>
-
-        <!-- IMAGE GENERATION -->
-        <section id="image-generation">
-          <h2 class="text-2xl font-bold text-text-primary mb-2">Image Generation (InvokeAI)</h2>
-          <p class="text-text-secondary mb-6">
-            The <code class="text-accent">generate-image-tool</code> MCP tool lets the model
-            generate images on demand during a conversation via a locally running
-            <a
-              href="https://invoke-ai.github.io/InvokeAI/"
-              target="_blank"
-              rel="noopener"
-              class="text-accent underline"
-            >InvokeAI</a
-            >
-            instance.
-          </p>
-          <div class="space-y-3">
-            <ng-container *ngFor="let step of invokeSteps">
-              <div
-                class="bg-surface-raised border border-border-default rounded-xl p-4 flex gap-3 items-start"
-              >
-                <span
-                  class="flex-shrink-0 w-7 h-7 rounded-full bg-info-bg border border-info-border flex items-center justify-center text-info-text font-bold text-xs"
-                >{{ step.n }}</span
-                >
-                <p class="text-sm text-text-secondary leading-relaxed">
-                  <strong class="text-text-primary">{{ step.title }}</strong> — {{ step.detail }}
-                </p>
-              </div>
-            </ng-container>
-          </div>
-        </section>
-
-        <!-- IMAGE UPLOAD -->
-        <section id="image-upload">
-          <h2 class="text-2xl font-bold text-text-primary mb-2">Image Upload</h2>
-          <p class="text-text-secondary mb-6">
-            Users can attach one or more images to a chat message before sending. Attached files
-            are listed below the textarea with filename and size, and can be removed before
-            sending. On send, each image is uploaded to
-            <code class="text-xs bg-surface-overlay px-1.5 py-0.5 rounded text-tool-text"
-            >POST /assets/:chatId</code
-            >
-            as <code class="text-accent">multipart/form-data</code>, validated for MIME type
-            (max <strong>10 MB</strong>), and stored as a binary blob in the
-            <code class="text-xs bg-surface-overlay px-1.5 py-0.5 rounded text-tool-text"
-            >image_blobs</code
-            >
-            MongoDB collection, then forwarded to the model as vision content.
-          </p>
-          <div class="grid sm:grid-cols-2 gap-4">
-            <div class="bg-surface-raised border border-border-default rounded-xl p-5">
-              <div class="flex items-center gap-2 mb-3">
-                <span
-                  class="w-7 h-7 rounded-lg bg-tool-bg flex items-center justify-center text-tool-text"
-                >
-                  <ng-icon name="heroPhoto" class="w-4 h-4" />
-                </span>
-                <p class="font-semibold text-sm text-text-primary">Supported formats</p>
-              </div>
-              <div class="flex flex-wrap gap-2">
-                <span
-                  *ngFor="let fmt of imageFormats"
-                  class="badge-pill bg-tool-bg text-tool-text border border-tool-border"
-                >{{ fmt }}</span
-                >
-              </div>
-            </div>
-            <div class="bg-surface-raised border border-border-default rounded-xl p-5">
-              <p class="font-semibold text-sm text-text-primary mb-2">Retrieval routes</p>
-              <p class="text-xs text-text-secondary leading-relaxed mb-1">
-                <code class="text-accent">GET /assets/:chatId/:filename</code> — authenticated,
-                owner or shared-chat access
-              </p>
-              <p class="text-xs text-text-secondary leading-relaxed">
-                <code class="text-accent">GET /assets/filequery/:filename?chatId=</code> —
-                authenticated, used for AI-generated image references
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <!-- VOICE INPUT -->
-        <section id="voice-input">
-          <h2 class="text-2xl font-bold text-text-primary mb-2">Voice Input</h2>
-          <p class="text-text-secondary mb-6">
-            A microphone button next to the chat input records a voice message and sends it
-            straight to the model as audio — no separate speech-to-text step in this codebase;
-            the inference server itself (llama.cpp, etc.) handles transcription/understanding via
-            its own audio input support. A text message is optional whenever a recording is
-            attached — you can send audio-only.
-          </p>
-          <div class="space-y-3">
-            <ng-container *ngFor="let step of voiceInputSteps">
-              <div
-                class="bg-surface-raised border border-border-default rounded-xl p-4 flex gap-3 items-start"
-              >
-                <span
-                  class="flex-shrink-0 w-7 h-7 rounded-full bg-tool-bg border border-tool-border flex items-center justify-center text-tool-text font-bold text-xs"
-                >{{ step.n }}</span
-                >
-                <p class="text-sm text-text-secondary leading-relaxed">
-                  <strong class="text-text-primary">{{ step.title }}</strong> — {{ step.detail }}
-                </p>
-              </div>
-            </ng-container>
-          </div>
-          <div
-            class="mt-4 flex gap-2 items-start bg-info-bg border border-info-border rounded-lg px-4 py-3"
-          >
-            <ng-icon
-              name="heroInformationCircle"
-              class="w-4 h-4 text-info-text flex-shrink-0 mt-0.5"
-            />
-            <p class="text-xs text-info-text">
-              Requires a model with audio understanding support (e.g. an audio-capable llama.cpp
-              build/model). If the loaded model can't process <code class="bg-info-bg px-1 rounded">input_audio</code>,
-              expect it to ignore or error on the audio content.
-            </p>
-          </div>
-        </section>
-
-        <!-- ENCRYPTION -->
-        <section id="message-encryption">
-          <h2 class="text-2xl font-bold text-text-primary mb-2">Message Encryption</h2>
-          <p class="text-text-secondary mb-8">
-            Per-chat AES-256 encryption can be opted into when creating a new chat session. Only
-            ciphertext ever reaches the inference server's own message store/logs — plaintext
-            never leaves the NestJS trust boundary.
-          </p>
-          <div class="grid sm:grid-cols-5 gap-6 sm:gap-2 mb-8">
-            <ng-container *ngFor="let step of encryptionFlow">
-              <div class="encrypt-flow-step flex sm:flex-col items-center gap-3 sm:gap-2">
-                <div
-                  [class]="
-                    'w-10 h-10 flex-shrink-0 rounded-full flex items-center justify-center font-bold text-sm border ' +
-                    step.circleClass
-                  "
-                >
-                  {{ step.n }}
-                </div>
-                <div class="flex-1 sm:flex-none sm:text-center">
-                  <p class="font-semibold text-xs text-text-primary">{{ step.title }}</p>
-                  <p class="text-xs text-text-muted mt-0.5 leading-relaxed">{{ step.detail }}</p>
                 </div>
               </div>
-            </ng-container>
-          </div>
+              <div
+                class="mt-3 flex gap-2 items-start bg-info-bg border border-info-border rounded-lg px-4 py-3"
+              >
+                <ng-icon
+                  name="heroInformationCircle"
+                  class="w-4 h-4 text-info-text flex-shrink-0 mt-0.5"
+                />
+                <p class="text-xs text-info-text">
+                  Since the backend's own <strong>McpClientService</strong> is now what calls MCP
+                  tools, <strong>SELF_MCP_URL</strong> only needs to be reachable from the backend
+                  process itself — it no longer needs to be reachable from LM Studio.
+                  <strong>SELF_URL</strong> must be reachable from the browser, or generated asset
+                  links (e.g. AI-generated images) will be broken. The InvokeAI base URL is
+                  currently hard-coded to
+                  <code class="bg-info-bg px-1 rounded">http://127.0.0.1:9090</code> in
+                  <code class="bg-info-bg px-1 rounded">app.module.ts</code>.
+                </p>
+              </div>
+            </section>
 
-          <h3 class="text-base font-semibold text-text-primary mb-3">
-            Key Storage &amp; Security Boundaries
-          </h3>
-          <div class="overflow-x-auto rounded-xl border border-border-default">
-            <table class="w-full text-sm">
-              <thead>
-              <tr class="bg-surface-overlay text-xs text-text-muted uppercase tracking-wider">
-                <th class="text-left px-4 py-3 font-semibold">What</th>
-                <th class="text-left px-4 py-3 font-semibold">Where</th>
-                <th class="text-left px-4 py-3 font-semibold">Plaintext?</th>
-              </tr>
-              </thead>
-              <tbody>
-              <ng-container *ngFor="let row of securityBoundaries; let odd = odd">
-                <tr [class]="odd ? 'bg-surface-raised' : 'bg-surface-base'">
-                  <td class="px-4 py-3 text-text-primary font-mono text-xs">{{ row.what }}</td>
-                  <td class="px-4 py-3 text-text-secondary text-xs">{{ row.where }}</td>
-                  <td class="px-4 py-3">
-                    @if (row.plaintext) {
-                      <span
-                        class="badge-pill bg-success-bg text-success-text border border-success-border"
-                      >&#10003; Yes</span
-                      >
-                    }
-                    @if (!row.plaintext) {
-                      <span
-                        class="badge-pill bg-error-bg text-error-text border border-error-border"
-                      >&#10007; No</span
-                      >
-                    }
-                  </td>
-                </tr>
-              </ng-container>
-              </tbody>
-            </table>
-          </div>
+            <!-- MCP TOOLS -->
+            <section id="mcp-tool-integration">
+              <h2 class="text-2xl font-bold text-text-primary mb-2">MCP Tool Integration</h2>
+              <p class="text-text-secondary mb-6">
+                The NestJS backend plays <strong>both</strong> MCP roles at once: an
+                <strong>MCP server</strong> (<code
+                  class="text-xs bg-surface-overlay px-1.5 py-0.5 rounded text-tool-text"
+                  >apps/api/src/tools/api.tools.ts</code
+                >, via
+                <code class="text-xs bg-surface-overlay px-1.5 py-0.5 rounded text-tool-text"
+                  >&#64;rekog/mcp-nest</code
+                >) exposing Streamable HTTP + SSE transports at
+                <code class="text-xs bg-surface-overlay px-1.5 py-0.5 rounded text-tool-text"
+                  >/tools/mcp</code
+                >, and an <strong>MCP client</strong> that connects to that same server (and any
+                others configured via <code class="text-accent">MCP_SERVER_URLS</code>), lists its
+                tools, and calls them on the model's behalf — forwarding the authenticated user's
+                JWT and current <code class="text-accent">chatId</code> so tools have full access to
+                the user's context.
+              </p>
+              <img
+                class="dark:hidden block mb-2"
+                src="mcp-preview-light.png"
+                alt="chat overview light"
+              />
+              <img
+                class="dark:block hidden mb-2"
+                src="mcp-preview-dark.png"
+                alt="chat overview dark"
+              />
 
-          <div
-            class="mt-4 flex gap-2 items-start bg-warn-bg border border-warn-border rounded-lg px-4 py-3"
-          >
-            <ng-icon
-              name="heroExclamationTriangle"
-              class="w-4 h-4 text-warn-text flex-shrink-0 mt-0.5"
-            />
-            <p class="text-xs text-warn-text">
-              The <strong>cryptoKey</strong> lives in MongoDB — your NestJS API and database are the
-              security boundary. Use HTTPS and restrict DB access in any non-local deployment.
-            </p>
-          </div>
-        </section>
-
-        <!-- AUTH -->
-        <section id="authentication">
-          <h2 class="text-2xl font-bold text-text-primary mb-6">
-            Authentication &amp; Authorization
-          </h2>
-          <div class="grid sm:grid-cols-2 gap-4">
-            <ng-container *ngFor="let item of authItems">
-              <div class="bg-surface-raised border border-border-default rounded-xl p-5 flex gap-3">
-                <span
-                  [class]="
-                    'mt-0.5 w-7 h-7 flex-shrink-0 rounded-md flex items-center justify-center ' +
-                    item.iconBg
-                  "
-                >
-                  <svg
-                    class="w-3.5 h-3.5"
-                    [class]="item.iconColor"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+              <div class="space-y-3 mb-4">
+                <ng-container *ngFor="let tool of mcpTools">
+                  <div
+                    class="bg-surface-raised border border-border-default rounded-xl p-5 flex flex-col sm:flex-row gap-3 items-start"
                   >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      [attr.d]="item.icon"
-                    />
-                  </svg>
-                </span>
-                <div>
-                  <p class="font-semibold text-sm text-text-primary mb-1">{{ item.title }}</p>
-                  <p class="text-xs text-text-secondary leading-relaxed">{{ item.desc }}</p>
+                    <code
+                      class="flex-shrink-0 text-xs bg-tool-bg border border-tool-border text-tool-text px-2.5 py-1 rounded-lg font-mono"
+                      >{{ tool.name }}</code
+                    >
+                    <p class="text-sm text-text-secondary leading-relaxed">{{ tool.desc }}</p>
+                  </div>
+                </ng-container>
+              </div>
+              <div class="bg-surface-overlay border border-border-subtle rounded-xl p-4">
+                <p class="text-xs text-text-secondary">
+                  To add a new tool: create an
+                  <code class="text-accent">&#64;Injectable()</code> class in
+                  <code class="text-accent">apps/api/src/tools/</code>, decorate methods with
+                  <code class="text-accent">&#64;Tool(...)</code> from
+                  <code class="text-accent">&#64;rekog/mcp-nest</code>, register it as a provider in
+                  <code class="text-accent">AppModule</code>, and add its name to the
+                  <code class="text-accent">allowedTools</code> list in
+                  <code class="text-accent">OpenAiService.chatStreamCompletions</code> so it's
+                  actually offered to the model.
+                </p>
+              </div>
+            </section>
+
+            <!-- CUSTOM MCP SERVERS -->
+            <section id="custom-mcp-servers">
+              <h2 class="text-2xl font-bold text-text-primary mb-2">Custom MCP Servers</h2>
+              <p class="text-text-secondary mb-6">
+                Beyond the built-in MCP server/client, each user can register their own external MCP
+                servers on their account and control exactly which tools are available —
+                account-wide or per chat. The account-level list, the New Chat dialog, and every
+                chat's settings dialog all read/write the same data, so changes made from any one of
+                them show up in the others immediately.
+              </p>
+              <img
+                class="dark:hidden block mb-2"
+                src="mcp-management-dialog-light.png"
+                alt="chat overview light"
+              />
+              <img
+                class="dark:block hidden mb-2"
+                src="mcp-management-dialog-dark.png"
+                alt="chat overview dark"
+              />
+              <div class="space-y-3 mb-4">
+                <ng-container *ngFor="let step of customMcpSteps">
+                  <div
+                    class="bg-surface-raised border border-border-default rounded-xl p-4 flex gap-3 items-start"
+                  >
+                    <span
+                      class="flex-shrink-0 w-7 h-7 rounded-full bg-success-bg border border-success-border flex items-center justify-center text-success-text font-bold text-xs"
+                      >{{ step.n }}</span
+                    >
+                    <p class="text-sm text-text-secondary leading-relaxed">
+                      <strong class="text-text-primary">{{ step.title }}</strong> —
+                      {{ step.detail }}
+                    </p>
+                  </div>
+                </ng-container>
+              </div>
+              <div class="bg-surface-overlay border border-border-subtle rounded-xl p-4">
+                <p class="text-xs text-text-secondary">
+                  Data model: <code class="text-accent">User.customMcps[]</code> holds
+                  <code class="text-accent">{{
+                    '{ id, name, endpoint, active, availableTools, allowedTools, headers? }'
+                  }}</code>
+                  per registered server.
+                  <code class="text-accent">ChatMetadata.mcpOverrides[]</code> holds
+                  <code class="text-accent">{{ '{ mcpId, active, allowedTools }' }}</code> — only
+                  written when a specific chat deviates from the account default.
+                </p>
+              </div>
+            </section>
+
+            <!-- IMAGE GENERATION -->
+            <section id="image-generation">
+              <h2 class="text-2xl font-bold text-text-primary mb-2">Image Generation (InvokeAI)</h2>
+              <p class="text-text-secondary mb-6">
+                The <code class="text-accent">generate-image-tool</code> MCP tool lets the model
+                generate images on demand during a conversation via a locally running
+                <a
+                  href="https://invoke-ai.github.io/InvokeAI/"
+                  target="_blank"
+                  rel="noopener"
+                  class="text-accent underline"
+                  >InvokeAI</a
+                >
+                instance.
+              </p>
+
+              <img
+                class="dark:hidden block mb-2"
+                src="chat-image-generator-light.png"
+                alt="chat overview light"
+              />
+              <img
+                class="dark:block hidden mb-2"
+                src="chat-image-generator-dark.png"
+                alt="chat overview dark"
+              />
+              <div class="space-y-3">
+                <ng-container *ngFor="let step of invokeSteps">
+                  <div
+                    class="bg-surface-raised border border-border-default rounded-xl p-4 flex gap-3 items-start"
+                  >
+                    <span
+                      class="flex-shrink-0 w-7 h-7 rounded-full bg-info-bg border border-info-border flex items-center justify-center text-info-text font-bold text-xs"
+                      >{{ step.n }}</span
+                    >
+                    <p class="text-sm text-text-secondary leading-relaxed">
+                      <strong class="text-text-primary">{{ step.title }}</strong> —
+                      {{ step.detail }}
+                    </p>
+                  </div>
+                </ng-container>
+              </div>
+            </section>
+
+            <!-- IMAGE UPLOAD -->
+            <section id="image-upload">
+              <h2 class="text-2xl font-bold text-text-primary mb-2">Image Upload</h2>
+              <p class="text-text-secondary mb-6">
+                Users can attach one or more images to a chat message before sending. Attached files
+                are listed below the textarea with filename and size, and can be removed before
+                sending. On send, each image is uploaded to
+                <code class="text-xs bg-surface-overlay px-1.5 py-0.5 rounded text-tool-text"
+                  >POST /assets/:chatId</code
+                >
+                as <code class="text-accent">multipart/form-data</code>, validated for MIME type
+                (max <strong>10 MB</strong>), and stored as a binary blob in the
+                <code class="text-xs bg-surface-overlay px-1.5 py-0.5 rounded text-tool-text"
+                  >image_blobs</code
+                >
+                MongoDB collection, then forwarded to the model as vision content.
+              </p>
+
+              <div class="grid sm:grid-cols-2 gap-4">
+                <div class="bg-surface-raised border border-border-default rounded-xl p-5">
+                  <div class="flex items-center gap-2 mb-3">
+                    <span
+                      class="w-7 h-7 rounded-lg bg-tool-bg flex items-center justify-center text-tool-text"
+                    >
+                      <ng-icon name="heroPhoto" class="w-4 h-4" />
+                    </span>
+                    <p class="font-semibold text-sm text-text-primary">Supported formats</p>
+                  </div>
+                  <div class="flex flex-wrap gap-2">
+                    <span
+                      *ngFor="let fmt of imageFormats"
+                      class="badge-pill bg-tool-bg text-tool-text border border-tool-border"
+                      >{{ fmt }}</span
+                    >
+                  </div>
+                </div>
+                <div class="bg-surface-raised border border-border-default rounded-xl p-5">
+                  <p class="font-semibold text-sm text-text-primary mb-2">Retrieval routes</p>
+                  <p class="text-xs text-text-secondary leading-relaxed mb-1">
+                    <code class="text-accent">GET /assets/:chatId/:filename</code> — authenticated,
+                    owner or shared-chat access
+                  </p>
+                  <p class="text-xs text-text-secondary leading-relaxed">
+                    <code class="text-accent">GET /assets/filequery/:filename?chatId=</code> —
+                    authenticated, used for AI-generated image references
+                  </p>
                 </div>
               </div>
-            </ng-container>
-          </div>
-        </section>
+            </section>
 
-        <!-- TOKEN LIMITING -->
-        <section id="token-usage">
-          <h2 class="text-2xl font-bold text-text-primary mb-2">Token Usage &amp; Rate Limiting</h2>
-          <p class="text-text-secondary mb-6">
-            Token consumption is tracked per user and enforced against subscription-tier limits
-            configured in the
-            <code class="text-xs bg-surface-overlay px-1.5 py-0.5 rounded text-reasoning-text"
-            >token_limit_configs</code
-            >
-            MongoDB collection.
-          </p>
-          <div class="grid sm:grid-cols-3 gap-4 mb-5">
-            <ng-container *ngFor="let tier of tokenTiers">
-              <div [class]="'card-hover rounded-xl p-5 border ' + tier.cardClass">
-                <p [class]="'text-xs font-bold uppercase tracking-wider mb-1 ' + tier.labelClass">
-                  {{ tier.label }}
-                </p>
-                <p class="text-2xl font-bold text-text-primary mb-1">{{ tier.tokens }}</p>
-                <p class="text-xs text-text-muted">tokens / interval</p>
+            <!-- VOICE INPUT -->
+            <section id="voice-input">
+              <h2 class="text-2xl font-bold text-text-primary mb-2">Voice Input</h2>
+              <p class="text-text-secondary mb-6">
+                A microphone button next to the chat input records a voice message and sends it
+                straight to the model as audio — no separate speech-to-text step in this codebase;
+                the inference server itself (llama.cpp, etc.) handles transcription/understanding
+                via its own audio input support. A text message is optional whenever a recording is
+                attached — you can send audio-only.
+              </p>
+              <img
+                class="dark:hidden block mb-2"
+                src="chat-voice-preview-light.png"
+                alt="chat overview light"
+              />
+              <img
+                class="dark:block hidden mb-2"
+                src="chat-voice-preview-dark.png"
+                alt="chat overview dark"
+              />
+              <div class="space-y-3">
+                <ng-container *ngFor="let step of voiceInputSteps">
+                  <div
+                    class="bg-surface-raised border border-border-default rounded-xl p-4 flex gap-3 items-start"
+                  >
+                    <span
+                      class="flex-shrink-0 w-7 h-7 rounded-full bg-tool-bg border border-tool-border flex items-center justify-center text-tool-text font-bold text-xs"
+                      >{{ step.n }}</span
+                    >
+                    <p class="text-sm text-text-secondary leading-relaxed">
+                      <strong class="text-text-primary">{{ step.title }}</strong> —
+                      {{ step.detail }}
+                    </p>
+                  </div>
+                </ng-container>
               </div>
-            </ng-container>
-          </div>
-          <p class="text-xs text-text-muted">
-            After each completed inference,
-            <code class="text-reasoning-text">TokenLimitService.updateUsedTokens()</code> increments
-            the user's <code class="text-reasoning-text">usedTokens</code> counter. If the limit
-            is reached, an
-            <code class="text-reasoning-text">api.info</code>
-            SSE event is emitted with the reset timestamp. Limits reset automatically when
-            <code class="text-reasoning-text">tokenCountResetDate</code> elapses. Token limits are
-            managed exclusively through the <a href="#admin-cms" class="text-accent underline">Admin CMS</a> —
-            the <code class="text-reasoning-text">TokenLimitModule</code> controller is gated
-            behind <code class="text-reasoning-text">&#64;Roles(Role.Admin)</code>.
-          </p>
-        </section>
+              <div
+                class="mt-4 flex gap-2 items-start bg-info-bg border border-info-border rounded-lg px-4 py-3"
+              >
+                <ng-icon
+                  name="heroInformationCircle"
+                  class="w-4 h-4 text-info-text flex-shrink-0 mt-0.5"
+                />
+                <p class="text-xs text-info-text">
+                  Requires a model with audio understanding support (e.g. an audio-capable llama.cpp
+                  build/model). If the loaded model can't process
+                  <code class="bg-info-bg px-1 rounded">input_audio</code>, expect it to ignore or
+                  error on the audio content.
+                </p>
+              </div>
+            </section>
 
-        <!-- ADMIN CMS -->
-        <section id="admin-cms">
-          <h2 class="text-2xl font-bold text-text-primary mb-2">Admin CMS</h2>
-          <p class="text-text-secondary mb-6">
-            A role-gated <code class="text-accent">/admin</code> route (Angular reactive forms
-            throughout — no <code class="text-accent">ngModel</code>) for managing users and
-            token-limit configs without touching MongoDB by hand. Only visible/reachable for
-            users with <code class="text-accent">role: 'admin'</code> — the link appears in the
-            account info panel only for admins, and is enforced twice: an Angular
-            <code class="text-accent">adminGuard</code> route guard, and
-            <code class="text-accent">&#64;Roles(Role.Admin)</code> on every backend endpoint.
-          </p>
+            <!-- ENCRYPTION -->
+            <section id="message-encryption">
+              <h2 class="text-2xl font-bold text-text-primary mb-2">Message Encryption</h2>
+              <p class="text-text-secondary mb-8">
+                Per-chat AES-256 encryption can be opted into when creating a new chat session. Only
+                ciphertext ever reaches the inference server's own message store/logs — plaintext
+                never leaves the NestJS trust boundary.
+              </p>
+              <div class="grid sm:grid-cols-5 gap-6 sm:gap-2 mb-8">
+                <ng-container *ngFor="let step of encryptionFlow">
+                  <div class="encrypt-flow-step flex sm:flex-col items-center gap-3 sm:gap-2">
+                    <div
+                      [class]="
+                        'w-10 h-10 flex-shrink-0 rounded-full flex items-center justify-center font-bold text-sm border ' +
+                        step.circleClass
+                      "
+                    >
+                      {{ step.n }}
+                    </div>
+                    <div class="flex-1 sm:flex-none sm:text-center">
+                      <p class="font-semibold text-xs text-text-primary">{{ step.title }}</p>
+                      <p class="text-xs text-text-muted mt-0.5 leading-relaxed">
+                        {{ step.detail }}
+                      </p>
+                    </div>
+                  </div>
+                </ng-container>
+              </div>
 
-          <h3 class="text-base font-semibold text-text-primary mb-2">User Management</h3>
-          <img
-            class="dark:hidden block mb-2 rounded-xl border border-border-default"
-            src="admin-users-preview-light.png"
-            alt="admin CMS user management light"
-          />
-          <img
-            class="dark:block hidden mb-6 rounded-xl border border-border-default"
-            src="admin-users-preview-dark.png"
-            alt="admin CMS user management dark"
-          />
-          <p class="text-text-secondary mb-6">
-            List every user with role, subscription, activation status, and current token usage.
-            Create a user directly (bypassing the normal registration/activation-email flow),
-            edit an existing user's role, subscription, activation status, or password, reset
-            their token-usage counter on demand, or delete them (an admin cannot delete their own
-            account, to avoid accidental lockout).
-          </p>
+              <h3 class="text-base font-semibold text-text-primary mb-3">
+                Key Storage &amp; Security Boundaries
+              </h3>
+              <div class="overflow-x-auto rounded-xl border border-border-default">
+                <table class="w-full text-sm">
+                  <thead>
+                    <tr class="bg-surface-overlay text-xs text-text-muted uppercase tracking-wider">
+                      <th class="text-left px-4 py-3 font-semibold">What</th>
+                      <th class="text-left px-4 py-3 font-semibold">Where</th>
+                      <th class="text-left px-4 py-3 font-semibold">Plaintext?</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <ng-container *ngFor="let row of securityBoundaries; let odd = odd">
+                      <tr [class]="odd ? 'bg-surface-raised' : 'bg-surface-base'">
+                        <td class="px-4 py-3 text-text-primary font-mono text-xs">
+                          {{ row.what }}
+                        </td>
+                        <td class="px-4 py-3 text-text-secondary text-xs">{{ row.where }}</td>
+                        <td class="px-4 py-3">
+                          @if (row.plaintext) {
+                            <span
+                              class="badge-pill bg-success-bg text-success-text border border-success-border"
+                              >&#10003; Yes</span
+                            >
+                          }
+                          @if (!row.plaintext) {
+                            <span
+                              class="badge-pill bg-error-bg text-error-text border border-error-border"
+                              >&#10007; No</span
+                            >
+                          }
+                        </td>
+                      </tr>
+                    </ng-container>
+                  </tbody>
+                </table>
+              </div>
 
-          <h3 class="text-base font-semibold text-text-primary mb-2">Token Limit Config Management</h3>
-          <img
-            class="dark:hidden block mb-2 rounded-xl border border-border-default"
-            src="admin-tokens-preview-light.png"
-            alt="admin CMS token limit config management light"
-          />
-          <img
-            class="dark:block hidden mb-6 rounded-xl border border-border-default"
-            src="admin-tokens-preview-dark.png"
-            alt="admin CMS token limit config management dark"
-          />
-          <p class="text-text-secondary mb-6">
-            List, create, edit, and delete <code class="text-accent">token_limit_configs</code>
-            documents. <strong>Creating a config with a brand-new tier name is how a new
-            subscription type is defined</strong> — there's no separate "add subscription type"
-            step. The tier-name field is free text when creating a config (validated against
-            <code class="text-accent">^[a-z0-9_-]&#123;2,32&#125;$</code>), and locked once a
-            config exists (one config per tier, enforced by a unique index). The "assign
-            subscription" dropdown in the user-edit dialog is populated from
-            <code class="text-accent">GET /admin/users/subscription-types</code>, which unions
-            the built-in defaults (<code class="text-accent">free</code>,
-            <code class="text-accent">basic</code>), every tier with a config, and any tier
-            already assigned to a user — so a user's tier stays selectable even if its config was
-            later deleted.
-          </p>
+              <div
+                class="mt-4 flex gap-2 items-start bg-warn-bg border border-warn-border rounded-lg px-4 py-3"
+              >
+                <ng-icon
+                  name="heroExclamationTriangle"
+                  class="w-4 h-4 text-warn-text flex-shrink-0 mt-0.5"
+                />
+                <p class="text-xs text-warn-text">
+                  The <strong>cryptoKey</strong> lives in MongoDB — your NestJS API and database are
+                  the security boundary. Use HTTPS and restrict DB access in any non-local
+                  deployment.
+                </p>
+              </div>
+            </section>
 
-          <div class="overflow-x-auto rounded-xl border border-border-default">
-            <table class="w-full text-sm">
-              <thead>
-              <tr class="bg-surface-overlay text-xs text-text-muted uppercase tracking-wider">
-                <th class="text-left px-4 py-3 font-semibold w-20">Method</th>
-                <th class="text-left px-4 py-3 font-semibold">Path</th>
-                <th class="text-left px-4 py-3 font-semibold hidden sm:table-cell">
-                  Description
-                </th>
-              </tr>
-              </thead>
-              <tbody>
-              <ng-container *ngFor="let route of adminApiRoutes; let odd = odd">
-                <tr [class]="odd ? 'bg-surface-raised' : 'bg-surface-base'">
-                  <td class="px-4 py-2.5">
-                    <span [class]="'badge-pill ' + route.methodClass">{{ route.method }}</span>
-                  </td>
-                  <td class="px-4 py-2.5 font-mono text-xs text-text-secondary">
-                    {{ route.path }}
-                  </td>
-                  <td class="px-4 py-2.5 text-xs text-text-muted hidden sm:table-cell">
-                    {{ route.desc }}
-                  </td>
-                </tr>
-              </ng-container>
-              </tbody>
-            </table>
-          </div>
-          <p class="mt-3 text-xs text-text-muted">
-            All admin routes require both a valid JWT and <code class="text-accent">role: 'admin'</code>.
-          </p>
-        </section>
+            <!-- AUTH -->
+            <section id="authentication">
+              <h2 class="text-2xl font-bold text-text-primary mb-6">
+                Authentication &amp; Authorization
+              </h2>
+              <div class="grid sm:grid-cols-2 gap-4">
+                <ng-container *ngFor="let item of authItems">
+                  <div
+                    class="bg-surface-raised border border-border-default rounded-xl p-5 flex gap-3"
+                  >
+                    <span
+                      [class]="
+                        'mt-0.5 w-7 h-7 flex-shrink-0 rounded-md flex items-center justify-center ' +
+                        item.iconBg
+                      "
+                    >
+                      <svg
+                        class="w-3.5 h-3.5"
+                        [class]="item.iconColor"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          [attr.d]="item.icon"
+                        />
+                      </svg>
+                    </span>
+                    <div>
+                      <p class="font-semibold text-sm text-text-primary mb-1">{{ item.title }}</p>
+                      <p class="text-xs text-text-secondary leading-relaxed">{{ item.desc }}</p>
+                    </div>
+                  </div>
+                </ng-container>
+              </div>
+            </section>
 
-        <!-- API TABLE -->
-        <section id="api-overview">
-          <h2 class="text-2xl font-bold text-text-primary mb-6">API Overview</h2>
-          <div class="overflow-x-auto rounded-xl border border-border-default">
-            <table class="w-full text-sm">
-              <thead>
-              <tr class="bg-surface-overlay text-xs text-text-muted uppercase tracking-wider">
-                <th class="text-left px-4 py-3 font-semibold w-20">Method</th>
-                <th class="text-left px-4 py-3 font-semibold">Path</th>
-                <th class="text-left px-4 py-3 font-semibold hidden sm:table-cell">
-                  Description
-                </th>
-              </tr>
-              </thead>
-              <tbody>
-              <ng-container *ngFor="let route of apiRoutes; let odd = odd">
-                <tr [class]="odd ? 'bg-surface-raised' : 'bg-surface-base'">
-                  <td class="px-4 py-2.5">
-                    <span [class]="'badge-pill ' + route.methodClass">{{ route.method }}</span>
-                  </td>
-                  <td class="px-4 py-2.5 font-mono text-xs text-text-secondary">
-                    {{ route.path }}
-                  </td>
-                  <td class="px-4 py-2.5 text-xs text-text-muted hidden sm:table-cell">
-                    {{ route.desc }}
-                  </td>
-                </tr>
-              </ng-container>
-              </tbody>
-            </table>
-          </div>
-          <p class="mt-3 text-xs text-text-muted">
-            Full interactive docs at <code class="text-accent">http://localhost:8888/api</code> when
-            <code class="text-accent">USE_SWAGGER=true</code>.
-          </p>
-        </section>
+            <!-- TOKEN LIMITING -->
+            <section id="token-usage">
+              <h2 class="text-2xl font-bold text-text-primary mb-2">
+                Token Usage &amp; Rate Limiting
+              </h2>
+              <p class="text-text-secondary mb-6">
+                Token consumption is tracked per user and enforced against subscription-tier limits
+                configured in the
+                <code class="text-xs bg-surface-overlay px-1.5 py-0.5 rounded text-reasoning-text"
+                  >token_limit_configs</code
+                >
+                MongoDB collection.
+              </p>
+              <div class="grid sm:grid-cols-3 gap-4 mb-5">
+                <ng-container *ngFor="let tier of tokenTiers">
+                  <div [class]="'card-hover rounded-xl p-5 border ' + tier.cardClass">
+                    <p
+                      [class]="'text-xs font-bold uppercase tracking-wider mb-1 ' + tier.labelClass"
+                    >
+                      {{ tier.label }}
+                    </p>
+                    <p class="text-2xl font-bold text-text-primary mb-1">{{ tier.tokens }}</p>
+                    <p class="text-xs text-text-muted">tokens / interval</p>
+                  </div>
+                </ng-container>
+              </div>
+              <p class="text-xs text-text-muted">
+                After each completed inference,
+                <code class="text-reasoning-text">TokenLimitService.updateUsedTokens()</code>
+                increments the user's <code class="text-reasoning-text">usedTokens</code> counter.
+                If the limit is reached, an
+                <code class="text-reasoning-text">api.info</code>
+                SSE event is emitted with the reset timestamp. Limits reset automatically when
+                <code class="text-reasoning-text">tokenCountResetDate</code> elapses. Token limits
+                are managed exclusively through the
+                <a href="#admin-cms" class="text-accent underline">Admin CMS</a> — the
+                <code class="text-reasoning-text">TokenLimitModule</code> controller is gated behind
+                <code class="text-reasoning-text">&#64;Roles(Role.Admin)</code>.
+              </p>
+            </section>
+
+            <!-- ADMIN CMS -->
+            <section id="admin-cms">
+              <h2 class="text-2xl font-bold text-text-primary mb-2">Admin CMS</h2>
+              <p class="text-text-secondary mb-6">
+                A role-gated <code class="text-accent">/admin</code> route (Angular reactive forms
+                throughout — no <code class="text-accent">ngModel</code>) for managing users and
+                token-limit configs without touching MongoDB by hand. Only visible/reachable for
+                users with <code class="text-accent">role: 'admin'</code> — the link appears in the
+                account info panel only for admins, and is enforced twice: an Angular
+                <code class="text-accent">adminGuard</code> route guard, and
+                <code class="text-accent">&#64;Roles(Role.Admin)</code> on every backend endpoint.
+              </p>
+
+              <h3 class="text-base font-semibold text-text-primary mb-2">User Management</h3>
+              <img
+                class="dark:hidden block mb-2 rounded-xl border border-border-default"
+                src="admin-users-preview-light.png"
+                alt="admin CMS user management light"
+              />
+              <img
+                class="dark:block hidden mb-6 rounded-xl border border-border-default"
+                src="admin-users-preview-dark.png"
+                alt="admin CMS user management dark"
+              />
+              <p class="text-text-secondary mb-6">
+                List every user with role, subscription, activation status, and current token usage.
+                Create a user directly (bypassing the normal registration/activation-email flow),
+                edit an existing user's role, subscription, activation status, or password, reset
+                their token-usage counter on demand, or delete them (an admin cannot delete their
+                own account, to avoid accidental lockout).
+              </p>
+
+              <h3 class="text-base font-semibold text-text-primary mb-2">
+                Token Limit Config Management
+              </h3>
+              <img
+                class="dark:hidden block mb-2 rounded-xl border border-border-default"
+                src="admin-tokens-preview-light.png"
+                alt="admin CMS token limit config management light"
+              />
+              <img
+                class="dark:block hidden mb-6 rounded-xl border border-border-default"
+                src="admin-tokens-preview-dark.png"
+                alt="admin CMS token limit config management dark"
+              />
+              <p class="text-text-secondary mb-6">
+                List, create, edit, and delete
+                <code class="text-accent">token_limit_configs</code> documents.
+                <strong
+                  >Creating a config with a brand-new tier name is how a new subscription type is
+                  defined</strong
+                >
+                — there's no separate "add subscription type" step. The tier-name field is free text
+                when creating a config (validated against
+                <code class="text-accent">^[a-z0-9_-]&#123;2,32&#125;$</code>), and locked once a
+                config exists (one config per tier, enforced by a unique index). The "assign
+                subscription" dropdown in the user-edit dialog is populated from
+                <code class="text-accent">GET /admin/users/subscription-types</code>, which unions
+                the built-in defaults (<code class="text-accent">free</code>,
+                <code class="text-accent">basic</code>), every tier with a config, and any tier
+                already assigned to a user — so a user's tier stays selectable even if its config
+                was later deleted.
+              </p>
+
+              <div class="overflow-x-auto rounded-xl border border-border-default">
+                <table class="w-full text-sm">
+                  <thead>
+                    <tr class="bg-surface-overlay text-xs text-text-muted uppercase tracking-wider">
+                      <th class="text-left px-4 py-3 font-semibold w-20">Method</th>
+                      <th class="text-left px-4 py-3 font-semibold">Path</th>
+                      <th class="text-left px-4 py-3 font-semibold hidden sm:table-cell">
+                        Description
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <ng-container *ngFor="let route of adminApiRoutes; let odd = odd">
+                      <tr [class]="odd ? 'bg-surface-raised' : 'bg-surface-base'">
+                        <td class="px-4 py-2.5">
+                          <span [class]="'badge-pill ' + route.methodClass">{{
+                            route.method
+                          }}</span>
+                        </td>
+                        <td class="px-4 py-2.5 font-mono text-xs text-text-secondary">
+                          {{ route.path }}
+                        </td>
+                        <td class="px-4 py-2.5 text-xs text-text-muted hidden sm:table-cell">
+                          {{ route.desc }}
+                        </td>
+                      </tr>
+                    </ng-container>
+                  </tbody>
+                </table>
+              </div>
+              <p class="mt-3 text-xs text-text-muted">
+                All admin routes require both a valid JWT and
+                <code class="text-accent">role: 'admin'</code>.
+              </p>
+            </section>
+
+            <!-- API TABLE -->
+            <section id="api-overview">
+              <h2 class="text-2xl font-bold text-text-primary mb-6">API Overview</h2>
+              <div class="overflow-x-auto rounded-xl border border-border-default">
+                <table class="w-full text-sm">
+                  <thead>
+                    <tr class="bg-surface-overlay text-xs text-text-muted uppercase tracking-wider">
+                      <th class="text-left px-4 py-3 font-semibold w-20">Method</th>
+                      <th class="text-left px-4 py-3 font-semibold">Path</th>
+                      <th class="text-left px-4 py-3 font-semibold hidden sm:table-cell">
+                        Description
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <ng-container *ngFor="let route of apiRoutes; let odd = odd">
+                      <tr [class]="odd ? 'bg-surface-raised' : 'bg-surface-base'">
+                        <td class="px-4 py-2.5">
+                          <span [class]="'badge-pill ' + route.methodClass">{{
+                            route.method
+                          }}</span>
+                        </td>
+                        <td class="px-4 py-2.5 font-mono text-xs text-text-secondary">
+                          {{ route.path }}
+                        </td>
+                        <td class="px-4 py-2.5 text-xs text-text-muted hidden sm:table-cell">
+                          {{ route.desc }}
+                        </td>
+                      </tr>
+                    </ng-container>
+                  </tbody>
+                </table>
+              </div>
+              <p class="mt-3 text-xs text-text-muted">
+                Full interactive docs at
+                <code class="text-accent">http://localhost:8888/api</code> when
+                <code class="text-accent">USE_SWAGGER=true</code>.
+              </p>
+            </section>
           </div>
         </div>
 
@@ -1275,7 +1386,7 @@ export class ReadmeComponent implements AfterViewInit, OnDestroy {
     },
     {
       title: 'Client-side MCP orchestration',
-      desc: "The backend runs its own MCP client, translates MCP tools into OpenAI function-tool definitions, and executes tool_calls itself in a loop.",
+      desc: 'The backend runs its own MCP client, translates MCP tools into OpenAI function-tool definitions, and executes tool_calls itself in a loop.',
       icon: 'M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z',
       iconBg: 'bg-reasoning-bg',
       iconColor: 'text-reasoning-text',
@@ -1303,7 +1414,7 @@ export class ReadmeComponent implements AfterViewInit, OnDestroy {
     },
     {
       title: 'Voice Input',
-      desc: 'Record a message with the mic button — hand-encoded as WAV and sent as an input_audio content part, with an automatic system prompt telling the model to treat it as the user\'s message. Text is optional when audio is attached.',
+      desc: "Record a message with the mic button — hand-encoded as WAV and sent as an input_audio content part, with an automatic system prompt telling the model to treat it as the user's message. Text is optional when audio is attached.",
       icon: 'M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z',
       iconBg: 'bg-tool-bg',
       iconColor: 'text-tool-text',
@@ -1428,7 +1539,7 @@ export class ReadmeComponent implements AfterViewInit, OnDestroy {
       n: '1',
       title: 'Chat ID sent immediately',
       detail:
-        "ChatMetadata is created (and its name decided) before any model output starts, and a created_chat event fires right away so the browser updates its URL well before the first token arrives.",
+        'ChatMetadata is created (and its name decided) before any model output starts, and a created_chat event fires right away so the browser updates its URL well before the first token arrives.',
     },
     {
       n: '2',
@@ -1491,23 +1602,52 @@ export class ReadmeComponent implements AfterViewInit, OnDestroy {
       n: '4',
       title: 'Per-chat overrides',
       detail:
-        'opt a specific chat out of a server or tool from the New Chat dialog or a chat\'s settings, without touching the account default.',
+        "opt a specific chat out of a server or tool from the New Chat dialog or a chat's settings, without touching the account default.",
     },
     {
       n: '5',
       title: 'Request-time merge',
       detail:
-        'on every Chat Completions request, the backend merges each active server\'s allowed tools (minus this chat\'s overrides) in alongside the built-in tool set, routing tool calls back to the correct server.',
+        "on every Chat Completions request, the backend merges each active server's allowed tools (minus this chat's overrides) in alongside the built-in tool set, routing tool calls back to the correct server.",
     },
   ];
 
   invokeSteps = [
-    { n: '1', title: 'Tool call', detail: 'the model calls generate-image-tool with a natural-language prompt string.' },
-    { n: '2', title: 'Model lookup', detail: 'InvokeService queries InvokeAI\'s /api/v2/models/ endpoint for the first model matching the requested name (default: "Dreamshaper 8").' },
-    { n: '3', title: 'Job submission', detail: 'a txt2img pipeline graph (512×512, 30 steps, dpmpp_3m_k scheduler, CFG 7.5) is submitted via POST /api/v1/queue/default/enqueue_batch.' },
-    { n: '4', title: 'Socket.IO listener', detail: 'the service subscribes to the default queue over Socket.IO and waits for an invocation_complete event with the generated image name.' },
-    { n: '5', title: 'Download & persist', detail: 'the image is downloaded from /api/v1/images/i/{name}/full and stored as a binary blob via AssetsService.' },
-    { n: '6', title: 'URL construction', detail: 'a public asset URL ({SELF_URL}/assets/filequery/{filename}?chatId=...) is returned and rendered as a Markdown image in the chat.' },
+    {
+      n: '1',
+      title: 'Tool call',
+      detail: 'the model calls generate-image-tool with a natural-language prompt string.',
+    },
+    {
+      n: '2',
+      title: 'Model lookup',
+      detail:
+        'InvokeService queries InvokeAI\'s /api/v2/models/ endpoint for the first model matching the requested name (default: "Dreamshaper 8").',
+    },
+    {
+      n: '3',
+      title: 'Job submission',
+      detail:
+        'a txt2img pipeline graph (512×512, 30 steps, dpmpp_3m_k scheduler, CFG 7.5) is submitted via POST /api/v1/queue/default/enqueue_batch.',
+    },
+    {
+      n: '4',
+      title: 'Socket.IO listener',
+      detail:
+        'the service subscribes to the default queue over Socket.IO and waits for an invocation_complete event with the generated image name.',
+    },
+    {
+      n: '5',
+      title: 'Download & persist',
+      detail:
+        'the image is downloaded from /api/v1/images/i/{name}/full and stored as a binary blob via AssetsService.',
+    },
+    {
+      n: '6',
+      title: 'URL construction',
+      detail:
+        'a public asset URL ({SELF_URL}/assets/filequery/{filename}?chatId=...) is returned and rendered as a Markdown image in the chat.',
+    },
   ];
 
   imageFormats = ['JPEG', 'PNG', 'WebP', 'GIF', 'AVIF'];
@@ -1517,7 +1657,7 @@ export class ReadmeComponent implements AfterViewInit, OnDestroy {
       n: '1',
       title: 'Record',
       detail:
-        'the mic button captures microphone audio via the Web Audio API (AudioContext + ScriptProcessorNode) and hand-encodes it as 16-bit PCM WAV on stop — MediaRecorder\'s default webm/opus output isn\'t decodable by llama.cpp\'s audio input.',
+        "the mic button captures microphone audio via the Web Audio API (AudioContext + ScriptProcessorNode) and hand-encodes it as 16-bit PCM WAV on stop — MediaRecorder's default webm/opus output isn't decodable by llama.cpp's audio input.",
     },
     {
       n: '2',
@@ -1535,7 +1675,7 @@ export class ReadmeComponent implements AfterViewInit, OnDestroy {
       n: '4',
       title: 'System prompt injection',
       detail:
-        'whenever a request contains an input_audio part, the backend injects an extra system message instructing the model to treat what was said as the user\'s actual message.',
+        "whenever a request contains an input_audio part, the backend injects an extra system message instructing the model to treat what was said as the user's actual message.",
     },
     {
       n: '5',
@@ -1582,7 +1722,11 @@ export class ReadmeComponent implements AfterViewInit, OnDestroy {
 
   securityBoundaries = [
     { what: 'cryptoKey', where: 'chat_metadata MongoDB document', plaintext: true },
-    { what: 'Messages → inference server', where: 'Inference server message store', plaintext: false },
+    {
+      what: 'Messages → inference server',
+      where: 'Inference server message store',
+      plaintext: false,
+    },
     { what: 'Browser → NestJS (HTTP body)', where: 'HTTPS in production', plaintext: true },
     { what: 'chatId MCP header', where: 'MCP request header (key lookup)', plaintext: true },
   ];
