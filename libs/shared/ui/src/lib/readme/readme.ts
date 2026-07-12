@@ -889,6 +889,64 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
               </div>
             </section>
 
+            <!-- TOOL APPROVAL -->
+            <section id="tool-approval">
+              <h2 class="text-2xl font-bold text-text-primary mb-2">Tool Approval</h2>
+              <p class="text-text-secondary mb-6">
+                Per-chat opt-in that pauses a tool call for your approval before it runs, instead of
+                executing automatically the moment the model requests it — the same
+                request/approve/deny loop as an agentic coding CLI, applied to this project's own
+                MCP tool orchestration.
+              </p>
+
+              @if (isBrowser) {
+                <div
+                  class="dark:hidden block mb-2 bg-contain bg-center bg-no-repeat bg-surface-overlay cursor-zoom-in h-56 sm:h-72 lg:h-96"
+                  [uiParallax]="'tool-approval-preview-light.png'"
+                  (click)="openPreview('tool-approval-preview-light.png')"
+                  role="img"
+                  aria-label="tool approval banner light"
+                ></div>
+                <div
+                  class="dark:block hidden mb-2 bg-contain bg-center bg-no-repeat bg-surface-overlay cursor-zoom-in h-56 sm:h-72 lg:h-96"
+                  [uiParallax]="'tool-approval-preview-dark.png'"
+                  (click)="openPreview('tool-approval-preview-dark.png')"
+                  role="img"
+                  aria-label="tool approval banner dark"
+                ></div>
+              }
+
+              <div class="space-y-3 mb-4">
+                @for (step of toolApprovalSteps; track step.n) {
+                  <div
+                    class="bg-surface-raised border border-border-default rounded-xl p-4 flex gap-3 items-start"
+                  >
+                    <span
+                      class="flex-shrink-0 w-7 h-7 rounded-full bg-tool-bg border border-tool-border flex items-center justify-center text-tool-text font-bold text-xs"
+                      >{{ step.n }}</span
+                    >
+                    <p class="text-sm text-text-secondary leading-relaxed">
+                      <strong class="text-text-primary">{{ step.title }}</strong> —
+                      {{ step.detail }}
+                    </p>
+                  </div>
+                }
+              </div>
+              <div
+                class="flex gap-2 items-start bg-info-bg border border-info-border rounded-lg px-4 py-3"
+              >
+                <ng-icon
+                  name="heroInformationCircle"
+                  class="w-4 h-4 text-info-text flex-shrink-0 mt-0.5"
+                />
+                <p class="text-xs text-info-text">
+                  The "always allow" list lives in memory on the backend, keyed by chat id — it
+                  resets on server restart and never persists to MongoDB, so re-approval is required
+                  again after a redeploy.
+                </p>
+              </div>
+            </section>
+
             <!-- MCP PROGRESS REPORTING -->
             <section id="mcp-progress-reporting">
               <h2 class="text-2xl font-bold text-text-primary mb-2">
@@ -1612,6 +1670,7 @@ export class ReadmeComponent implements AfterViewInit, OnDestroy {
     { id: 'environment-variables', label: 'Environment Variables' },
     { id: 'mcp-tool-integration', label: 'MCP Tool Integration' },
     { id: 'custom-mcp-servers', label: 'Custom MCP Servers' },
+    { id: 'tool-approval', label: 'Tool Approval' },
     { id: 'mcp-progress-reporting', label: 'MCP Progress Reporting' },
     { id: 'image-generation', label: 'Image Generation' },
     { id: 'image-upload', label: 'Image Upload' },
@@ -2001,6 +2060,39 @@ export class ReadmeComponent implements AfterViewInit, OnDestroy {
       title: 'Request-time merge',
       detail:
         "on every Chat Completions request, the backend merges each active server's allowed tools (minus this chat's overrides) in alongside the built-in tool set, routing tool calls back to the correct server.",
+    },
+  ];
+
+  toolApprovalSteps = [
+    {
+      n: '1',
+      title: 'Opt in per chat',
+      detail:
+        'toggle "Require tool approval" in the New Chat dialog or a chat\'s settings. Stored as ChatMetadata.toolsRequireApproval — off by default.',
+    },
+    {
+      n: '2',
+      title: 'Stream pauses, not aborts',
+      detail:
+        'when the model requests a tool call, the backend emits a response.tool_approval.required SSE event and awaits your decision — the SSE connection stays open the whole time.',
+    },
+    {
+      n: '3',
+      title: 'Banner above the input',
+      detail:
+        'the pending call (tool name + arguments) renders as a banner above the chat input with three actions: Allow once, Always allow, Deny.',
+    },
+    {
+      n: '4',
+      title: 'Decision posted back',
+      detail:
+        'POST /openai/tool-approval/:requestId resolves the backend\'s pending promise for that call — Deny skips execution and feeds the model a "User denied this tool call" result instead.',
+    },
+    {
+      n: '5',
+      title: 'Always allow, per chat, per session',
+      detail:
+        'choosing "Always allow" whitelists that tool name for the rest of the chat\'s current server process — later calls to the same tool run without prompting again.',
     },
   ];
 
