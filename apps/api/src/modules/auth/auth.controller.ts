@@ -33,6 +33,7 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { randomUUID } from 'crypto';
 import { Public } from './public.decorator';
+import { Role } from './roles.decorator';
 import { LoginDto } from './login.dto';
 import { RegisterDto } from './register.dto';
 import { User, UserDocument } from './user.schema';
@@ -286,7 +287,7 @@ export class AuthController {
     await this.userModel.create({
       username: dto.username.toLowerCase(),
       passwordHash,
-      role: 'user',
+      role: Role.User,
       isActivated: false,
       activationHash,
     });
