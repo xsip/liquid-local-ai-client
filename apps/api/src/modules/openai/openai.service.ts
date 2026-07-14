@@ -517,10 +517,7 @@ export class OpenAiService {
 
             if (
               chatMeta.toolsRequireApproval &&
-              !this.toolApprovalService.isAlwaysAllowed(
-                resolvedChatMetaId!,
-                tc.name,
-              )
+              !(chatMeta.alwaysAllowedTools ?? []).includes(tc.name)
             ) {
               const { requestId, promise } = this.toolApprovalService.request();
               this.writeSseEvent(
@@ -558,10 +555,11 @@ export class OpenAiService {
               }
 
               if (decision === 'always') {
-                this.toolApprovalService.markAlwaysAllowed(
-                  resolvedChatMetaId!,
+                chatMeta.alwaysAllowedTools = [
+                  ...(chatMeta.alwaysAllowedTools ?? []),
                   tc.name,
-                );
+                ];
+                await chatMeta.save();
               }
             }
 

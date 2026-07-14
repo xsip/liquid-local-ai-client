@@ -25,6 +25,7 @@ export interface ChatSettingsData {
   invokeAiModelToUse?: InvokeAiModelToUseEnum;
   transcribeAudio?: boolean;
   toolsRequireApproval?: boolean;
+  alwaysAllowedTools?: string[];
   customMcps: CustomMcpDto[];
   mcpOverrides: ChatMcpOverrideDto[];
 }
@@ -184,6 +185,29 @@ interface McpUiState {
           <ui-toggle [(ngModel)]="localToolsRequireApproval" activeColor="bg-amber-500" />
         </div>
 
+        <!-- Always-allowed tools -->
+        @if (localAlwaysAllowedTools.length) {
+          <div class="mb-4">
+            <ui-label class="mb-1.5">{{ 'chatSettings.resetToolApprovals' | translate }}</ui-label>
+            <span class="text-[10px] text-text-muted mt-0.5 block mb-2">{{
+              'chatSettings.resetToolApprovalsHint' | translate
+            }}</span>
+            <div class="flex flex-wrap gap-1.5 mt-2">
+              @for (tool of localAlwaysAllowedTools; track tool) {
+                <button
+                  type="button"
+                  class="flex items-center gap-1.5 pl-2 pr-1.5 py-1 rounded-lg border border-border-default text-[10px] font-mono text-text-muted hover:border-warn/40 hover:text-warn transition-colors"
+                  [title]="'chatSettings.revokeToolApproval' | translate"
+                  (click)="revokeTool(tool)"
+                >
+                  {{ tool }}
+                  <span class="text-text-muted">×</span>
+                </button>
+              }
+            </div>
+          </div>
+        }
+
         <div class="mb-4 mt-2">
           <div class="flex items-center justify-between mb-1.5">
             <ui-label>{{ 'chatSettings.mcpServers' | translate }}</ui-label>
@@ -302,6 +326,8 @@ export class ChatSettingsDialogComponent implements OnChanges, OnInit {
 
   readonly saved = output<ChatSettingsSaveEvent>();
   readonly closed = output<void>();
+  /** Emits {chatId, toolName} when the user revokes a single "always allow" entry. */
+  readonly revokeToolApproval = output<{ chatId: string; toolName: string }>();
   /** Emits the full, updated account-level MCP server list whenever it changes
    * here (inline refresh or the embedded manage dialog) so ancestor routes stay in sync. */
   readonly accountMcpsChange = output<CustomMcpDto[]>();
@@ -316,6 +342,7 @@ export class ChatSettingsDialogComponent implements OnChanges, OnInit {
   localInvokeAiModelPreference?: InvokeAiModelToUseEnum;
   localTranscribeAudio = false;
   localToolsRequireApproval = false;
+  localAlwaysAllowedTools: string[] = [];
   localMcpState: McpUiState[] = [];
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -335,6 +362,7 @@ export class ChatSettingsDialogComponent implements OnChanges, OnInit {
     this.localInvokeAiModelPreference = d.invokeAiModelToUse;
     this.localTranscribeAudio = d.transcribeAudio ?? false;
     this.localToolsRequireApproval = d.toolsRequireApproval ?? false;
+    this.localAlwaysAllowedTools = [...(d.alwaysAllowedTools ?? [])];
 
     this.localMcpState = (d.customMcps ?? []).map((mcp) => {
       const override = (d.mcpOverrides ?? []).find((o) => o.mcpId === mcp.id);
@@ -345,6 +373,11 @@ export class ChatSettingsDialogComponent implements OnChanges, OnInit {
         expanded: false,
       };
     });
+  }
+
+  revokeTool(toolName: string): void {
+    this.localAlwaysAllowedTools = this.localAlwaysAllowedTools.filter((t) => t !== toolName);
+    this.revokeToolApproval.emit({ chatId: this.data().chatId, toolName });
   }
 
   toggleTool(state: McpUiState, tool: string): void {

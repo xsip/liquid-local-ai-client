@@ -422,6 +422,7 @@ import InvokeAiModelToUseEnum = UpdateChatMetadataDto.InvokeAiModelToUseEnum;
         (saved)="onSettingsSaved($event)"
         (closed)="closeSettings()"
         (accountMcpsChange)="accountMcpsChange.emit($event)"
+        (revokeToolApproval)="revokeToolApproval.emit($event)"
       />
     }
 
@@ -520,6 +521,7 @@ export class ChatSidebarComponent {
   readonly chatDeleted = output<string>();
   readonly openChatSettings = output<string>();
   readonly saveCryptoSettings = output<ChatSettingsSaveEvent>();
+  readonly revokeToolApproval = output<{ chatId: string; toolName: string }>();
   readonly shareChat = output<{ chatId: string; username: string }>();
   readonly unshareChat = output<{ chatId: string; userId: string }>();
   readonly accountMcpsChange = output<CustomMcpDto[]>();
@@ -649,6 +651,7 @@ export class ChatSidebarComponent {
       invokeAiModelToUse: chat.invokeAiModelToUse,
       transcribeAudio: chat.transcribeAudio ?? false,
       toolsRequireApproval: chat.toolsRequireApproval ?? false,
+      alwaysAllowedTools: chat.alwaysAllowedTools ?? [],
       customMcps: this.customMcps(),
       mcpOverrides: chat.mcpOverrides ?? [],
     });
@@ -665,6 +668,7 @@ export class ChatSidebarComponent {
     mcpOverrides?: ChatMcpOverrideDto[],
     transcribeAudio?: boolean,
     toolsRequireApproval?: boolean,
+    alwaysAllowedTools?: string[],
   ): void {
     this.settingsModal.update((m) =>
       m
@@ -678,6 +682,7 @@ export class ChatSidebarComponent {
             mcpOverrides: mcpOverrides ?? m.mcpOverrides,
             transcribeAudio: transcribeAudio ?? m.transcribeAudio,
             toolsRequireApproval: toolsRequireApproval ?? m.toolsRequireApproval,
+            alwaysAllowedTools: alwaysAllowedTools ?? m.alwaysAllowedTools,
           }
         : null,
     );

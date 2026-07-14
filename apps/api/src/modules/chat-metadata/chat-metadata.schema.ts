@@ -128,6 +128,11 @@ export class ChatMetadata {
   @Prop({ required: false, type: Boolean, default: false })
   toolsRequireApproval?: boolean;
 
+  /** Tool names the user marked "always allow" for this chat, bypassing the
+   * approval prompt. Cleared via the "reset tool approvals" chat setting. */
+  @Prop({ required: false, default: [], type: [String] })
+  alwaysAllowedTools: string[];
+
   @Prop({
     required: false,
     enum: Object.values(InvokeAiModel),
@@ -262,6 +267,12 @@ export class ChatMetadataDto {
       'When true, tool/MCP calls in this chat pause and wait for user approval before running',
   })
   toolsRequireApproval?: boolean;
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Tool names marked "always allow" for this chat',
+  })
+  alwaysAllowedTools?: string[];
 
   @ApiPropertyOptional({
     type: [String],

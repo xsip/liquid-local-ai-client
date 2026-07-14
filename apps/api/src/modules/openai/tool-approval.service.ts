@@ -11,13 +11,12 @@ interface PendingApproval {
  * Gates tool/MCP calls behind a user approval step when a chat has
  * `toolsRequireApproval` enabled. The generation loop in `OpenaiService`
  * awaits `request().promise` before invoking a tool; the frontend resolves
- * it via `POST openai/tool-approval/:requestId`.
+ * it via `POST openai/tool-approval/:requestId`. "Always allow" decisions
+ * are persisted on `ChatMetadata.alwaysAllowedTools`, not here.
  */
 @Injectable()
 export class ToolApprovalService {
   private readonly pending = new Map<string, PendingApproval>();
-  /** Tools marked "always allow" for a given chat, for the lifetime of the process. */
-  private readonly alwaysAllowed = new Map<string, Set<string>>();
 
   request(): { requestId: string; promise: Promise<ToolApprovalDecision> } {
     const requestId = randomUUID();
@@ -33,15 +32,5 @@ export class ToolApprovalService {
     this.pending.delete(requestId);
     entry.resolve(decision);
     return true;
-  }
-
-  isAlwaysAllowed(chatId: string, toolName: string): boolean {
-    return this.alwaysAllowed.get(chatId)?.has(toolName) ?? false;
-  }
-
-  markAlwaysAllowed(chatId: string, toolName: string): void {
-    const set = this.alwaysAllowed.get(chatId) ?? new Set<string>();
-    set.add(toolName);
-    this.alwaysAllowed.set(chatId, set);
   }
 }

@@ -46,6 +46,10 @@ export interface ChatMetadataDto {
      */
     toolsRequireApproval?: boolean;
     /**
+     * Tool names marked \"always allow\" for this chat
+     */
+    alwaysAllowedTools?: Array<string>;
+    /**
      * ObjectIds of users granted access to this chat
      */
     sharedWith?: Array<string>;

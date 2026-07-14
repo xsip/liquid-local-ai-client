@@ -145,7 +145,7 @@ Unlike the old Responses-API flow — where LM Studio itself connected to the MC
 - **Persistent chat history** — every exchange is stored in MongoDB as a rolling message array and rehydrated on demand, including reconstructed tool-call banners and image attachments
 - **Resilient background generation** — a response keeps generating server-side even if the client disconnects; refreshing the page or switching chats mid-response reattaches to the live stream instead of losing it (see [Resilient Background Generation](#resilient-background-generation))
 - **Custom MCP servers** — users can register their own MCP servers on their account (endpoint auto-discovers name + tool list), toggle a server or individual tools on/off account-wide, and re-run discovery on demand; per-chat overrides let a specific chat opt out of a server/tool without affecting the account default (see [Custom MCP Servers](#custom-mcp-servers))
-- **Tool approval** — per-chat opt-in that pauses a tool call for approval before it runs, without aborting the SSE stream; approve once, always allow for the rest of the chat, or deny (see [Tool Approval](#tool-approval))
+- **Tool approval** — per-chat opt-in that pauses a tool call for approval before it runs, without aborting the SSE stream; approve once, always allow for the rest of the chat, or deny — "always allow" decisions are persisted per chat and can be revoked individually from the chat settings dialog (see [Tool Approval](#tool-approval))
 - **MCP tool server** — the backend registers itself as an MCP server and also calls itself as an MCP client
     - `get-token-usage-tool` — returns the authenticated user's current token usage and limit
     - `get-content-from-file-ids` — fetches uploaded file content on demand by file ID
@@ -421,7 +421,11 @@ Per-chat opt-in (`ChatMetadata.toolsRequireApproval`) that pauses a tool/MCP cal
 2. **Stream pauses, not aborts** — when the model returns a tool call, `OpenAiService.chatStreamCompletions` emits a `response.tool_approval.required` SSE event and `await`s a promise from `ToolApprovalService` before calling `McpClientService.callTool()`. The SSE connection stays open and streaming the whole time — nothing is aborted.
 3. **Banner above the chat input** — `ToolApprovalBannerComponent` renders the pending call's name and arguments above the input, with three actions: **Allow once**, **Always allow**, **Deny**.
 4. **Decision posted back** — the chosen decision is sent to `POST /openai/tool-approval/:requestId`, which resolves the matching pending promise in `ToolApprovalService`. **Deny** skips `callTool()` entirely and feeds the model a `"User denied this tool call."` tool-result message instead of the tool's actual output — the generation loop continues normally.
-5. **"Always allow" is per chat, per server process** — choosing **Always allow** adds the tool name to an in-memory allowlist keyed by chat id. Later calls to that same tool in the same chat skip the approval gate (no SSE event, no wait) until the server restarts — it is not persisted to MongoDB.
+5. **"Always allow" is persisted per chat** — choosing **Always allow** adds the tool name to `ChatMetadata.alwaysAllowedTools` in MongoDB. Later calls to that same tool in the same chat skip the approval gate (no SSE event, no wait), and the allowlist survives server restarts/redeploys.
+6. **Revoke individually from chat settings** — a chat's settings dialog lists every tool on its `alwaysAllowedTools` list as a chip; clicking one sends a `PATCH /chat-metadata/:id` with that tool removed, re-enabling the approval prompt for it without affecting the rest of the list.
+
+![Revoke always-allow (light)](https://raw.githubusercontent.com/xsip/liquid-local-ai-client/refs/heads/main/apps/ui/public/revoke-always-allow-light.png)
+![Revoke always-allow (dark)](https://raw.githubusercontent.com/xsip/liquid-local-ai-client/refs/heads/main/apps/ui/public/revoke-always-allow-dark.png)
 
 > **Note:** because the SSE stream and `resumeStream`/`ActiveGenerationService` buffering (see [Resilient Background Generation](#resilient-background-generation)) already replay everything sent so far, refreshing the page while a tool-approval request is pending replays the `response.tool_approval.required` event and the banner reappears — the backend is still just awaiting the same promise.
 

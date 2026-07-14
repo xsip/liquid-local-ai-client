@@ -78,6 +78,15 @@ export class UpdateChatMetadataDto {
   toolsRequireApproval?: boolean;
 
   @ApiPropertyOptional({
+    type: [String],
+    description: 'Tool names marked "always allow" for this chat. Send [] to reset.',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  alwaysAllowedTools?: string[];
+
+  @ApiPropertyOptional({
     description: 'Opt-out overrides for the user\'s account-level custom MCP servers',
     type: [ChatMcpOverrideDto],
   })

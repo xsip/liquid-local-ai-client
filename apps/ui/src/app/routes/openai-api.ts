@@ -208,6 +208,7 @@ type ChatNameMode = 'ai' | 'custom' | 'none';
             (chatDeleted)="deleteChat($event)"
             (openChatSettings)="onOpenChatSettings($event)"
             (saveCryptoSettings)="onSaveCryptoSettings($event)"
+            (revokeToolApproval)="onRevokeToolApproval($event)"
             (shareChat)="onShareChat($event)"
             (unshareChat)="onUnshareChat($event)"
             (accountMcpsChange)="customMcps.set($event)"
@@ -1147,6 +1148,7 @@ export class OpenAiApi implements OnDestroy, OnInit {
           chat.mcpOverrides ?? [],
           chat.transcribeAudio ?? false,
           chat.toolsRequireApproval ?? false,
+          chat.alwaysAllowedTools ?? [],
         );
       },
       error: () => {
@@ -1194,6 +1196,20 @@ export class OpenAiApi implements OnDestroy, OnInit {
           );
         },
       });
+  }
+
+  onRevokeToolApproval({ chatId, toolName }: { chatId: string; toolName: string }): void {
+    const chat = this.chatList().find((c) => c._id === chatId);
+    const alwaysAllowedTools: string[] = (chat?.alwaysAllowedTools ?? []).filter(
+      (t: string) => t !== toolName,
+    );
+    this.chatMetaService.updateChatMetadata(chatId, { alwaysAllowedTools }).subscribe({
+      next: () => {
+        this.chatList.update((list) =>
+          list.map((c) => (c._id === chatId ? { ...c, alwaysAllowedTools } : c)),
+        );
+      },
+    });
   }
 
   onShareChat({ chatId, username }: { chatId: string; username: string }): void {

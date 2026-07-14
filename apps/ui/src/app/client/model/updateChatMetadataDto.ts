@@ -25,6 +25,10 @@ export interface UpdateChatMetadataDto {
     transcribeAudio?: boolean;
     toolsRequireApproval?: boolean;
     /**
+     * Tool names marked \"always allow\" for this chat. Send [] to reset.
+     */
+    alwaysAllowedTools?: Array<string>;
+    /**
      * Opt-out overrides for the user\'s account-level custom MCP servers
      */
     mcpOverrides?: Array<ChatMcpOverrideDto>;

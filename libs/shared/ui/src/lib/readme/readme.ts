@@ -940,11 +940,28 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                   class="w-4 h-4 text-info-text flex-shrink-0 mt-0.5"
                 />
                 <p class="text-xs text-info-text">
-                  The "always allow" list lives in memory on the backend, keyed by chat id — it
-                  resets on server restart and never persists to MongoDB, so re-approval is required
-                  again after a redeploy.
+                  The "always allow" list is persisted on <code>ChatMetadata.alwaysAllowedTools</code>
+                  in MongoDB, keyed per chat — it survives server restarts and redeploys, and any
+                  entry can be revoked individually from that chat's settings dialog.
                 </p>
               </div>
+
+              @if (isBrowser) {
+                <div
+                  class="dark:hidden block mt-4 bg-contain bg-center bg-no-repeat bg-surface-overlay cursor-zoom-in h-56 sm:h-72 lg:h-96"
+                  [uiParallax]="'revoke-always-allow-light.png'"
+                  (click)="openPreview('revoke-always-allow-light.png')"
+                  role="img"
+                  aria-label="revoke always-allow tool light"
+                ></div>
+                <div
+                  class="dark:block hidden mt-4 bg-contain bg-center bg-no-repeat bg-surface-overlay cursor-zoom-in h-56 sm:h-72 lg:h-96"
+                  [uiParallax]="'revoke-always-allow-dark.png'"
+                  (click)="openPreview('revoke-always-allow-dark.png')"
+                  role="img"
+                  aria-label="revoke always-allow tool dark"
+                ></div>
+              }
             </section>
 
             <!-- MCP PROGRESS REPORTING -->
@@ -2090,9 +2107,15 @@ export class ReadmeComponent implements AfterViewInit, OnDestroy {
     },
     {
       n: '5',
-      title: 'Always allow, per chat, per session',
+      title: 'Always allow, persisted per chat',
       detail:
-        'choosing "Always allow" whitelists that tool name for the rest of the chat\'s current server process — later calls to the same tool run without prompting again.',
+        'choosing "Always allow" adds the tool name to ChatMetadata.alwaysAllowedTools in MongoDB — later calls to the same tool in the same chat run without prompting again, and the list survives server restarts.',
+    },
+    {
+      n: '6',
+      title: 'Revoke individually from chat settings',
+      detail:
+        'the chat settings dialog lists every always-allowed tool as a chip; clicking one removes just that tool from the list, re-enabling the approval prompt for it.',
     },
   ];
 

@@ -2104,6 +2104,13 @@
             "type": "boolean",
             "description": "When true, tool/MCP calls in this chat pause and wait for user approval before running"
           },
+          "alwaysAllowedTools": {
+            "description": "Tool names marked \"always allow\" for this chat",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "sharedWith": {
             "description": "ObjectIds of users granted access to this chat",
             "type": "array",
@@ -2185,6 +2192,13 @@
           },
           "toolsRequireApproval": {
             "type": "boolean"
+          },
+          "alwaysAllowedTools": {
+            "description": "Tool names marked \"always allow\" for this chat. Send [] to reset.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "mcpOverrides": {
             "description": "Opt-out overrides for the user's account-level custom MCP servers",
