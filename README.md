@@ -1,4 +1,4 @@
-# <img src="https://raw.githubusercontent.com/xsip/liquid-local-ai-client/refs/heads/main/apps/ui/public/logo-cropped.png" alt="Logo" width="30"/> Liquid Local AI Client | [Preview on youtube](https://www.youtube.com/watch?v=_UhKke10JzY)  
+# <img src="https://raw.githubusercontent.com/xsip/liquid-local-ai-client/refs/heads/main/apps/ui/public/logo-cropped.png" alt="Logo" width="30"/> Pure Liquid Local AI Client | [Preview on youtube](https://www.youtube.com/watch?v=_UhKke10JzY)  
 
 A full-stack AI chat client that connects to any OpenAI-compatible local inference server (LM Studio, Ollama, llama.cpp, vLLM, ...) via the standard `/v1/chat/completions` endpoint. Built with Angular, NestJS, and MongoDB, with first-class MCP (Model Context Protocol) tool support, AI image generation via [InvokeAI](https://invoke-ai.github.io/InvokeAI/), image upload into chat, voice message recording (sent as `input_audio` for models with audio support), and optional end-to-end AES message encryption.
 

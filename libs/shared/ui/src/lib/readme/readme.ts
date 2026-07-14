@@ -220,7 +220,7 @@ import { SHOW_CHAT_LINK } from '../tokens';
               <img src="logo-cropped.png" class="w-full h-full text-white" alt="logo" />
             </div>
             <span class="font-semibold text-sm text-text-primary truncate"
-              >Liquid Local AI Client</span
+              >Pure Liquid Local AI Client</span
             >
             <span
               class="hidden sm:inline-flex badge-pill bg-accent/10 text-accent-text border border-accent/20 ml-1"
@@ -312,7 +312,7 @@ import { SHOW_CHAT_LINK } from '../tokens';
             uiAnimateOnScroll="up"
             [aosDelay]="80"
           >
-            Liquid Local<br />
+            Pure Liquid Local<br />
             <span
               class="text-transparent bg-clip-text bg-gradient-to-r from-accent to-reasoning-text"
               >AI Client</span
@@ -1771,7 +1771,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
         <footer
           class="border-t border-border-default pt-8 pb-4 mt-20 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-text-muted"
         >
-          <p>Liquid Local AI Client &mdash; MIT License</p>
+          <p>Pure Liquid Local AI Client &mdash; MIT License</p>
           <div class="flex gap-4">
             <span>Angular <strong class="text-text-secondary">21</strong></span>
             <span>NestJS <strong class="text-text-secondary">11</strong></span>
@@ -1826,7 +1826,7 @@ export class ReadmeComponent implements AfterViewInit, OnDestroy {
       'Protocol) tool support, AI image generation via InvokeAI, image upload into chat, voice ' +
       'message recording, and optional end-to-end AES message encryption.';
 
-    this.title.setTitle('Liquid Local AI Client — Full-stack AI Chat Client for Local LLMs');
+    this.title.setTitle('Pure Liquid Local AI Client — Full-stack AI Chat Client for Local LLMs');
     this.meta.updateTag({ name: 'description', content: description });
     this.meta.updateTag({
       name: 'keywords',
@@ -1837,12 +1837,12 @@ export class ReadmeComponent implements AfterViewInit, OnDestroy {
     this.meta.updateTag({ property: 'og:type', content: 'website' });
     this.meta.updateTag({
       property: 'og:title',
-      content: 'Liquid Local AI Client',
+      content: 'Pure Liquid Local AI Client',
     });
     this.meta.updateTag({ property: 'og:description', content: description });
     this.meta.updateTag({ property: 'og:image', content: '/chat-preview-dark.png' });
     this.meta.updateTag({ name: 'twitter:card', content: 'summary_large_image' });
-    this.meta.updateTag({ name: 'twitter:title', content: 'Liquid Local AI Client' });
+    this.meta.updateTag({ name: 'twitter:title', content: 'Pure Liquid Local AI Client' });
     this.meta.updateTag({ name: 'twitter:description', content: description });
     this.meta.updateTag({ name: 'twitter:image', content: '/chat-preview-dark.png' });
   }
