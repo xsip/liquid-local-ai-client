@@ -141,7 +141,6 @@ type ChatNameMode = 'ai' | 'custom' | 'none';
       >
         <div
           class="w-7 h-7 rounded-2xl flex items-center justify-center"
-          style="box-shadow: 0 8px 32px var(--color-accent-glow);"
         >
           <img src="logo-cropped.png" class="w-full h-full text-white" alt="logo" />
         </div>

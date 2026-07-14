@@ -133,11 +133,10 @@ import { SHOW_CHAT_LINK } from '../tokens';
       >
         <div class="max-w-6xl mx-auto px-4 sm:px-8 h-14 flex items-center justify-between gap-4">
           <div class="flex items-center gap-2.5 min-w-0">
-            <span
-              class="w-7 h-7 rounded-lg bg-accent/20 flex items-center justify-center flex-shrink-0"
-            >
-              <ng-icon name="heroCommandLine" class="w-4 h-4 text-accent" />
-            </span>
+            <div
+              class="w-7 h-7 rounded-2xl flex items-center justify-center">
+              <img src="logo-cropped.png" class="w-full h-full text-white" alt="logo" />
+            </div>
             <span class="font-semibold text-sm text-text-primary truncate"
               >Liquid Local AI Client</span
             >

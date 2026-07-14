@@ -109,7 +109,6 @@ import ClientEnum = CreateChatMetadataDto.ClientEnum;
         >
           <div
             class="w-16 h-16 rounded-2xl flex items-center justify-center mb-2 animate-float"
-            style="border: 1px solid var(--color-border-default);"
           >
             <img src="logo-cropped.png" class="w-full h-full text-white" alt="logo" />
           </div>
@@ -424,7 +423,6 @@ import ClientEnum = CreateChatMetadataDto.ClientEnum;
             } @else {
               <div
                 class="w-3 h-3 text-reasoning-muted shrink-0"
-                style="border: 1px solid var(--color-border-default);"
               >
                 <img src="logo-cropped.png" class="w-full h-full text-white" alt="logo" />
               </div>
@@ -477,18 +475,18 @@ import ClientEnum = CreateChatMetadataDto.ClientEnum;
         <!-- AI message -->
         <div class="flex flex-col items-start gap-1.5" @msgAnim>
           @if (msg.username) {
-            <span class="text-[10px] text-text-muted font-medium ml-8">{{ msg.username }}</span>
+            <span class="text-[10px] text-text-muted font-medium ml-1">{{ msg.username }}</span>
           }
-          <!-- Avatar -->
-          <div class="flex items-start gap-2.5 min-w-0 w-full">
+          <div class="relative min-w-0 max-w-[80%] w-full">
+            <!-- Avatar badge — small marker in the bubble's top-left corner -->
             <div
-              class="w-6 h-6 rounded-lg shrink-0 mt-0.5 flex items-center justify-center animate-scale-in"
-              style="border: 1px solid var(--color-border-default); box-shadow: 0 2px 8px var(--color-accent-glow);"
+              class="absolute -top-1.5 -left-1.5 w-4 h-4 rounded-full overflow-hidden shrink-0 animate-scale-in z-10"
+              style="box-shadow: 0 0 0 2px var(--color-surface-base);"
             >
-              <img src="logo-cropped.png" class="w-full h-full text-white" alt="logo" />
+              <img src="logo-cropped.png" class="w-full h-full object-cover" alt="logo" />
             </div>
             <div
-              class="min-w-0 max-w-[80%] text-text-primary rounded-2xl rounded-tl-sm px-4 py-3 text-sm leading-relaxed overflow-hidden"
+              class="min-w-0 text-text-primary rounded-2xl rounded-tl-sm px-4 py-3 text-sm leading-relaxed overflow-hidden"
               style="background: var(--color-surface-raised); border: 1px solid var(--color-border-default); box-shadow: var(--shadow-md);"
             >
               @if (msg.streaming) {
@@ -513,7 +511,7 @@ import ClientEnum = CreateChatMetadataDto.ClientEnum;
               }
             </div>
           </div>
-          <div class="flex items-center gap-3 ml-8">
+          <div class="flex items-center gap-3 ml-1">
             @if (msg.stats) {
               <span class="text-[10px] text-text-disabled font-mono">{{ msg.stats }}</span>
             }

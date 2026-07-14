@@ -83,7 +83,6 @@ import { BlobBackgroundDirective } from '../shared/directives/blob-background.di
           <div class="relative">
             <div
               class="w-14 h-14 rounded-2xl flex items-center justify-center animate-float"
-              style="box-shadow: 0 8px 32px var(--color-accent-glow);"
             >
               <img src="logo-cropped.png" class="w-full h-full text-white" alt="logo" />
             </div>
