@@ -28,12 +28,20 @@ import {
 } from '@ng-icons/heroicons/outline';
 import { DarkModeToggleComponent } from '../dark-mode-toggle/dark-mode-toggle.component';
 import { ParallaxDirective } from '../directives/parallax.directive';
+import { AnimateOnScrollDirective } from '../directives/animate-on-scroll.directive';
 import { SHOW_CHAT_LINK } from '../tokens';
 
 @Component({
   selector: 'app-readme',
   standalone: true,
-  imports: [RouterLink, TranslateModule, NgIconComponent, DarkModeToggleComponent, ParallaxDirective],
+  imports: [
+    RouterLink,
+    TranslateModule,
+    NgIconComponent,
+    DarkModeToggleComponent,
+    ParallaxDirective,
+    AnimateOnScrollDirective,
+  ],
   viewProviders: [
     provideIcons({
       heroCommandLine,
@@ -123,6 +131,80 @@ import { SHOW_CHAT_LINK } from '../tokens';
         border-radius: 0.75rem;
         background: var(--color-surface-raised);
       }
+
+      .raindrop {
+        position: absolute;
+        top: -10%;
+        pointer-events: none;
+        animation-name: raindrop-fall;
+        animation-timing-function: linear;
+        animation-iteration-count: infinite;
+        will-change: transform, opacity;
+      }
+      .raindrop img {
+        width: 100%;
+        height: 100%;
+        display: block;
+        filter: drop-shadow(0 0 6px var(--color-accent-glow, transparent));
+      }
+      @keyframes raindrop-fall {
+        0% {
+          transform: translateY(0) rotate(-4deg);
+          opacity: 0;
+        }
+        8% {
+          opacity: var(--drop-opacity, 0.2);
+        }
+        90% {
+          opacity: var(--drop-opacity, 0.2);
+        }
+        100% {
+          transform: translateY(128vh) rotate(4deg);
+          opacity: 0;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .raindrop {
+          animation: none;
+          display: none;
+        }
+      }
+
+      /* ── Animate-on-scroll ──────────────────────────────────────────────
+       * .ui-aos-init is only ever added by AnimateOnScrollDirective from a
+       * real browser with JS running — never present in SSR output or when
+       * JS is disabled, so the element's default (no-class) state is simply
+       * "visible, no transform", which is exactly what we want as the
+       * no-animation fallback. */
+      .ui-aos-init {
+        opacity: 0;
+        transition:
+          opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+          transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+        will-change: opacity, transform;
+      }
+      .ui-aos-init.ui-aos--up {
+        transform: translateY(28px);
+      }
+      .ui-aos-init.ui-aos--down {
+        transform: translateY(-28px);
+      }
+      .ui-aos-init.ui-aos--left {
+        transform: translateX(-36px);
+      }
+      .ui-aos-init.ui-aos--right {
+        transform: translateX(36px);
+      }
+      .ui-aos-init.ui-aos--zoom {
+        transform: scale(0.92);
+      }
+      .ui-aos-init.ui-aos--fade {
+        transform: none;
+      }
+      .ui-aos-init.ui-aos-visible {
+        opacity: 1;
+        transform: none;
+      }
     `,
   ],
   template: `
@@ -182,8 +264,28 @@ import { SHOW_CHAT_LINK } from '../tokens';
         <div
           class="absolute inset-0 bg-gradient-to-br from-accent/10 via-transparent to-reasoning-bg pointer-events-none"
         ></div>
+
+        <!-- Falling droplets — decorative, echoes the logo's water-drop shape -->
+        @if (isBrowser) {
+          <div class="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+            @for (drop of raindrops; track $index) {
+              <div
+                class="raindrop"
+                [style.left]="drop.left"
+                [style.width.px]="drop.size"
+                [style.height.px]="drop.size"
+                [style.animation-duration.s]="drop.duration"
+                [style.animation-delay.s]="drop.delay"
+                [style.--drop-opacity]="drop.opacity"
+              >
+                <img src="logo-cropped.png" alt="" />
+              </div>
+            }
+          </div>
+        }
+
         <div class="relative max-w-6xl mx-auto px-4 sm:px-8 py-16 sm:py-24">
-          <div class="flex flex-wrap items-center gap-2 mb-6">
+          <div class="flex flex-wrap items-center gap-2 mb-6" uiAnimateOnScroll="fade">
             <span class="badge-pill bg-accent/10 text-accent-text border border-accent/20"
               >Angular 21</span
             >
@@ -207,6 +309,8 @@ import { SHOW_CHAT_LINK } from '../tokens';
 
           <h1
             class="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-text-primary mb-4 leading-tight"
+            uiAnimateOnScroll="up"
+            [aosDelay]="80"
           >
             Liquid Local<br />
             <span
@@ -214,7 +318,11 @@ import { SHOW_CHAT_LINK } from '../tokens';
               >AI Client</span
             >
           </h1>
-          <p class="text-lg sm:text-xl text-text-secondary max-w-2xl mb-8 leading-relaxed">
+          <p
+            class="text-lg sm:text-xl text-text-secondary max-w-2xl mb-8 leading-relaxed"
+            uiAnimateOnScroll="up"
+            [aosDelay]="160"
+          >
             A full-stack AI chat client that connects to any OpenAI-compatible local inference
             server — LM Studio, Ollama, llama.cpp, vLLM — over the standard
             <code class="text-accent">/v1/chat/completions</code> endpoint, with client-side MCP
@@ -222,7 +330,7 @@ import { SHOW_CHAT_LINK } from '../tokens';
             message encryption.
           </p>
 
-          <div class="flex flex-wrap gap-3">
+          <div class="flex flex-wrap gap-3" uiAnimateOnScroll="fade" [aosDelay]="240">
             <a
               href="#getting-started"
               class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-accent hover:bg-accent-hover text-white font-semibold text-sm transition-colors"
@@ -269,6 +377,7 @@ import { SHOW_CHAT_LINK } from '../tokens';
               @for (item of navSections; track item.id) {
                 <a
                   [href]="'#' + item.id"
+                  (click)="scrollToSection($event, item.id)"
                   class="px-2 py-1.5 rounded-lg text-xs transition-colors border-l-2"
                   [class]="
                     activeSection() === item.id
@@ -315,7 +424,7 @@ import { SHOW_CHAT_LINK } from '../tokens';
                 @for (item of navSections; track item.id) {
                   <a
                     [href]="'#' + item.id"
-                    (click)="mobileNavOpen.set(false)"
+                    (click)="scrollToSection($event, item.id); mobileNavOpen.set(false)"
                     class="px-2 py-1.5 rounded-lg text-xs transition-colors border-l-2"
                     [class]="
                       activeSection() === item.id
@@ -369,6 +478,7 @@ import { SHOW_CHAT_LINK } from '../tokens';
               <section>
                 <div
                   class="dark:hidden block bg-contain bg-center bg-no-repeat bg-surface-overlay cursor-zoom-in h-56 sm:h-72 lg:h-96"
+                  uiAnimateOnScroll="zoom"
                   [uiParallax]="'chat-preview-light.png'"
                   (click)="openPreview('chat-preview-light.png')"
                   role="img"
@@ -376,6 +486,7 @@ import { SHOW_CHAT_LINK } from '../tokens';
                 ></div>
                 <div
                   class="dark:block hidden bg-contain bg-center bg-no-repeat bg-surface-overlay cursor-zoom-in h-56 sm:h-72 lg:h-96"
+                  uiAnimateOnScroll="zoom"
                   [uiParallax]="'chat-preview-dark.png'"
                   (click)="openPreview('chat-preview-dark.png')"
                   role="img"
@@ -398,6 +509,7 @@ import { SHOW_CHAT_LINK } from '../tokens';
               <div class="grid sm:grid-cols-2 gap-4">
                 <div
                   class="card-hover bg-surface-raised border border-border-default rounded-xl p-6"
+                  uiAnimateOnScroll="left"
                 >
                   <div class="flex items-center gap-3 mb-3">
                     <span
@@ -419,6 +531,7 @@ import { SHOW_CHAT_LINK } from '../tokens';
 
                 <div
                   class="card-hover bg-surface-raised border border-border-default rounded-xl p-6"
+                  uiAnimateOnScroll="right"
                 >
                   <div class="flex items-center gap-3 mb-3">
                     <span
@@ -520,9 +633,11 @@ import { SHOW_CHAT_LINK } from '../tokens';
                 and the frontend reattaches to it automatically.
               </p>
               <div class="space-y-3 mb-4">
-                @for (step of resilientGenerationSteps; track step.n) {
+                @for (step of resilientGenerationSteps; track step.n; let i = $index) {
                   <div
                     class="bg-surface-raised border border-border-default rounded-xl p-4 flex gap-3 items-start"
+                    uiAnimateOnScroll="left"
+                    [aosDelay]="i * 70"
                   >
                     <span
                       class="flex-shrink-0 w-7 h-7 rounded-full bg-accent/15 border border-accent/30 flex items-center justify-center text-accent font-bold text-xs"
@@ -576,6 +691,8 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
               <div class="grid sm:grid-cols-4 gap-3">
                 <div
                   class="bg-surface-raised border border-border-default rounded-lg p-4 text-center"
+                  uiAnimateOnScroll="up"
+                  [aosDelay]="0"
                 >
                   <p class="text-text-muted text-xs uppercase tracking-wider font-semibold mb-1">
                     Frontend
@@ -583,7 +700,11 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                   <p class="font-medium text-text-primary">Angular 21</p>
                   <p class="text-text-muted text-xs mt-1">localhost:4200</p>
                 </div>
-                <div class="bg-accent-subtle border border-accent/25 rounded-lg p-4 text-center">
+                <div
+                  class="bg-accent-subtle border border-accent/25 rounded-lg p-4 text-center"
+                  uiAnimateOnScroll="up"
+                  [aosDelay]="60"
+                >
                   <p class="text-text-muted text-xs uppercase tracking-wider font-semibold mb-1">
                     Backend + MCP
                   </p>
@@ -592,6 +713,8 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                 </div>
                 <div
                   class="bg-surface-raised border border-border-default rounded-lg p-4 text-center"
+                  uiAnimateOnScroll="up"
+                  [aosDelay]="120"
                 >
                   <p class="text-text-muted text-xs uppercase tracking-wider font-semibold mb-1">
                     Inference Server
@@ -601,6 +724,8 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                 </div>
                 <div
                   class="bg-surface-raised border border-border-default rounded-lg p-4 text-center"
+                  uiAnimateOnScroll="up"
+                  [aosDelay]="180"
                 >
                   <p class="text-text-muted text-xs uppercase tracking-wider font-semibold mb-1">
                     Image Gen
@@ -615,9 +740,11 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
             <section id="tech-stack">
               <h2 class="text-2xl font-bold text-text-primary mb-6">Tech Stack</h2>
               <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                @for (item of techStack; track item.tech) {
+                @for (item of techStack; track item.tech; let i = $index) {
                   <div
                     class="card-hover bg-surface-raised border border-border-default rounded-xl p-4 flex flex-col gap-2"
+                    uiAnimateOnScroll="up"
+                    [aosDelay]="(i % 4) * 60"
                   >
                     <span [class]="'badge-pill self-start ' + item.badgeClass">{{
                       item.layer
@@ -633,9 +760,11 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
             <section id="features">
               <h2 class="text-2xl font-bold text-text-primary mb-6">Features</h2>
               <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                @for (feat of features; track feat.title) {
+                @for (feat of features; track feat.title; let i = $index) {
                   <div
                     class="card-hover bg-surface-raised border border-border-default rounded-xl p-5 flex gap-4"
+                    uiAnimateOnScroll="fade"
+                    [aosDelay]="(i % 3) * 70"
                   >
                     <span
                       [class]="
@@ -672,7 +801,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
               <h2 class="text-2xl font-bold text-text-primary mb-2">Getting Started</h2>
               <p class="text-text-secondary mb-8">Up and running in a few steps.</p>
               <div class="space-y-4">
-                @for (step of steps; track step.n) {
+                @for (step of steps; track step.n; let i = $index) {
                   <div class="relative flex gap-4 sm:gap-5" [class.step-line]="!$last">
                     <div
                       class="flex-shrink-0 w-10 h-10 rounded-full bg-accent/15 border border-accent/30 flex items-center justify-center text-accent font-bold text-sm z-10"
@@ -681,6 +810,8 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                     </div>
                     <div
                       class="flex-1 min-w-0 bg-surface-raised border border-border-default rounded-xl p-4 sm:p-5 mb-3"
+                      uiAnimateOnScroll="right"
+                      [aosDelay]="(i % 4) * 60"
                     >
                       <p class="font-semibold text-text-primary mb-2">{{ step.title }}</p>
                       @if (step.desc) {
@@ -711,6 +842,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
               </p>
               <div
                 class="bg-surface-raised border border-border-default rounded-xl overflow-hidden"
+                uiAnimateOnScroll="zoom"
               >
                 <div
                   class="flex items-center gap-2 px-4 py-2.5 bg-surface-overlay border-b border-border-subtle"
@@ -790,6 +922,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
               @if (isBrowser) {
                 <div
                   class="dark:hidden block mb-2 bg-contain bg-center bg-no-repeat bg-surface-overlay cursor-zoom-in h-56 sm:h-72 lg:h-96"
+                  uiAnimateOnScroll="left"
                   [uiParallax]="'mcp-preview-light.png'"
                   (click)="openPreview('mcp-preview-light.png')"
                   role="img"
@@ -797,6 +930,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                 ></div>
                 <div
                   class="dark:block hidden mb-2 bg-contain bg-center bg-no-repeat bg-surface-overlay cursor-zoom-in h-56 sm:h-72 lg:h-96"
+                  uiAnimateOnScroll="left"
                   [uiParallax]="'mcp-preview-dark.png'"
                   (click)="openPreview('mcp-preview-dark.png')"
                   role="img"
@@ -805,9 +939,11 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
               }
 
               <div class="space-y-3 mb-4">
-                @for (tool of mcpTools; track tool.name) {
+                @for (tool of mcpTools; track tool.name; let i = $index) {
                   <div
                     class="bg-surface-raised border border-border-default rounded-xl p-5 flex flex-col sm:flex-row gap-3 items-start"
+                    uiAnimateOnScroll="fade"
+                    [aosDelay]="i * 50"
                   >
                     <code
                       class="flex-shrink-0 text-xs bg-tool-bg border border-tool-border text-tool-text px-2.5 py-1 rounded-lg font-mono"
@@ -845,6 +981,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
               @if (isBrowser) {
                 <div
                   class="dark:hidden block mb-2 bg-contain bg-center bg-no-repeat bg-surface-overlay cursor-zoom-in h-56 sm:h-72 lg:h-96"
+                  uiAnimateOnScroll="right"
                   [uiParallax]="'mcp-management-dialog-light.png'"
                   (click)="openPreview('mcp-management-dialog-light.png')"
                   role="img"
@@ -852,6 +989,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                 ></div>
                 <div
                   class="dark:block hidden mb-2 bg-contain bg-center bg-no-repeat bg-surface-overlay cursor-zoom-in h-56 sm:h-72 lg:h-96"
+                  uiAnimateOnScroll="right"
                   [uiParallax]="'mcp-management-dialog-dark.png'"
                   (click)="openPreview('mcp-management-dialog-dark.png')"
                   role="img"
@@ -859,9 +997,11 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                 ></div>
               }
               <div class="space-y-3 mb-4">
-                @for (step of customMcpSteps; track step.n) {
+                @for (step of customMcpSteps; track step.n; let i = $index) {
                   <div
                     class="bg-surface-raised border border-border-default rounded-xl p-4 flex gap-3 items-start"
+                    uiAnimateOnScroll="left"
+                    [aosDelay]="i * 60"
                   >
                     <span
                       class="flex-shrink-0 w-7 h-7 rounded-full bg-success-bg border border-success-border flex items-center justify-center text-success-text font-bold text-xs"
@@ -901,6 +1041,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
               @if (isBrowser) {
                 <div
                   class="dark:hidden block mb-2 bg-contain bg-center bg-no-repeat bg-surface-overlay cursor-zoom-in h-56 sm:h-72 lg:h-96"
+                  uiAnimateOnScroll="up"
                   [uiParallax]="'tool-approval-preview-light.png'"
                   (click)="openPreview('tool-approval-preview-light.png')"
                   role="img"
@@ -908,6 +1049,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                 ></div>
                 <div
                   class="dark:block hidden mb-2 bg-contain bg-center bg-no-repeat bg-surface-overlay cursor-zoom-in h-56 sm:h-72 lg:h-96"
+                  uiAnimateOnScroll="up"
                   [uiParallax]="'tool-approval-preview-dark.png'"
                   (click)="openPreview('tool-approval-preview-dark.png')"
                   role="img"
@@ -916,9 +1058,11 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
               }
 
               <div class="space-y-3 mb-4">
-                @for (step of toolApprovalSteps; track step.n) {
+                @for (step of toolApprovalSteps; track step.n; let i = $index) {
                   <div
                     class="bg-surface-raised border border-border-default rounded-xl p-4 flex gap-3 items-start"
+                    uiAnimateOnScroll="right"
+                    [aosDelay]="i * 60"
                   >
                     <span
                       class="flex-shrink-0 w-7 h-7 rounded-full bg-tool-bg border border-tool-border flex items-center justify-center text-tool-text font-bold text-xs"
@@ -948,6 +1092,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
               @if (isBrowser) {
                 <div
                   class="dark:hidden block mt-4 bg-contain bg-center bg-no-repeat bg-surface-overlay cursor-zoom-in h-56 sm:h-72 lg:h-96"
+                  uiAnimateOnScroll="up"
                   [uiParallax]="'revoke-always-allow-light.png'"
                   (click)="openPreview('revoke-always-allow-light.png')"
                   role="img"
@@ -955,6 +1100,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                 ></div>
                 <div
                   class="dark:block hidden mt-4 bg-contain bg-center bg-no-repeat bg-surface-overlay cursor-zoom-in h-56 sm:h-72 lg:h-96"
+                  uiAnimateOnScroll="up"
                   [uiParallax]="'revoke-always-allow-dark.png'"
                   (click)="openPreview('revoke-always-allow-dark.png')"
                   role="img"
@@ -983,6 +1129,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
               @if (isBrowser) {
                 <div
                   class="dark:hidden block mb-2 bg-contain bg-center bg-no-repeat bg-surface-overlay cursor-zoom-in h-56 sm:h-72 lg:h-96"
+                  uiAnimateOnScroll="zoom"
                   [uiParallax]="'mcp-progress-light.gif'"
                   (click)="openPreview('mcp-progress-light.gif')"
                   role="img"
@@ -990,6 +1137,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                 ></div>
                 <div
                   class="dark:block hidden mb-2 bg-contain bg-center bg-no-repeat bg-surface-overlay cursor-zoom-in h-56 sm:h-72 lg:h-96"
+                  uiAnimateOnScroll="zoom"
                   [uiParallax]="'mcp-progress-dark.gif'"
                   (click)="openPreview('mcp-progress-dark.gif')"
                   role="img"
@@ -998,9 +1146,11 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
               }
 
               <div class="space-y-3 mb-4">
-                @for (step of mcpProgressSteps; track step.n) {
+                @for (step of mcpProgressSteps; track step.n; let i = $index) {
                   <div
                     class="bg-surface-raised border border-border-default rounded-xl p-4 flex gap-3 items-start"
+                    uiAnimateOnScroll="up"
+                    [aosDelay]="i * 60"
                   >
                     <span
                       class="flex-shrink-0 w-7 h-7 rounded-full bg-accent/15 border border-accent/30 flex items-center justify-center text-accent font-bold text-xs"
@@ -1048,6 +1198,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
               @if (isBrowser) {
                 <div
                   class="dark:hidden block mb-2 bg-contain bg-center bg-no-repeat bg-surface-overlay cursor-zoom-in h-56 sm:h-72 lg:h-96"
+                  uiAnimateOnScroll="left"
                   [uiParallax]="'chat-image-generator-light.png'"
                   (click)="openPreview('chat-image-generator-light.png')"
                   role="img"
@@ -1055,6 +1206,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                 ></div>
                 <div
                   class="dark:block hidden mb-2 bg-contain bg-center bg-no-repeat bg-surface-overlay cursor-zoom-in h-56 sm:h-72 lg:h-96"
+                  uiAnimateOnScroll="left"
                   [uiParallax]="'chat-image-generator-dark.png'"
                   (click)="openPreview('chat-image-generator-dark.png')"
                   role="img"
@@ -1062,9 +1214,11 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                 ></div>
               }
               <div class="space-y-3">
-                @for (step of invokeSteps; track step.n) {
+                @for (step of invokeSteps; track step.n; let i = $index) {
                   <div
                     class="bg-surface-raised border border-border-default rounded-xl p-4 flex gap-3 items-start"
+                    uiAnimateOnScroll="left"
+                    [aosDelay]="i * 60"
                   >
                     <span
                       class="flex-shrink-0 w-7 h-7 rounded-full bg-info-bg border border-info-border flex items-center justify-center text-info-text font-bold text-xs"
@@ -1098,7 +1252,10 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
               </p>
 
               <div class="grid sm:grid-cols-2 gap-4">
-                <div class="bg-surface-raised border border-border-default rounded-xl p-5">
+                <div
+                  class="bg-surface-raised border border-border-default rounded-xl p-5"
+                  uiAnimateOnScroll="left"
+                >
                   <div class="flex items-center gap-2 mb-3">
                     <span
                       class="w-7 h-7 rounded-lg bg-tool-bg flex items-center justify-center text-tool-text"
@@ -1115,7 +1272,10 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                     }
                   </div>
                 </div>
-                <div class="bg-surface-raised border border-border-default rounded-xl p-5">
+                <div
+                  class="bg-surface-raised border border-border-default rounded-xl p-5"
+                  uiAnimateOnScroll="right"
+                >
                   <p class="font-semibold text-sm text-text-primary mb-2">Retrieval routes</p>
                   <p class="text-xs text-text-secondary leading-relaxed mb-1">
                     <code class="text-accent">GET /assets/:chatId/:filename</code> — authenticated,
@@ -1144,6 +1304,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
               @if (isBrowser) {
                 <div
                   class="dark:hidden block mb-2 bg-contain bg-center bg-no-repeat bg-surface-overlay cursor-zoom-in h-56 sm:h-72 lg:h-96"
+                  uiAnimateOnScroll="right"
                   [uiParallax]="'chat-voice-preview-light.png'"
                   (click)="openPreview('chat-voice-preview-light.png')"
                   role="img"
@@ -1151,6 +1312,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                 ></div>
                 <div
                   class="dark:block hidden mb-2 bg-contain bg-center bg-no-repeat bg-surface-overlay cursor-zoom-in h-56 sm:h-72 lg:h-96"
+                  uiAnimateOnScroll="right"
                   [uiParallax]="'chat-voice-preview-dark.png'"
                   (click)="openPreview('chat-voice-preview-dark.png')"
                   role="img"
@@ -1158,9 +1320,11 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                 ></div>
               }
               <div class="space-y-3">
-                @for (step of voiceInputSteps; track step.n) {
+                @for (step of voiceInputSteps; track step.n; let i = $index) {
                   <div
                     class="bg-surface-raised border border-border-default rounded-xl p-4 flex gap-3 items-start"
+                    uiAnimateOnScroll="right"
+                    [aosDelay]="i * 60"
                   >
                     <span
                       class="flex-shrink-0 w-7 h-7 rounded-full bg-tool-bg border border-tool-border flex items-center justify-center text-tool-text font-bold text-xs"
@@ -1204,6 +1368,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
               @if (isBrowser) {
                 <div
                   class="dark:hidden block mb-2 bg-contain bg-center bg-no-repeat bg-surface-overlay cursor-zoom-in h-56 sm:h-72 lg:h-96"
+                  uiAnimateOnScroll="zoom"
                   [uiParallax]="'audio-transcribe-light.gif'"
                   (click)="openPreview('audio-transcribe-light.gif')"
                   role="img"
@@ -1211,6 +1376,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                 ></div>
                 <div
                   class="dark:block hidden mb-2 bg-contain bg-center bg-no-repeat bg-surface-overlay cursor-zoom-in h-56 sm:h-72 lg:h-96"
+                  uiAnimateOnScroll="zoom"
                   [uiParallax]="'audio-transcribe-dark.gif'"
                   (click)="openPreview('audio-transcribe-dark.gif')"
                   role="img"
@@ -1218,9 +1384,11 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                 ></div>
               }
               <div class="space-y-3 mb-4">
-                @for (step of voiceTranscriptionSteps; track step.n) {
+                @for (step of voiceTranscriptionSteps; track step.n; let i = $index) {
                   <div
                     class="bg-surface-raised border border-border-default rounded-xl p-4 flex gap-3 items-start"
+                    uiAnimateOnScroll="up"
+                    [aosDelay]="i * 60"
                   >
                     <span
                       class="flex-shrink-0 w-7 h-7 rounded-full bg-success-bg border border-success-border flex items-center justify-center text-success-text font-bold text-xs"
@@ -1267,8 +1435,12 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                 never leaves the NestJS trust boundary.
               </p>
               <div class="grid sm:grid-cols-5 gap-6 sm:gap-2 mb-8">
-                @for (step of encryptionFlow; track step.n) {
-                  <div class="encrypt-flow-step flex sm:flex-col items-center gap-3 sm:gap-2">
+                @for (step of encryptionFlow; track step.n; let i = $index) {
+                  <div
+                    class="encrypt-flow-step flex sm:flex-col items-center gap-3 sm:gap-2"
+                    uiAnimateOnScroll="fade"
+                    [aosDelay]="i * 100"
+                  >
                     <div
                       [class]="
                         'w-10 h-10 flex-shrink-0 rounded-full flex items-center justify-center font-bold text-sm border ' +
@@ -1290,7 +1462,10 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
               <h3 class="text-base font-semibold text-text-primary mb-3">
                 Key Storage &amp; Security Boundaries
               </h3>
-              <div class="overflow-x-auto rounded-xl border border-border-default">
+              <div
+                class="overflow-x-auto rounded-xl border border-border-default"
+                uiAnimateOnScroll="up"
+              >
                 <table class="w-full text-sm">
                   <thead>
                     <tr class="bg-surface-overlay text-xs text-text-muted uppercase tracking-wider">
@@ -1347,9 +1522,11 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                 Authentication &amp; Authorization
               </h2>
               <div class="grid sm:grid-cols-2 gap-4">
-                @for (item of authItems; track item.title) {
+                @for (item of authItems; track item.title; let i = $index) {
                   <div
                     class="bg-surface-raised border border-border-default rounded-xl p-5 flex gap-3"
+                    uiAnimateOnScroll="up"
+                    [aosDelay]="(i % 2) * 80"
                   >
                     <span
                       [class]="
@@ -1395,8 +1572,12 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                 MongoDB collection.
               </p>
               <div class="grid sm:grid-cols-3 gap-4 mb-5">
-                @for (tier of tokenTiers; track tier.label) {
-                  <div [class]="'card-hover rounded-xl p-5 border ' + tier.cardClass">
+                @for (tier of tokenTiers; track tier.label; let i = $index) {
+                  <div
+                    [class]="'card-hover rounded-xl p-5 border ' + tier.cardClass"
+                    uiAnimateOnScroll="zoom"
+                    [aosDelay]="i * 80"
+                  >
                     <p
                       [class]="'text-xs font-bold uppercase tracking-wider mb-1 ' + tier.labelClass"
                     >
@@ -1439,6 +1620,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
               @if (isBrowser) {
                 <div
                   class="dark:hidden block mb-2 rounded-xl border border-border-default bg-contain bg-center bg-no-repeat bg-surface-overlay cursor-zoom-in h-56 sm:h-72 lg:h-96"
+                  uiAnimateOnScroll="left"
                   [uiParallax]="'admin-users-preview-light.png'"
                   (click)="openPreview('admin-users-preview-light.png')"
                   role="img"
@@ -1446,6 +1628,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                 ></div>
                 <div
                   class="dark:block hidden mb-6 rounded-xl border border-border-default bg-contain bg-center bg-no-repeat bg-surface-overlay cursor-zoom-in h-56 sm:h-72 lg:h-96"
+                  uiAnimateOnScroll="left"
                   [uiParallax]="'admin-users-preview-dark.png'"
                   (click)="openPreview('admin-users-preview-dark.png')"
                   role="img"
@@ -1466,6 +1649,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
               @if (isBrowser) {
                 <div
                   class="dark:hidden block mb-2 rounded-xl border border-border-default bg-contain bg-center bg-no-repeat bg-surface-overlay cursor-zoom-in h-56 sm:h-72 lg:h-96"
+                  uiAnimateOnScroll="right"
                   [uiParallax]="'admin-tokens-preview-light.png'"
                   (click)="openPreview('admin-tokens-preview-light.png')"
                   role="img"
@@ -1473,6 +1657,7 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                 ></div>
                 <div
                   class="dark:block hidden mb-6 rounded-xl border border-border-default bg-contain bg-center bg-no-repeat bg-surface-overlay cursor-zoom-in h-56 sm:h-72 lg:h-96"
+                  uiAnimateOnScroll="right"
                   [uiParallax]="'admin-tokens-preview-dark.png'"
                   (click)="openPreview('admin-tokens-preview-dark.png')"
                   role="img"
@@ -1498,7 +1683,10 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
                 was later deleted.
               </p>
 
-              <div class="overflow-x-auto rounded-xl border border-border-default">
+              <div
+                class="overflow-x-auto rounded-xl border border-border-default"
+                uiAnimateOnScroll="left"
+              >
                 <table class="w-full text-sm">
                   <thead>
                     <tr class="bg-surface-overlay text-xs text-text-muted uppercase tracking-wider">
@@ -1537,7 +1725,10 @@ Angular UI (4200) ──SSE──▶ NestJS API (8888) ──/v1/chat/completion
             <!-- API TABLE -->
             <section id="api-overview">
               <h2 class="text-2xl font-bold text-text-primary mb-6">API Overview</h2>
-              <div class="overflow-x-auto rounded-xl border border-border-default">
+              <div
+                class="overflow-x-auto rounded-xl border border-border-default"
+                uiAnimateOnScroll="right"
+              >
                 <table class="w-full text-sm">
                   <thead>
                     <tr class="bg-surface-overlay text-xs text-text-muted uppercase tracking-wider">
@@ -1663,7 +1854,35 @@ export class ReadmeComponent implements AfterViewInit, OnDestroy {
 
   scrollToTop(): void {
     document.getElementById('hero')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // Drop any #section hash left over from a previous sidenav click.
+    history.pushState(null, '', location.pathname + location.search);
   }
+
+  /** Sidenav links keep a plain `href="#id"` so they work with JS disabled
+   *  (the browser's native anchor jump). This handler only ever runs once
+   *  Angular's JS is bootstrapped and listening — so intercepting the click
+   *  here to smooth-scroll instead is safe: a no-JS client never attaches
+   *  this listener at all and just gets the native instant jump. */
+  scrollToSection(event: MouseEvent, id: string): void {
+    event.preventDefault();
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // preventDefault() stops the native anchor jump (which would also update the
+    // URL), so mirror that part of the browser's default behavior manually.
+    history.pushState(null, '', `#${id}`);
+  }
+
+  /** Static (non-random-per-render) config for the falling-droplet decoration
+   *  in the hero section — computed once so it's stable across change detection. */
+  readonly raindrops = Array.from({ length: 16 }, (_, i) => {
+    const seed = i / 16;
+    return {
+      left: `${(seed * 97 + i * 13) % 100}%`,
+      size: 14 + ((i * 7) % 5) * 6,
+      duration: 9 + ((i * 5) % 7),
+      delay: -((i * 3.7) % 12),
+      opacity: 0.12 + ((i * 11) % 5) * 0.05,
+    };
+  });
 
   readonly previewImage = signal<string | null>(null);
 
