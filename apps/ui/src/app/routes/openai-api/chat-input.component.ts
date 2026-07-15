@@ -317,11 +317,19 @@ export type { AppendedFile };
             <span>{{ 'chatInput.generating' | translate }}</span>
           </div>
         } @else if (locked()) {
-          <div
+          <!--<div
             class="flex items-center gap-1.5 px-3 py-1.5 mb-2 text-xs rounded-xl border border-warn text-warn bg-warn/10"
           >
             <ng-icon name="heroLockClosed" class="w-3.5 h-3.5 shrink-0" />
             <span>{{ 'chatInput.locked' | translate }}</span>
+          </div>!-->
+          <div
+            class="flex items-center gap-1.5 px-3 py-1.5 mb-2 text-xs rounded-xl border border-accent/40 text-accent bg-accent/10"
+          >
+            <span
+              class="w-3 h-3 shrink-0 rounded-full border-2 border-accent border-t-transparent animate-spin"
+            ></span>
+            <span>{{ 'chatInput.generating' | translate }}</span>
           </div>
         }
 

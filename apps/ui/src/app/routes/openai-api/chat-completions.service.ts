@@ -80,6 +80,10 @@ export class ChatCompletionsService {
   private readonly lastUserInput = signal<string>('');
   private sub?: Subscription;
   private lockPollSub?: Subscription;
+  /** Last-observed `lastMessageSentAt` from lock polling — used to detect a
+   * completed turn even when the whole exchange finishes between two poll
+   * ticks and `locked` is never observed as `true` (see updateLockPolling). */
+  private lastSeenMessageSentAt?: string;
   /** All subscriptions wired per-generation (submit/resume) — torn down and
    * recreated on every call so they never accumulate duplicates across
    * multiple submits/resumes within the same component lifetime. */
@@ -541,6 +545,7 @@ export class ChatCompletionsService {
    */
   updateLockPolling(chatId: string, shouldPoll: boolean, modelName: string, onChatListRefresh: () => void): void {
     this.stopLockPolling();
+    this.lastSeenMessageSentAt = undefined;
     if (!shouldPoll) {
       this.locked.set(false);
       return;
@@ -554,6 +559,19 @@ export class ChatCompletionsService {
           this.locked.set(isLocked);
           if (isLocked && !wasLocked && !this.streaming()) {
             this.resumeStreaming(chatId, modelName, onChatListRefresh);
+          }
+
+          // Catches a turn that started and finished entirely between two poll
+          // ticks — `locked` was never observed as `true`, so the branch above
+          // never fires, but `lastMessageSentAt` still moved. First observation
+          // just seeds the baseline (this chat's already-loaded history already
+          // reflects it) rather than firing a spurious refresh on poll start.
+          const sentAt = meta.lastMessageSentAt ? String(meta.lastMessageSentAt) : undefined;
+          const isFirstObservation = this.lastSeenMessageSentAt === undefined;
+          const changed = sentAt !== undefined && sentAt !== this.lastSeenMessageSentAt;
+          if (sentAt !== undefined) this.lastSeenMessageSentAt = sentAt;
+          if (changed && !isFirstObservation && !isLocked && !this.streaming()) {
+            onChatListRefresh();
           }
         },
         error: () => this.stopLockPolling(),

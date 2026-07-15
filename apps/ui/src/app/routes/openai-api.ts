@@ -861,16 +861,21 @@ export class OpenAiApi implements OnDestroy, OnInit {
       const rawMessages: any[] = latest?.messages ?? [];
       const date = new Date(latest?.createdAt ?? Date.now());
 
-      // Entries are oldest-first snapshots of the rolling `messages` array, each stamped
-      // with the username of whoever submitted that turn. Map each raw message index to
-      // the username of the entry that first introduced it, so senders can be labeled
-      // in shared chats.
+      // Chats written after the messageSenders migration store one row holding the
+      // full history plus a parallel `messageSenders[]` array (index i = who
+      // submitted the turn that produced messages[i]) — read it directly.
+      // Older chats may still have several rows (one per turn, each holding a
+      // growing snapshot of the array) from before that migration; for those,
+      // fall back to diffing consecutive entries' lengths to recover the same
+      // per-index authorship.
       const entries = res as any[];
-      const senderByIndex = entries.flatMap((entry, i) => {
-        const prevLen = (entries[i - 1]?.messages as any[] | undefined)?.length ?? 0;
-        const entryLen = (entry?.messages as any[] | undefined)?.length ?? 0;
-        return Array<string | undefined>(Math.max(entryLen - prevLen, 0)).fill(entry?.username);
-      });
+      const senderByIndex: (string | undefined)[] = latest?.messageSenders?.length
+        ? latest.messageSenders
+        : entries.flatMap((entry, i) => {
+            const prevLen = (entries[i - 1]?.messages as any[] | undefined)?.length ?? 0;
+            const entryLen = (entry?.messages as any[] | undefined)?.length ?? 0;
+            return Array<string | undefined>(Math.max(entryLen - prevLen, 0)).fill(entry?.username);
+          });
 
       // Index tool results by tool_call_id so they can be attached to their originating call.
       const toolResultsById = new Map<string, string>();

@@ -411,9 +411,14 @@ export class OpenAiService {
     await this.chatMetadataService.touch(resolvedChatMetaId!, {
       locked: true,
     });
+    // `lastMessageSentAt` is also bumped here (not just at the top of this
+    // method) so it reliably marks "an exchange just finished" — shared-chat
+    // polling watches this value to detect a completed turn even if the whole
+    // exchange finished between two poll ticks and the `locked` flag was
+    // never observed as `true` (see updateLockPolling on the frontend).
     const unlock = () =>
       this.chatMetadataService
-        .touch(resolvedChatMetaId!, { locked: false })
+        .touch(resolvedChatMetaId!, { locked: false, lastMessageSentAt: new Date() })
         .catch((error: any) =>
           this.logger.error(`Failed to unlock chat: ${error.message}`),
         );
@@ -670,12 +675,14 @@ export class OpenAiService {
         break;
       }
 
+      const requestingUser = await this.userModel.findById(userId).exec();
       await this.chatsService.saveCompletionEntry(
         userId,
         resolvedChatMetaId!,
         messages,
         newChatConfig?.chatName,
         resolvedChatMetaId,
+        requestingUser?.username ?? 'unknown',
       );
 
       // ── Token accounting via TokenLimitService ──────────────────────

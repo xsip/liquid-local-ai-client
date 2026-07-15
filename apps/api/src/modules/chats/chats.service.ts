@@ -16,27 +16,52 @@ export class ChatsService {
 
   /**
    * Persist a Chat Completions exchange as a rolling message array.
-   * The latest doc for internalChatId holds the full history.
+   * Upserts a single document per internalChatId (rather than inserting a
+   * new row per turn) — `messageSenders` grows in lockstep with `messages`
+   * so per-turn authorship survives collapsing history into one row, for
+   * shared-chat "You" vs. another user's name labeling.
    */
   async saveCompletionEntry(
     userId: Types.ObjectId,
     internalChatId: string,
     messages: Record<string, unknown>[],
-    name?: string,
-    chatInternalId?: string,
+    name: string | undefined,
+    chatInternalId: string | undefined,
+    username: string,
   ): Promise<ChatDocument> {
-    const doc = new this.chatModel({
+    // Latest-by-createdAt in case legacy multi-row chats (written before this
+    // upsert scheme) still have several rows for this internalChatId — we
+    // always want to keep extending the newest one.
+    const existing = await this.chatModel
+      .findOne({ internalChatId })
+      .sort({ createdAt: -1 })
+      .exec();
+    const prevSenders = existing?.messageSenders ?? [];
+    const newTurnCount = Math.max(messages.length - prevSenders.length, 0);
+    const messageSenders = [
+      ...prevSenders,
+      ...Array(newTurnCount).fill(username),
+    ];
+
+    const update = {
       userId,
-      internalChatId: chatInternalId,
-      name: name ?? null,
+      internalChatId,
+      chatInternalId: chatInternalId ?? existing?.chatInternalId ?? null,
+      name: name ?? existing?.name ?? null,
       messages,
-      chatInternalId: chatInternalId ?? null,
-    });
-    const saved = await doc.save();
+      messageSenders,
+    };
+
+    const saved = existing
+      ? await this.chatModel
+          .findByIdAndUpdate(existing._id, { $set: update }, { new: true })
+          .exec()
+      : await new this.chatModel(update).save();
+
     this.logger.log(
       `Saved completion chat entry — user=${userId} chatId=${internalChatId}`,
     );
-    return saved;
+    return saved!;
   }
 
   /**

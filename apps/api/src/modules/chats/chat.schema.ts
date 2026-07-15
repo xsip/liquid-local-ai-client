@@ -28,10 +28,21 @@ export class Chat {
 
   /**
    * Rolling Chat Completions message array (system/user/assistant/tool turns).
-   * The latest entry for an internalChatId holds the full history.
+   * One document per chat session holds the full history — see
+   * ChatsService.saveCompletionEntry, which upserts this array turn-by-turn
+   * instead of inserting a new row per turn.
    */
   @Prop({ required: false, default: null, type: [Object] })
   messages: Record<string, unknown>[] | null;
+
+  /**
+   * Parallel array to `messages` — `messageSenders[i]` is the username of
+   * whoever submitted the turn that produced `messages[i]` (used to label
+   * "You" vs. another user's name in shared chats). `null` for entries
+   * written before this field existed.
+   */
+  @Prop({ required: false, default: null, type: [String] })
+  messageSenders: (string | null)[] | null;
 
   // `createdAt` / `updatedAt` are injected automatically by { timestamps: true }
 }
@@ -74,4 +85,12 @@ export class ChatEntryDto {
     description: 'Rolling Chat Completions message array, when applicable',
   })
   messages?: Record<string, unknown>[] | null;
+
+  @ApiPropertyOptional({
+    description:
+      'Parallel array to `messages` — username of whoever submitted each turn, for labeling shared chats. Null for entries written before this field existed.',
+    type: [String],
+    nullable: true,
+  })
+  messageSenders?: (string | null)[] | null;
 }

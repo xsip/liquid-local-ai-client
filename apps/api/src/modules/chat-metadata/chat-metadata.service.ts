@@ -245,10 +245,13 @@ export class ChatMetadataService {
       .exec();
     const sourceMessages =
       (latestEntry?.messages as Record<string, unknown>[]) ?? [];
+    const sourceSenders =
+      (latestEntry?.messageSenders as (string | null)[]) ?? [];
     const branchedMessages = this.sliceThroughAssistantReply(
       sourceMessages,
       dto.keepMessageCount,
     );
+    const branchedSenders = sourceSenders.slice(0, branchedMessages.length);
 
     const branchedMeta = new this.metaModel({
       name: source.name ? `${source.name} (branch)` : 'Branched chat',
@@ -283,6 +286,7 @@ export class ChatMetadataService {
       chatInternalId: branchedId,
       name: null,
       messages: rewrittenMessages,
+      messageSenders: branchedSenders,
     }).save();
 
     this.logger.log(

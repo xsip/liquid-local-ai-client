@@ -4314,6 +4314,14 @@
           "messages": {
             "type": "object",
             "description": "Rolling Chat Completions message array, when applicable"
+          },
+          "messageSenders": {
+            "description": "Parallel array to `messages` — username of whoever submitted each turn, for labeling shared chats. Null for entries written before this field existed.",
+            "nullable": true,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
