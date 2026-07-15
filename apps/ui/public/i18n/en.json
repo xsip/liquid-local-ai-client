@@ -115,6 +115,7 @@
   },
   "messages": {
     "branchInNewChat": "Branch in new chat",
+    "continueGenerating": "Continue generating",
     "transcribed": "transcribed",
     "noMessages": "No messages yet",
     "resend": "↺ Resend",

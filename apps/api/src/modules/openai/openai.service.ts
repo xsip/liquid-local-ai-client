@@ -671,7 +671,29 @@ export class OpenAiService {
           ...(assembledReasoning
             ? { reasoning_content: assembledReasoning }
             : {}),
+          // Persisted as-is (Chat Completions message arrays are stored verbatim)
+          // so a reload or a shared-chat viewer's history load can still tell
+          // this reply was cut off and offer "Continue generating" — mirrors how
+          // `transcribed: true` survives on user messages for the same reason.
+          ...(finishReason === 'length' ? { finish_reason: 'length' } : {}),
         });
+
+        // finish_reason: 'length' means the model hit max_tokens (this request's
+        // remaining per-interval token budget, or the model's own context/output
+        // cap) and was cut off mid-response rather than finishing naturally.
+        if (finishReason === 'length') {
+          this.writeSseEvent(
+            res,
+            'api.info',
+            {
+              type: 'api.info',
+              message:
+                'Response was cut off — the token limit was reached before the model finished.',
+              code: 'truncated',
+            },
+            resolvedChatMetaId,
+          );
+        }
         break;
       }
 
