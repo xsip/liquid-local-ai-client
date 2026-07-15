@@ -6,16 +6,18 @@
 }
 
 html {
+  /* Safety net against any child briefly exceeding 100% width (e.g. an
+     unclamped flex/grid item) causing a horizontal scrollbar on mobile.
+     Only set on <html>, not <body> too — giving both elements a non-visible
+     overflow-x forces their overflow-y to compute to `auto` (CSS spec), which
+     turns <body> into its own nested scroll container and breaks
+     `position: sticky` for anything inside it (e.g. the docs sidenav). */
   overflow-x: hidden;
   max-width: 100vw;
 }
 
 body {
-  overflow-x: hidden;
-  max-width: 100vw;
-}
-
-body {
+  width: 100vw;
   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

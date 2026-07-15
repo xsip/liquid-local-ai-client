@@ -205,13 +205,20 @@ import { SHOW_CHAT_LINK } from '../tokens';
         opacity: 1;
         transform: none;
       }
+
+      @media (max-width: 768px) {
+        .ui-aos-init.ui-aos--left,
+        .ui-aos-init.ui-aos--right {
+          transform: translateY(16px);
+        }
+      }
     `,
   ],
   template: `
-    <div class="min-h-screen relative bg-surface-base text-text-primary">
+    <div class="min-h-screen bg-surface-base text-text-primary">
       <!-- ── HEADER ─────────────────────────────────────────────────────────── -->
       <header
-        class="fixed w-full left-0 top-0 z-50 border-b bg-surface-base border-border-default"
+        class="fixed inset-x-0 max-w-screen top-0 z-50 border-b bg-surface-base border-border-default"
       >
         <div class="max-w-6xl mx-auto px-4 sm:px-8 h-14 flex items-center justify-between gap-4">
           <div class="flex items-center gap-2.5 min-w-0">
